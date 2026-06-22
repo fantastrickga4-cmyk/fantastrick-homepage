@@ -1,0 +1,11 @@
+# 설치 도구 (다시 설치 가능 — 올리지 않음)
+node_modules/
+
+# OS / 에디터 부산물
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 임시·테스트 파일
+docs/_*.png
+*.tmp

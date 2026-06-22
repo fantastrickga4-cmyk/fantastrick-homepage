@@ -1,0 +1,19 @@
+{
+  "name": "fantastrick_hompage",
+  "version": "1.0.0",
+  "description": "> 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "playwright": "^1.61.0"
+  }
+}

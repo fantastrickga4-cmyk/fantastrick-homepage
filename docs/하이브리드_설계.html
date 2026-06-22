@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>판타스트릭 — 설계 프로토타입 (하이브리드)</title>
+<link rel="icon" href="../assets/images/favicon.png">
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --bg:#090a15; --bg2:#10122a; --surface:#181b30; --surface2:#232844;
+  --text:#e8ebf5; --muted:#97a0be; --faint:#6a7298; --line:rgba(255,255,255,.10);
+  --cyan:#2f74e6; --cyan-deep:#043cb2; --gold:#8d63d6; --danger:#e35d6b;
+  --maxw:1180px; --r:16px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{position:relative}
+.eyebrow{letter-spacing:.3em;font-size:12px;font-weight:700;color:var(--cyan);text-transform:uppercase}
+.eyebrow.gold{color:var(--gold)}
+h2.title{font-size:clamp(24px,3.4vw,38px);font-weight:800;letter-spacing:-.01em;margin:.3em 0 .15em}
+.lead{color:var(--muted);max-width:640px}
+.btn{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:14px;padding:13px 22px;border-radius:11px;border:1px solid transparent;cursor:pointer;transition:.18s;white-space:nowrap}
+.btn.primary{background:var(--cyan-deep);color:#fff}
+.btn.primary:hover{box-shadow:0 0 0 3px rgba(47,116,230,.25);transform:translateY(-1px)}
+.btn.ghost{background:transparent;border-color:rgba(47,116,230,.5);color:var(--cyan)}
+.btn.ghost:hover{background:rgba(47,116,230,.08)}
+.btn.gold{background:var(--gold);color:#fff}
+.btn.gold:hover{box-shadow:0 0 0 3px rgba(141,99,214,.25);transform:translateY(-1px)}
+.btn.gold-ghost{background:transparent;border-color:rgba(141,99,214,.5);color:var(--gold)}
+.btn.sm{padding:9px 15px;font-size:13px;border-radius:9px}
+
+/* draft badge */
+.draft{position:fixed;left:14px;bottom:14px;z-index:200;background:rgba(11,13,24,.9);border:1px solid var(--line);color:var(--muted);
+  font-size:11px;padding:6px 12px;border-radius:999px;backdrop-filter:blur(6px)}
+.draft b{color:var(--cyan)}
+
+/* ---------- HEADER ---------- */
+header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.25s}
+.hdr-in{max-width:var(--maxw);margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:18px}
+header.scrolled{background:rgba(7,8,15,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header.scrolled .hdr-in{padding:11px 22px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.04em;font-size:17px}
+.brand .logo-img{height:26px;width:auto;display:block}
+.brand .mark{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--cyan),#043cb2);color:#fff;font-weight:900;box-shadow:0 0 16px rgba(47,116,230,.4)}
+nav.main{display:flex;gap:24px;margin-left:14px;font-size:14.5px;color:var(--muted)}
+nav.main a:hover{color:var(--text)}
+.hdr-cta{margin-left:auto;display:flex;gap:9px}
+.menu-btn{display:none;margin-left:auto;background:none;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px 11px;font-size:18px;cursor:pointer}
+@media(max-width:860px){
+  nav.main,.hdr-cta{display:none}
+  .menu-btn{display:block}
+}
+
+/* ---------- HERO ---------- */
+.hero{min-height:100vh;display:flex;align-items:center;overflow:hidden}
+.hero .bg{position:absolute;inset:0;z-index:0}
+.hero .bg img{width:100%;height:100%;object-fit:cover;opacity:.45}
+.hero .bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(7,8,15,.95) 10%,rgba(7,8,15,.6) 55%,rgba(7,8,15,.85)),
+            radial-gradient(900px 500px at 75% 30%,rgba(47,116,230,.16),transparent 60%)}
+.hero .wrap{position:relative;z-index:2;padding-top:90px;padding-bottom:60px}
+.hero h1{font-size:clamp(34px,6vw,68px);font-weight:800;line-height:1.12;letter-spacing:-.02em;margin:18px 0 14px}
+.hero h1 .accent{color:var(--cyan);text-shadow:0 0 30px rgba(47,116,230,.35)}
+.hero p.sub{font-size:clamp(15px,2vw,19px);color:#cfd5ea;max-width:560px}
+.hero .cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+.hero .meta{display:flex;gap:22px;margin-top:34px;flex-wrap:wrap;color:var(--muted);font-size:13.5px}
+.hero .meta b{color:var(--text);font-size:20px;font-weight:800;display:block}
+.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;color:var(--faint);font-size:11px;letter-spacing:.2em;text-align:center;animation:bob 2s infinite}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
+
+/* ---------- generic section spacing ---------- */
+.block{padding:96px 0}
+.block.alt{background:linear-gradient(180deg,var(--bg2),var(--bg))}
+.shead{margin-bottom:42px}
+
+/* reveal (progressive enhancement — only hides when JS is active) */
+.js .reveal{opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1)}
+.js .reveal.in{opacity:1;transform:none}
+
+/* ---------- ABOUT ---------- */
+.about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:54px;align-items:center}
+@media(max-width:860px){.about-grid{grid-template-columns:1fr;gap:34px}}
+.pillars{display:grid;gap:14px}
+.pillar{display:flex;gap:14px;padding:18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--surface),#0e1120)}
+.pillar .pn{flex:0 0 42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:20px;
+  background:rgba(47,116,230,.1);color:var(--cyan);border:1px solid rgba(47,116,230,.25)}
+.pillar h4{margin:0 0 2px;font-size:16px}
+.pillar p{margin:0;font-size:13.5px;color:var(--muted)}
+.about-visual{position:relative}
+.about-visual img{border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);width:100%;aspect-ratio:4/5;object-fit:cover}
+.about-visual .stamp{position:absolute;left:-14px;bottom:24px;background:var(--surface2);border:1px solid var(--line);
+  border-radius:12px;padding:12px 16px;box-shadow:var(--shadow)}
+.about-visual .stamp b{color:var(--cyan);font-size:22px}
+.about-visual .stamp span{display:block;font-size:12px;color:var(--muted)}
+.worldtags{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.worldtags span{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 13px}
+.worldtags b{color:var(--cyan)}
+
+/* ---------- THEMES (compact grid) ---------- */
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}
+.chip{font-size:13px;color:var(--muted);border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 15px;cursor:pointer;transition:.15s}
+.chip.on,.chip:hover{color:var(--cyan);border-color:var(--cyan)}
+.theme-carousel{position:relative}
+.theme-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 14px;
+  scrollbar-width:none;-ms-overflow-style:none;cursor:grab;user-select:none;scroll-behavior:smooth}
+.theme-track::-webkit-scrollbar{display:none}
+.theme-track.dragging{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
+.theme-track.dragging .tcard{pointer-events:none}
+/* 하단 슬라이드 바 (옆에 더 있는지 표시 · 드래그 가능) */
+.car-bar{height:5px;background:rgba(255,255,255,.08);border-radius:999px;margin-top:6px;position:relative;cursor:pointer}
+.car-bar.hidden{display:none}
+.car-thumb{position:absolute;top:0;left:0;height:100%;width:30%;background:var(--cyan);border-radius:999px;opacity:.85;transition:opacity .15s}
+.car-bar:hover .car-thumb{opacity:1}
+/* 카드: 한 화면에 정확히 4개 (태블릿 2개 / 모바일 1.1개 peek) */
+.tcard{position:relative;flex:0 0 calc((100% - 48px)/4);scroll-snap-align:start;
+  border:1px solid var(--line);border-radius:13px;overflow:clip;background:var(--surface);transition:.22s;display:flex;flex-direction:column}
+@media(max-width:860px){.tcard{flex-basis:calc((100% - 16px)/2)}}
+@media(max-width:520px){.tcard{flex-basis:84%}}
+.tcard:hover{transform:translateY(-4px);border-color:rgba(47,116,230,.45);box-shadow:var(--shadow)}
+/* coming soon 카드 */
+.tcard.soon{cursor:default}
+.tcard.soon:hover{transform:none;border-color:var(--line);box-shadow:none}
+.tcard.soon .thumb{background:linear-gradient(135deg,#0e1120,#161a2e)}
+.tcard.soon .thumb::after{background:linear-gradient(180deg,rgba(7,8,15,.45),rgba(7,8,15,.92))}
+.tcard.soon .thumb .phtxt{position:relative;z-index:2;font-size:15px;font-weight:800;letter-spacing:.16em;color:var(--cyan);opacity:.85}
+.tcard.soon .tt h3{color:#c5cadd}
+.tcard.soon .meta .go{color:var(--faint)}
+.tcard .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;
+  background-position:center;background-repeat:no-repeat;background-size:100%;transition:background-size .5s ease}
+.tcard:not(.soon):hover .thumb{background-size:114%}
+.tcard .thumb.ph{display:grid;place-items:center}
+.tcard .thumb.ph.cyan{background:radial-gradient(circle at 50% 40%,rgba(47,116,230,.22),#0b1620)}
+.tcard .thumb.ph.gold{background:radial-gradient(circle at 50% 40%,rgba(141,99,214,.22),#1a1505)}
+.tcard .thumb.ph .phtxt{color:var(--faint);font-size:11px;letter-spacing:.08em}
+.tcard .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(7,8,15,.92))}
+.tcard .badge{position:absolute;top:10px;left:10px;z-index:2;display:flex;gap:5px;flex-wrap:wrap;max-width:calc(100% - 88px)}
+.tcard .badge span{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(7,8,15,.62);backdrop-filter:blur(4px);border:1px solid var(--line)}
+.tcard .badge .genre{color:var(--cyan)}
+.tcard .badge .murder{color:var(--danger)}
+.tcard .store-tag{position:absolute;top:10px;right:10px;z-index:2;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(7,8,15,.62);backdrop-filter:blur(4px);border:1px solid var(--line);color:#d3d9ec;white-space:nowrap}
+.tcard .tt{position:absolute;left:13px;right:13px;bottom:11px;z-index:2}
+.tcard .tt .store{font-size:11px;color:var(--cyan);font-weight:600}
+.tcard .tt h3{margin:1px 0 0;font-size:17px;font-weight:800;line-height:1.25}
+.tcard .meta{display:flex;align-items:center;gap:10px;padding:11px 13px;font-size:12px;color:var(--muted)}
+.tcard .meta .sp{flex:1}.tcard .meta .sp b{color:var(--text);font-weight:600}
+.tcard .meta .go{color:var(--cyan);font-weight:700;white-space:nowrap}
+.tcard:hover .meta .go{text-decoration:underline}
+/* 난이도: 자물쇠 아이콘 */
+.diff{display:inline-flex;gap:2px;vertical-align:-1px}
+.diff .lock{width:11px;height:12px;display:inline-block;color:var(--faint);background:currentColor;
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/></svg>") center/contain no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/></svg>") center/contain no-repeat}
+.diff .lock.on{color:var(--cyan)}
+
+/* ---------- STORES ---------- */
+.store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.store-grid{grid-template-columns:1fr}}
+.store{border:1px solid var(--line);border-radius:12px;padding:12px 15px;background:linear-gradient(180deg,var(--surface),#0e1120)}
+.store .store-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.store .tag{font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.04em;flex:0 0 auto}
+.store.tgc .tag{color:var(--gold)}
+.store h3{margin:0;font-size:15.5px}
+.store .addr{font-size:11.5px;color:var(--muted);margin:3px 0 6px}
+.store .hours{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:6px}
+.store .hours b{color:var(--text);font-weight:600}
+.store .themes{font-size:10.5px;color:var(--faint)}
+.store .themes b{color:var(--cyan)}
+/* 매장: 왼쪽 카드 + 오른쪽 지도 2단 */
+.stores-layout{display:grid;grid-template-columns:1fr 1.08fr;gap:18px;align-items:stretch}
+@media(max-width:760px){.stores-layout{grid-template-columns:1fr}}
+.stores-left{display:flex;flex-direction:column;gap:12px}
+.stores-left .store{flex:1;display:flex;flex-direction:column;justify-content:center}
+.stores-right{display:block;position:relative;align-self:start;border-radius:14px;overflow:hidden;border:1px solid var(--line);transition:.2s}
+.stores-right:hover{border-color:rgba(47,116,230,.45)}
+.stores-right::after{content:"지도 크게 보기 ↗";position:absolute;right:12px;bottom:12px;z-index:3;font-size:11.5px;font-weight:700;color:#fff;background:rgba(9,10,21,.78);backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:8px;padding:6px 11px;opacity:.85;transition:.2s}
+.stores-right:hover::after{opacity:1}
+.store-map-img{width:100%;height:auto;display:block}
+.map-pin{position:absolute;z-index:2;transform:translate(-50%,-122%);white-space:nowrap;font-size:11px;font-weight:700;
+  color:#fff;background:rgba(9,10,21,.86);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:3px 8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.45);pointer-events:none;letter-spacing:-.01em}
+.map-pin::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:rgba(9,10,21,.86)}
+.map-pin.below{transform:translate(-50%,22%)}
+.map-pin.below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:rgba(9,10,21,.86)}
+
+/* ---------- BUSINESS / B2B ---------- */
+.biz{background:
+  radial-gradient(800px 400px at 85% 0%,rgba(141,99,214,.10),transparent 60%),
+  linear-gradient(180deg,#0a0b14,#0c0e1a);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.biz-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:40px}
+.cap3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:860px){.cap3{grid-template-columns:1fr}}
+.cap{border:1px solid var(--line);border-radius:14px;padding:26px;background:rgba(20,23,40,.5);transition:.25s}
+.cap:hover{border-color:rgba(141,99,214,.45);transform:translateY(-4px)}
+.cap .ci{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;font-size:22px;margin-bottom:16px;
+  background:rgba(141,99,214,.12);color:var(--gold);border:1px solid rgba(141,99,214,.3)}
+.cap h4{margin:0 0 4px;font-size:18px}
+.cap .en{font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.cap p{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+.biz-cta{margin-top:38px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  border:1px solid rgba(141,99,214,.3);border-radius:16px;padding:26px 28px;background:rgba(141,99,214,.05)}
+.biz-cta .bt{flex:1;min-width:240px}
+.biz-cta h4{margin:0 0 4px;font-size:19px}
+.biz-cta p{margin:0;color:var(--muted);font-size:13.5px}
+
+/* ---------- RESERVE BAND ---------- */
+.reserve{padding:84px 0;text-align:center;position:relative;overflow:hidden}
+.reserve .bg{position:absolute;inset:0;z-index:0}
+.reserve .bg img{width:100%;height:100%;object-fit:cover;opacity:.25}
+.reserve .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,8,15,.85),rgba(7,8,15,.95))}
+.reserve .wrap{position:relative;z-index:2}
+.reserve h2{font-size:clamp(26px,4vw,42px);font-weight:800;margin:0 0 10px}
+.reserve p{color:var(--muted);margin:0 0 26px}
+
+/* ---------- FOOTER ---------- */
+footer{background:#05060c;border-top:1px solid var(--line);padding:54px 0 30px;font-size:13.5px;color:var(--muted)}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:34px}
+@media(max-width:760px){.foot-grid{grid-template-columns:1fr;gap:24px}}
+footer h5{color:var(--text);font-size:13px;letter-spacing:.05em;margin:0 0 12px;text-transform:uppercase}
+footer a:hover{color:var(--cyan)}
+footer ul{list-style:none;margin:0;padding:0}
+footer ul li{padding:3px 0}
+.foot-bottom{border-top:1px solid var(--line);margin-top:34px;padding-top:20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--faint)}
+.slogan-foot{color:var(--cyan);font-weight:600}
+
+/* floating reserve (mobile) */
+.float{position:fixed;right:16px;bottom:16px;z-index:120;display:none}
+@media(max-width:860px){.float{display:block}}
+</style>
+</head>
+<body>
+
+<div class="draft">설계 미리보기 · <b>하이브리드 시안</b> — 내용/이미지는 시안용</div>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="hdr-in">
+    <a href="#home" class="brand" aria-label="FANTASTRICK 홈"><img class="logo-img" src="../assets/images/logo-white.png" alt="FANTASTRICK"></a>
+    <nav class="main">
+      <a href="#about">소개</a>
+      <a href="#themes">테마</a>
+      <a href="#stores">매장</a>
+      <a href="#business">비즈니스</a>
+    </nav>
+    <div class="hdr-cta">
+      <a href="비즈니스.html" class="btn gold-ghost sm">비즈니스 문의</a>
+      <a href="http://fantastrick.co.kr/booking/" class="btn primary sm">예약하기</a>
+    </div>
+    <button class="menu-btn" onclick="document.querySelector('nav.main').scrollIntoView()">☰</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="bg"><img src="../assets/images/permanence-1.jpg" alt=""></div>
+  <div class="wrap">
+    <div class="eyebrow">강남 · 11년차 이머시브 방탈출 &amp; 머더룸</div>
+    <h1>일상이 멈추고,<br><span class="accent">이야기가 시작된다</span></h1>
+    <p class="sub">계단을 내려오는 순간, 당신은 사건의 한가운데에 섭니다.<br>판타스트릭은 직접 만든 공간·장치·이야기로 한 편의 사건을 선사합니다.</p>
+    <div class="cta">
+      <a href="http://fantastrick.co.kr/booking/" class="btn primary">테마 예약하기 →</a>
+      <a href="비즈니스.html" class="btn gold-ghost">외주·컨설팅 문의</a>
+    </div>
+    <div class="meta">
+      <div><b>11년</b>이머시브 운영</div>
+      <div><b>3곳</b>강남 직영 매장</div>
+      <div><b>4종</b>대표 테마</div>
+    </div>
+  </div>
+  <div class="scrollcue">SCROLL ↓</div>
+</section>
+
+<!-- ABOUT -->
+<section class="block" id="about">
+  <div class="wrap about-grid">
+    <div class="reveal">
+      <div class="eyebrow">ABOUT · 우리는 누구인가</div>
+      <h2 class="title">환상(Fantasy)을 기술(Trick)로<br>현실에 옮깁니다</h2>
+      <p class="lead">판타스트릭은 환상과 공감을 기술로 현실화하는 이머시브 콘텐츠 브랜드입니다.
+      게임 속으로 들어가는 듯한 공간 연출과 높은 장치 밀도로, 플레이가 끝난 뒤에도 이야기가 한 겹 더 이어집니다.</p>
+      <div class="pillars" style="margin-top:24px">
+        <div class="pillar"><div class="pn">◎</div><div><h4>몰입 연출</h4><p>계단을 내려오면 일상이 멈추는, 공간 전체가 무대인 이머시브 설계.</p></div></div>
+        <div class="pillar"><div class="pn">⚙</div><div><h4>높은 장치 밀도</h4><p>직접 제작한 잠금·연출·센서 장치로 몰입을 만들어냅니다.</p></div></div>
+        <div class="pillar"><div class="pn">✦</div><div><h4>히든페이지</h4><p>엔딩 후에도 이어지는 숨은 이야기 — 다시 찾고 싶은 이유.</p></div></div>
+      </div>
+      <div class="worldtags">
+        <span>세계관 <b>Tricky Game Center</b></span>
+        <span>캐릭터 <b>Fanta</b></span>
+        <span>캐릭터 <b>Tricky</b></span>
+        <span>머더룸 <b>당신이 직접 해결하는 사건</b></span>
+      </div>
+    </div>
+    <div class="about-visual reveal">
+      <img src="../assets/images/permanence-poster.jpg" alt="시간의 영속성 포스터">
+      <div class="stamp"><b>SINCE 2015</b><span>강남에서 11년, 이머시브 한길</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- THEMES -->
+<section class="block alt" id="themes">
+  <div class="wrap">
+    <div class="shead reveal">
+      <div class="eyebrow">INTERACTIVE CONTENTS</div>
+      <h2 class="title">인터랙티브 콘텐츠</h2>
+      <p class="lead" style="color:#d3d9ec;max-width:760px">
+        대부분의 콘텐츠는 당신을 객석에 둡니다. 하지만 <b style="color:#fff;font-weight:700">인터랙티브 콘텐츠는, 당신을 무대 위에 세웁니다.</b><br>
+        정해진 결말을 지켜보는 대신 당신의 선택과 행동이 이야기를 직접 이끌어가고 결정합니다.<br>
+        방탈출과 오프라인 머더미스터리, 이머시브 공연까지 — 형태는 달라도 본질은 하나입니다.<br>
+        콘텐츠 안으로 걸어 들어가, 직접 이야기의 주인공이 되는 것.</p>
+      <p class="lead" style="margin-top:16px;border-left:2px solid var(--cyan);padding-left:16px;color:#eef1f8;max-width:730px">
+        판타스트릭은 그 순간을 스토리·공간·장치로 구현합니다. <b style="color:#fff;font-weight:700">판타스트릭이 준비한 콘텐츠의 문을 열어보세요.</b></p>
+    </div>
+    <div class="filters reveal">
+      <button class="chip on" data-f="all">전체</button>
+      <button class="chip" data-f="s1">1호점</button>
+      <button class="chip" data-f="s2">2호점</button>
+      <button class="chip" data-f="s3">3호점 · TGC</button>
+      <button class="chip" data-f="murder">머더룸</button>
+    </div>
+    <div class="theme-carousel reveal">
+      <div class="theme-track" id="themeTrack">
+
+      <a class="tcard" data-cat="s1" href="http://fantastrick.co.kr/rooms/firstfoundbride/">
+        <div class="thumb" style="background-image:url(../assets/images/poster-bride.jpg)" role="img" aria-label="태초의 신부 포스터">
+          <div class="badge"><span class="genre">잠입</span><span class="genre">SF 판타지</span></div>
+          <div class="store-tag">1호점</div>
+          <div class="tt"><h3>태초의 신부</h3></div>
+        </div>
+        <div class="meta"><span class="sp"><b>100분</b> · <span class="diff"><i class="lock on"></i><i class="lock on"></i><i class="lock on"></i><i class="lock on"></i><i class="lock"></i></span></span><span class="go">예약 →</span></div>
+      </a>
+
+      <a class="tcard" data-cat="s2" href="http://fantastrick.co.kr/rooms/bookofduat/">
+        <div class="thumb" style="background-image:url(../assets/images/poster-duat.png)" role="img" aria-label="사자의 서 포스터">
+          <div class="badge"><span class="genre">잠입</span><span class="genre">SF 판타지</span></div>
+          <div class="store-tag">2호점</div>
+          <div class="tt"><h3>사자의 서</h3></div>
+        </div>
+        <div class="meta"><span class="sp"><b>80분</b> · <span class="diff"><i class="lock on"></i><i class="lock on"></i><i class="lock on"></i><i class="lock"></i><i class="lock"></i></span></span><span class="go">예약 →</span></div>
+      </a>
+
+      <a class="tcard" data-cat="s3" href="http://fantastrick.co.kr/rooms/ldc/">
+        <div class="thumb" style="background-image:url(../assets/images/poster-ldc.png)" role="img" aria-label="락다운시티 포스터">
+          <div class="badge"><span class="genre">액션</span><span class="genre">SF</span><span class="genre">이머시브</span><span class="genre">재난</span></div>
+          <div class="store-tag">3호점 · TGC</div>
+          <div class="tt"><h3>락다운시티</h3></div>
+        </div>
+        <div class="meta"><span class="sp"><b>100분</b> · <span class="diff"><i class="lock on"></i><i class="lock on"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></span></span><span class="go">예약 →</span></div>
+      </a>
+
+      <a class="tcard" data-cat="s3 murder" href="http://fantastrick.co.kr/rooms/time/">
+        <div class="thumb" style="background-image:url(../assets/images/poster-time.jpg)" role="img" aria-label="시간의 영속성 포스터">
+          <div class="badge"><span class="murder">머더룸</span><span class="genre">SF</span><span class="genre">추리</span></div>
+          <div class="store-tag">3호점 · TGC</div>
+          <div class="tt"><h3>시간의 영속성</h3></div>
+        </div>
+        <div class="meta"><span class="sp"><b>80분</b> · <span class="diff"><i class="lock on"></i><i class="lock on"></i><i class="lock"></i><i class="lock"></i><i class="lock"></i></span></span><span class="go">예약 →</span></div>
+      </a>
+
+      <div class="tcard soon" data-cat="s3">
+        <div class="thumb ph"><span class="phtxt">COMING SOON</span>
+          <div class="badge"><span class="genre">공포</span></div>
+          <div class="store-tag">3호점 · TGC</div>
+          <div class="tt"><h3>흑백사서 : ?</h3></div>
+        </div>
+        <div class="meta"><span class="sp">새 테마 · 공개 예정</span><span class="go">준비중</span></div>
+      </div>
+
+      <div class="tcard soon" data-cat="s3">
+        <div class="thumb ph"><span class="phtxt">COMING SOON</span>
+          <div class="badge"><span class="genre">판타지</span><span class="genre">아케이드</span></div>
+          <div class="store-tag">3호점 · TGC</div>
+          <div class="tt"><h3>? ? ?</h3></div>
+        </div>
+        <div class="meta"><span class="sp">새 테마 · 공개 예정</span><span class="go">준비중</span></div>
+      </div>
+
+      </div>
+      <div class="car-bar" id="carBar"><div class="car-thumb" id="carThumb"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- STORES -->
+<section class="block" id="stores">
+  <div class="wrap">
+    <div class="shead reveal">
+      <div class="eyebrow">STORES · 오시는 길</div>
+      <h2 class="title">강남 직영 3곳</h2>
+      <p class="lead">강남역·신논현역 도보권. 모든 매장은 인접해 있어 단체 이용도 가능합니다.</p>
+    </div>
+    <div class="stores-layout reveal">
+      <div class="stores-left">
+        <div class="store">
+          <div class="store-head"><span class="tag">1호점</span><h3>판타스트릭 1호점</h3></div>
+          <div class="addr">강남대로79길 39, B1</div>
+          <div class="hours">평일 <b>11:00–23:30</b> · 주말 <b>09:00–23:30</b> · 연중무휴</div>
+          <div class="themes">테마 · <b>태초의 신부 — 이브 프로젝트</b></div>
+        </div>
+        <div class="store">
+          <div class="store-head"><span class="tag">2호점</span><h3>판타스트릭 2호점</h3></div>
+          <div class="addr">사평대로 353, B1</div>
+          <div class="hours">평일 부분운영 · 금·토·일 <b>11:00–23:30</b> · 월~목 부분운영/주말 무휴</div>
+          <div class="themes">테마 · <b>사자의 서 — Book of Duat</b></div>
+        </div>
+        <div class="store tgc">
+          <div class="store-head"><span class="tag">3호점 ★</span><h3>판타스트릭 TGC</h3></div>
+          <div class="addr">강남대로83길 34, B1</div>
+          <div class="hours">평일 <b>12:00–23:30</b> · 주말 <b>10:00–23:30</b> · 연중무휴</div>
+          <div class="themes">테마 · <b>락다운시티</b> · <b>시간의 영속성(머더룸)</b></div>
+        </div>
+      </div>
+      <a class="stores-right" href="https://www.google.com/maps/d/viewer?mid=1_BzwJnCB42RENrmvTm-HNCyFHwm8zCA" target="_blank" rel="noopener" title="구글 지도에서 크게 보기">
+        <img class="store-map-img" src="../assets/images/stores-map.png" alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점, 강남대로·사평대로 일대">
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- BUSINESS / B2B -->
+<section class="block biz" id="business">
+  <div class="wrap">
+    <div class="biz-head reveal">
+      <div>
+        <div class="eyebrow gold">BUSINESS · B2B</div>
+        <h2 class="title">우리는, 직접 만듭니다</h2>
+        <p class="lead">11년간 직영 매장을 운영하며 쌓은 콘텐츠·공간·장치 역량을 외부 프로젝트에도 제공합니다.
+        브랜드 공간, 체험형 콘텐츠, 이머시브 장치가 필요하다면 처음부터 끝까지 함께합니다.</p>
+      </div>
+      <a href="비즈니스.html" class="btn gold">비즈니스 페이지 보기 →</a>
+    </div>
+
+    <div class="cap3">
+      <div class="cap reveal"><div class="ci">✎</div><div class="en">Contents</div><h4>콘텐츠 제작</h4>
+        <p>테마·시나리오·연출 기획부터 운영 설계까지. 방탈출·머더미스터리·브랜드 체험 콘텐츠 턴키 제작.</p></div>
+      <div class="cap reveal"><div class="ci">▦</div><div class="en">Space</div><h4>공간 디자인</h4>
+        <p>세트·인테리어·동선 설계. 이야기에 맞춘 몰입형 공간을 직접 시공·연출합니다.</p></div>
+      <div class="cap reveal"><div class="ci">⚙</div><div class="en">Tech / Device</div><h4>기술 · 장치</h4>
+        <p>잠금/해제 장치, 조명·음향·기믹 제어, 센서 트리거 등 이머시브 장치를 제작·납품·판매합니다.</p></div>
+    </div>
+
+    <div class="biz-cta reveal" id="bizform">
+      <div class="bt">
+        <h4>컨설팅 · 외주 제작 · 장치 도입이 필요하세요?</h4>
+        <p>역량·서비스·진행 방식·레퍼런스·문의를 비즈니스 전용 페이지에 정리해 두었습니다. (직영 매장 3곳·테마 4종이 곧 포트폴리오입니다.)</p>
+      </div>
+      <a href="비즈니스.html" class="btn gold">비즈니스(B2B) 페이지로 →</a>
+      <a href="mailto:fantastrick@fantastrick.co.kr" class="btn gold-ghost">fantastrick@fantastrick.co.kr</a>
+    </div>
+  </div>
+</section>
+
+<!-- RESERVE BAND -->
+<section class="reserve" id="reserve">
+  <div class="bg"><img src="../assets/images/permanence-2.jpg" alt=""></div>
+  <div class="wrap">
+    <div class="eyebrow">RESERVATION</div>
+    <h2>오늘 하루를, 잠시 두고 오세요</h2>
+    <p>원하는 매장과 테마를 골라 시간을 예약하세요. 강남역·신논현역 도보권.</p>
+    <a href="http://fantastrick.co.kr/booking/" class="btn primary" style="font-size:16px;padding:16px 30px">전체 테마 예약하러 가기 →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="brand" style="margin-bottom:12px"><img class="logo-img" src="../assets/images/logo-white.png" alt="FANTASTRICK" style="height:30px"></div>
+        <p class="slogan-foot">일상이 멈추고, 이야기가 시작된다</p>
+        <p style="margin:8px 0 0">강남 11년차 이머시브 방탈출 &amp; 머더룸 브랜드<br>판타스트릭 (Fantasy + Trick)</p>
+      </div>
+      <div>
+        <h5>바로가기</h5>
+        <ul>
+          <li><a href="#about">브랜드 소개</a></li>
+          <li><a href="#themes">테마</a></li>
+          <li><a href="#stores">매장 · 오시는 길</a></li>
+          <li><a href="비즈니스.html">비즈니스(B2B)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>문의 · 예약</h5>
+        <ul>
+          <li>예약 · <a href="http://fantastrick.co.kr/booking/">fantastrick.co.kr/booking</a></li>
+          <li>비즈니스 · <a href="mailto:fantastrick@fantastrick.co.kr">fantastrick@fantastrick.co.kr</a></li>
+          <li>1호점 · 강남대로79길 39, B1</li>
+          <li>2호점 · 사평대로 353, B1</li>
+          <li>TGC · 강남대로83길 34, B1</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 FANTASTRICK. All rights reserved.</span>
+      <span>본 페이지는 설계 미리보기(시안)입니다.</span>
+    </div>
+  </div>
+</footer>
+
+<a href="http://fantastrick.co.kr/booking/" class="btn primary float">예약하기</a>
+
+<script>
+// header scroll state
+const hdr=document.getElementById('hdr');
+addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>40),{passive:true});
+
+// reveal on scroll
+const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// theme filter
+const chips=document.querySelectorAll('.chip');
+chips.forEach(c=>c.addEventListener('click',()=>{
+  chips.forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  const f=c.dataset.f;
+  document.querySelectorAll('.tcard').forEach(card=>{
+    const cats=(card.dataset.cat||'').split(' ');
+    card.style.display=(f==='all'||cats.includes(f))?'':'none';
+  });
+  if(track){track.scrollLeft=0; updBar();}
+}));
+
+// theme carousel — drag(마우스)·스와이프(터치) + 하단 슬라이드 바
+const track=document.getElementById('themeTrack');
+const carBar=document.getElementById('carBar'), carThumb=document.getElementById('carThumb');
+function updBar(){
+  if(!track||!carBar)return;
+  const max=track.scrollWidth-track.clientWidth;
+  if(max<=2){carBar.classList.add('hidden');return;}
+  carBar.classList.remove('hidden');
+  const ratio=track.clientWidth/track.scrollWidth;
+  carThumb.style.width=(ratio*100)+'%';
+  carThumb.style.left=((track.scrollLeft/max)*(100-ratio*100))+'%';
+}
+if(track){
+  // 카드 끌기(마우스). 터치/펜은 네이티브 스크롤 사용
+  let down=false,sx=0,sl=0,moved=false;
+  track.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='mouse')return;
+    down=true;moved=false;sx=e.clientX;sl=track.scrollLeft;track.classList.add('dragging');
+  });
+  window.addEventListener('pointermove',e=>{
+    if(!down)return;
+    const dx=e.clientX-sx;
+    if(Math.abs(dx)>5)moved=true;
+    track.scrollLeft=sl-dx;
+  });
+  const stop=()=>{down=false;track.classList.remove('dragging');};
+  window.addEventListener('pointerup',stop);
+  window.addEventListener('pointercancel',stop);
+  // 드래그한 경우 카드 클릭(이동) 막기
+  track.querySelectorAll('a.tcard').forEach(a=>a.addEventListener('click',e=>{if(moved)e.preventDefault();}));
+
+  // 하단 슬라이드 바 갱신 + 바 클릭/드래그로 이동
+  track.addEventListener('scroll',updBar,{passive:true});
+  addEventListener('resize',updBar);
+  if(carBar){
+    let bd=false;
+    const barTo=(clientX)=>{
+      const r=carBar.getBoundingClientRect(), tw=carThumb.offsetWidth;
+      let p=(clientX-r.left-tw/2)/(r.width-tw);
+      p=Math.max(0,Math.min(1,p));
+      track.scrollLeft=p*(track.scrollWidth-track.clientWidth);
+    };
+    carBar.addEventListener('pointerdown',e=>{bd=true;carBar.setPointerCapture(e.pointerId);barTo(e.clientX);});
+    carBar.addEventListener('pointermove',e=>{if(bd)barTo(e.clientX);});
+    const bstop=()=>bd=false;
+    carBar.addEventListener('pointerup',bstop);carBar.addEventListener('pointercancel',bstop);
+  }
+  updBar();
+}
+</script>
+</body>
+</html>
