@@ -3,20 +3,39 @@
 > 이 프로젝트에 어떤 폴더·파일이 있는지 한눈에 보는 지도예요. 바뀌면 업데이트해요.
 
 ```
-E:\fantastrick_hompage\
-├─ CLAUDE.md          ← Claude(AI)가 지킬 작업 약속 (제일 먼저 읽음)
-├─ README.md          ← 변경 기록 (무엇을 바꿨는지)
-├─ DIRECTORY_MAP.md   ← 이 폴더 지도
-├─ package.json       ← 도구(playwright) 설정
-├─ node_modules\      ← 설치된 도구 (화면 확인용 playwright)
-├─ assets\
-│  └─ images\         ← 실제 게임 이미지 7장 (lockdowncity, permanence, murderroom…)
-└─ docs\              ← 문서·보고서·미리보기
-   ├─ 기능_로드맵.md            ← 앞으로 추가할 기능 목록(예약·문자·리뷰 등)
-   ├─ 홈페이지_설계시안_10.md   ← 경쟁사 분석 + 설계 시안 10가지(글)
-   ├─ 시안미리보기.html         ← 설계 시안 10가지 시각 목업
-   ├─ 하이브리드_설계.html      ← ★메인(B2C) 고화질 프로토타입(크롬에서 열기)
-   └─ 비즈니스.html             ← ★비즈니스(B2B) 전용 페이지 — 메인에서 버튼으로 이동
+fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
+├─ CLAUDE.md            ← Claude(AI)가 지킬 작업 약속 (제일 먼저 읽음)
+├─ README.md            ← 변경 기록 (무엇을 바꿨는지)
+├─ DIRECTORY_MAP.md     ← 이 폴더 지도
+├─ 협업_시작안내.md      ← 새로 합류한 사람용 시작 안내
+├─ package.json         ← Next.js·React·Supabase 등 도구 설정
+├─ next.config.ts       ← Next.js 설정
+├─ tsconfig.json        ← TypeScript 설정
+├─ .env.local.example   ← 환경변수(비밀키) 예시 — 복사해서 .env.local 만들기
+├─ supabase\
+│  └─ schema.sql        ← 예약·리뷰 데이터베이스 표 만드는 SQL (Supabase에 1회 실행)
+├─ public\
+│  └─ images\           ← 웹에서 쓰는 이미지(로고·포스터·지도 등, assets에서 복사)
+├─ src\
+│  ├─ app\
+│  │  ├─ layout.tsx     ← 공통 틀(헤더·푸터·폰트)
+│  │  ├─ globals.css    ← 전체 디자인(시네마틱 CSS, 프로토타입에서 이식)
+│  │  ├─ page.tsx       ← 메인 홈페이지 (히어로·테마 캐러셀·매장·B2B 티저)
+│  │  ├─ reserve\       ← 예약 화면
+│  │  ├─ reservation\   ← 예약 조회·취소 (전화번호로)
+│  │  ├─ reviews\       ← 후기 목록·작성
+│  │  ├─ business\      ← 비즈니스(B2B) 페이지
+│  │  └─ api\           ← 서버 처리 (예약 생성/조회/취소, 리뷰 목록/작성)
+│  ├─ components\       ← Header.tsx, Footer.tsx (공통)
+│  └─ lib\              ← data.ts(매장·테마), supabase.ts(DB연결), util.ts(전화번호 등)
+├─ assets\images\       ← 원본 이미지 보관 (public/images 의 원본)
+└─ docs\                ← 문서·옛 프로토타입(참고용)
+   ├─ 기능_로드맵.md          ← 앞으로 추가할 기능 목록·결정사항
+   ├─ 설정_안내.md            ← ★ Supabase·Vercel 연결 방법 (사장님용)
+   ├─ 하이브리드_설계.html    ← (옛) 메인 프로토타입 — 디자인 원본 참고용
+   ├─ 비즈니스.html           ← (옛) 비즈니스 프로토타입
+   ├─ 시안미리보기.html       ← (옛) 설계 시안 10가지
+   └─ 홈페이지_설계시안_10.md  ← (옛) 경쟁사 분석 + 시안 글
 ```
 
-> 📌 앞으로 만들 것(예정): `index.html`(메인 페이지), `css\`(디자인), `js\`(동작) — **시안 방향 확정 후 제작**
+> 📌 옛 `docs/*.html` 프로토타입은 **디자인 원본 참고용**으로 보존. 실제 사이트는 이제 `src/app/` 의 Next.js 앱입니다.

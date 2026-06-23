@@ -1,19 +1,26 @@
 {
-  "name": "fantastrick_hompage",
+  "name": "fantastrick-homepage",
   "version": "1.0.0",
-  "description": "> 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "판타스트릭(Fantastrick) 공식 홈페이지 — 자체 예약·리뷰 시스템",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
-    "playwright": "^1.61.0"
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "playwright": "^1.61.0",
+    "typescript": "^5.7.3"
   }
 }

@@ -1,6 +1,15 @@
 # 설치 도구 (다시 설치 가능 — 올리지 않음)
 node_modules/
 
+# Next.js 빌드 결과물 (자동 생성)
+.next/
+out/
+next-env.d.ts
+
+# 환경변수 (비밀키 — 절대 올리지 않음)
+.env*.local
+.env
+
 # OS / 에디터 부산물
 Thumbs.db
 .DS_Store
@@ -9,3 +18,7 @@ desktop.ini
 # 임시·테스트 파일
 docs/_*.png
 *.tmp
+
+# 로그·스크린샷 임시
+*.log
+shot.mjs
