@@ -2,6 +2,11 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-06-24
+- 🔌 **Supabase 연결 완료** — 예약·조회·취소·리뷰 전 과정 실제 저장 동작 확인(E2E PASS). 키는 `.env.local`(깃 제외). ⚠️Supabase 새 키(sb_secret_)는 supabase-js에서 거부됨 → **Legacy service_role 키(eyJ...)** 사용
+- 🚀 **Vercel 배포 완료** — 라이브: **https://fantastrick-homepage.vercel.app** (프로덕션에서도 예약·리뷰 작동 확인). Supabase 환경변수 2개는 Vercel에 등록됨. (※ GitHub 자동배포는 아직 미연결 — 현재는 CLI로 수동 배포. 다음에 대시보드에서 Git 연결 예정)
+- 🔜 다음: `fantastrick.co.kr` 도메인 연결 → 가비아 호스팅 해지(이메일·tgc 이전 확인 후) → 예약금 결제(토스)·자동문자(알리고)
+
 ## 2026-06-23
 - 🏗️ **Next.js 앱으로 전환 + 자체 예약/리뷰 시스템 1차 구현** (정적 HTML 프로토타입 → 실제 웹앱)
   - 기술 결정: **Next.js(App Router) + Supabase + Vercel** (사장님 다른 앱들과 동일 스택, 무료). 디자인은 기존 시네마틱 CSS를 그대로 이식해 100% 보존

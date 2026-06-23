@@ -22,3 +22,5 @@ docs/_*.png
 # 로그·스크린샷 임시
 *.log
 shot.mjs
+
+.vercel
