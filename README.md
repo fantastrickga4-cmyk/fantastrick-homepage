@@ -32,6 +32,7 @@
 
 - 🗺️ 매장 섹션을 **2단 압축 레이아웃**으로 변경: 왼쪽=매장 카드 3개(세로·컴팩트), 오른쪽=지도 이미지(`assets/images/stores-map.png`). 지도 클릭 시 My Maps 뷰어로 연결. 모바일은 1단 스택
 - 📍 매장명 라벨 PNG 3종(Pretendard, 다크 블록) 제작해 ref 폴더 저장 → 사용자가 My Maps에 올려 라벨 포함 지도 재캡처 → 고해상도(1592×1231) 이미지로 교체. 중복되던 HTML 라벨 오버레이는 제거
+- 🔗 **Git 저장소 초기화 + GitHub 연결**: `.gitignore`(node_modules 등 제외) 작성, 로컬 커밋 후 **비공개(Private) 원격저장소** 생성·푸시 → `github.com/fantastrick2026/fantastrick-homepage` (bwl과 별개 독립 저장소, 기본 브랜치 main). Vercel 배포는 아직 안 함
 
 ### 다음 할 일 (제안)
 - [ ] 프로토타입 피드백 반영 → 정식 `index.html`(+`business.html`) + `css/` + `js/`로 분리·정교화
