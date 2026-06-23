@@ -12,6 +12,7 @@ E:\fantastrick_hompage\
 ├─ assets\
 │  └─ images\         ← 실제 게임 이미지 7장 (lockdowncity, permanence, murderroom…)
 └─ docs\              ← 문서·보고서·미리보기
+   ├─ 기능_로드맵.md            ← 앞으로 추가할 기능 목록(예약·문자·리뷰 등)
    ├─ 홈페이지_설계시안_10.md   ← 경쟁사 분석 + 설계 시안 10가지(글)
    ├─ 시안미리보기.html         ← 설계 시안 10가지 시각 목업
    ├─ 하이브리드_설계.html      ← ★메인(B2C) 고화질 프로토타입(크롬에서 열기)
