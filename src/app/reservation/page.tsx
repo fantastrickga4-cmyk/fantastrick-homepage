@@ -23,14 +23,27 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "취소됨",
 };
 
+const POLICY_TEXT =
+  "테마시작 시간기준 24시간 이후면 100% 환불, 24시간 미만으로 남아있을경우 80%, 당일예약 변경 및 취소는 전액 환불이 불가능합니다. 그래도 진행하시겠습니까?";
+
 export default function ReservationLookup() {
   const [phone, setPhone] = useState("");
   const [list, setList] = useState<Reservation[] | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 취소 모달 상태
+  const [target, setTarget] = useState<Reservation | null>(null); // 취소하려는 예약
+  const [bank, setBank] = useState("");
+  const [account, setAccount] = useState("");
+  const [holder, setHolder] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [doneMsg, setDoneMsg] = useState("");
+
   async function lookup() {
-    setErr(""); setList(null); setLoading(true);
+    setErr(""); setList(null); setLoading(true); setDoneMsg("");
     try {
       const res = await fetch(`/api/reservations?phone=${encodeURIComponent(phone)}`);
       const j = await res.json();
@@ -43,20 +56,61 @@ export default function ReservationLookup() {
     }
   }
 
-  async function cancel(id: string) {
-    if (!confirm("이 예약을 취소할까요?")) return;
+  function openCancel(r: Reservation) {
+    setTarget(r);
+    setBank(""); setAccount(""); setHolder("");
+    setModalErr(""); setShowPolicy(false);
+  }
+  function closeModal() {
+    setTarget(null); setShowPolicy(false); setSubmitting(false);
+  }
+
+  // 완료 버튼 → 환불 정보 검증 후 정책 확인창 표시
+  function onComplete() {
+    setModalErr("");
+    if (!bank.trim() || !account.trim() || !holder.trim()) {
+      setModalErr("은행 · 계좌번호 · 예금주를 모두 입력해 주세요.");
+      return;
+    }
+    setShowPolicy(true);
+  }
+
+  // 정책 확인창 "예" → 실제 취소 진행
+  async function confirmCancel() {
+    if (!target) return;
+    setSubmitting(true);
     try {
       const res = await fetch("/api/reservations/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, phone }),
+        body: JSON.stringify({
+          id: target.id,
+          phone,
+          refundBank: bank,
+          refundAccount: account,
+          refundHolder: holder,
+        }),
       });
       const j = await res.json();
-      if (!res.ok) { alert(j.error || "취소에 실패했습니다."); return; }
-      // 목록 갱신
-      setList((prev) => prev?.map((r) => (r.id === id ? { ...r, status: "cancelled" } : r)) || null);
+      if (!res.ok) {
+        setShowPolicy(false);
+        setModalErr(j.error || "취소에 실패했습니다.");
+        setSubmitting(false);
+        return;
+      }
+      // 목록 갱신 + 안내
+      setList((prev) => prev?.map((x) => (x.id === target.id ? { ...x, status: "cancelled" } : x)) || null);
+      const rate = j.refundRate;
+      setDoneMsg(
+        rate === 0
+          ? "예약이 취소되었습니다. (당일 예약/방문으로 환불은 불가합니다.)"
+          : `예약이 취소되었습니다. 입력하신 계좌로 예약금의 ${rate}%가 환불됩니다.`
+      );
+      closeModal();
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      setShowPolicy(false);
+      setModalErr("네트워크 오류가 발생했습니다.");
+      setSubmitting(false);
     }
   }
 
@@ -83,6 +137,8 @@ export default function ReservationLookup() {
         {err && <div className="msg-err">⚠️ {err}</div>}
       </div>
 
+      {doneMsg && <div className="notice ok" style={{ marginTop: 16 }}>✅ {doneMsg}</div>}
+
       {list && (
         <div style={{ marginTop: 20 }}>
           {list.length === 0 ? (
@@ -108,7 +164,7 @@ export default function ReservationLookup() {
                       <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원 {r.deposit_paid ? "(결제완료)" : "(미결제)"}</b></div>
                     </div>
                     {!cancelled && (
-                      <button className="btn ghost sm" onClick={() => cancel(r.id)}>예약 취소</button>
+                      <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
                     )}
                   </div>
                 );
@@ -121,6 +177,63 @@ export default function ReservationLookup() {
       <p style={{ marginTop: 18, textAlign: "center" }}>
         <Link href="/reserve" style={{ color: "var(--muted)" }}>← 새 예약하기</Link>
       </p>
+
+      {/* 취소 모달 — 환불 계좌 입력 */}
+      {target && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal(); }}>
+          <div className="modal">
+            <button className="close-x" onClick={closeModal} aria-label="닫기">✕</button>
+            <h3>예약 취소</h3>
+
+            {/* 자동으로 채워지는 예약 정보 */}
+            <div className="res-summary" style={{ marginTop: 0, marginBottom: 18 }}>
+              <div className="r"><span>테마</span><b>{target.theme_name}</b></div>
+              <div className="r"><span>날짜</span><b>{formatDate(target.date)}</b></div>
+              <div className="r"><span>시간</span><b>{target.time}</b></div>
+            </div>
+
+            <div className="notice info" style={{ marginBottom: 16 }}>
+              환불받으실 계좌 정보를 입력해 주세요.
+            </div>
+
+            <div className="field">
+              <label>은행</label>
+              <input type="text" value={bank} placeholder="예: 카카오뱅크" onChange={(e) => setBank(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>계좌번호</label>
+              <input type="text" inputMode="numeric" value={account} placeholder="'-' 없이 숫자만" onChange={(e) => setAccount(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>예금주</label>
+              <input type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
+            </div>
+
+            {modalErr && <div className="msg-err">⚠️ {modalErr}</div>}
+
+            <div className="modal-btns" style={{ marginTop: 18 }}>
+              <button className="btn ghost" onClick={closeModal}>닫기</button>
+              <button className="btn primary" onClick={onComplete}>완료</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 정책 확인창 — 예 / 아니오 */}
+      {target && showPolicy && (
+        <div className="modal-overlay" style={{ zIndex: 310 }}>
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <h3>환불 규정 안내</h3>
+            <p className="modal-policy">{POLICY_TEXT}</p>
+            <div className="modal-btns">
+              <button className="btn ghost" onClick={() => setShowPolicy(false)} disabled={submitting}>아니오</button>
+              <button className="btn danger" onClick={confirmCancel} disabled={submitting}>
+                {submitting ? "처리 중…" : "예"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
