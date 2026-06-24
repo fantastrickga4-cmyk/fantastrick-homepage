@@ -59,18 +59,21 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, id: data.id, deposit });
 }
 
-// 전화번호로 예약 조회
+// 전화번호 + 예약자 이름으로 예약 조회 (이름을 본인확인 수단으로 사용)
 export async function GET(req: NextRequest) {
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
   const phone = normalizePhone(req.nextUrl.searchParams.get("phone") || "");
+  const name = (req.nextUrl.searchParams.get("name") || "").trim();
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호 형식을 확인해 주세요." }, { status: 400 });
+  if (!name) return NextResponse.json({ error: "예약자 이름을 입력해 주세요." }, { status: 400 });
 
   const { data, error } = await db
     .from("reservations")
     .select("id, store_id, theme_id, theme_name, date, time, people, name, deposit, deposit_paid, status, created_at")
     .eq("phone", phone)
+    .eq("name", name)
     .order("date", { ascending: false })
     .limit(50);
 

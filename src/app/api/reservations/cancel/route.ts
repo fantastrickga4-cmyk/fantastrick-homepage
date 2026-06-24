@@ -31,23 +31,25 @@ export async function POST(req: NextRequest) {
 
   const id = String(body.id || "");
   const phone = normalizePhone(String(body.phone || ""));
+  const name = String(body.name || "").trim();
   const refundBank = String(body.refundBank || "").trim();
   const refundAccount = String(body.refundAccount || "").trim();
   const refundHolder = String(body.refundHolder || "").trim();
 
-  if (!id || !isValidPhone(phone)) {
+  if (!id || !isValidPhone(phone) || !name) {
     return NextResponse.json({ error: "예약 정보를 확인해 주세요." }, { status: 400 });
   }
   if (!refundBank || !refundAccount || !refundHolder) {
     return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
   }
 
-  // 본인 예약인지 확인 + 날짜/시간 가져오기
+  // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
     .select("id, status, date, time")
     .eq("id", id)
     .eq("phone", phone)
+    .eq("name", name)
     .single();
 
   if (findErr || !found) {

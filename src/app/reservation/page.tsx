@@ -28,6 +28,7 @@ const POLICY_TEXT =
 
 export default function ReservationLookup() {
   const [phone, setPhone] = useState("");
+  const [lookupName, setLookupName] = useState("");
   const [list, setList] = useState<Reservation[] | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,9 +44,14 @@ export default function ReservationLookup() {
   const [doneMsg, setDoneMsg] = useState("");
 
   async function lookup() {
-    setErr(""); setList(null); setLoading(true); setDoneMsg("");
+    setErr(""); setList(null); setDoneMsg("");
+    if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
+    if (!lookupName.trim()) return setErr("예약자 이름을 입력해 주세요.");
+    setLoading(true);
     try {
-      const res = await fetch(`/api/reservations?phone=${encodeURIComponent(phone)}`);
+      const res = await fetch(
+        `/api/reservations?phone=${encodeURIComponent(phone)}&name=${encodeURIComponent(lookupName.trim())}`
+      );
       const j = await res.json();
       if (!res.ok) setErr(j.error || "조회에 실패했습니다.");
       else setList(j.reservations);
@@ -86,6 +92,7 @@ export default function ReservationLookup() {
         body: JSON.stringify({
           id: target.id,
           phone,
+          name: lookupName.trim(),
           refundBank: bank,
           refundAccount: account,
           refundHolder: holder,
@@ -118,9 +125,19 @@ export default function ReservationLookup() {
     <div className="formwrap">
       <div className="page-top" />
       <h2 className="title" style={{ marginBottom: 4 }}>예약 조회 · 취소</h2>
-      <p className="lead" style={{ marginBottom: 22 }}>예약하실 때 입력한 전화번호로 조회하세요.</p>
+      <p className="lead" style={{ marginBottom: 22 }}>본인 확인을 위해 <b style={{ color: "var(--text)" }}>예약자 이름</b>과 <b style={{ color: "var(--text)" }}>전화번호</b>를 모두 입력해 주세요.</p>
 
       <div className="card">
+        <div className="field">
+          <label>예약자 이름</label>
+          <input
+            type="text"
+            value={lookupName}
+            placeholder="예약 때 입력한 이름"
+            onChange={(e) => setLookupName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && lookup()}
+          />
+        </div>
         <div className="field" style={{ marginBottom: 12 }}>
           <label>전화번호</label>
           <input
