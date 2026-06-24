@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone } from "@/lib/util";
-import { themeById, DEPOSIT_PER_PERSON } from "@/lib/data";
+import { themeById } from "@/lib/data";
+import { getConfig } from "@/lib/settings";
 
 // 예약 생성
 export async function POST(req: NextRequest) {
@@ -29,7 +30,25 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "예약자 이름을 입력해 주세요." }, { status: 400 });
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호 형식을 확인해 주세요." }, { status: 400 });
 
-  const deposit = DEPOSIT_PER_PERSON * people;
+  const config = await getConfig();
+  if (config.disabledThemes.includes(theme.id)) {
+    return NextResponse.json({ error: "현재 예약을 받지 않는 테마입니다." }, { status: 400 });
+  }
+
+  // 관리자가 닫은(차단) 시간인지 확인
+  const { data: blocks } = await db
+    .from("blocked_slots")
+    .select("theme_id, time")
+    .eq("date", date);
+  const relevant = (blocks || []).filter((b: { theme_id: string | null }) => !b.theme_id || b.theme_id === theme.id);
+  if (relevant.some((b: { time: string | null }) => !b.time)) {
+    return NextResponse.json({ error: "해당 날짜는 예약을 받지 않습니다." }, { status: 409 });
+  }
+  if (relevant.some((b: { time: string | null }) => b.time === time)) {
+    return NextResponse.json({ error: "마감된 시간입니다. 다른 시간을 선택해 주세요." }, { status: 409 });
+  }
+
+  const deposit = config.depositPerPerson * people;
 
   const { data, error } = await db
     .from("reservations")

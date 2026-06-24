@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone } from "@/lib/util";
+import { sendReservationSms } from "@/lib/sms";
 
 // 환불율 계산 (한국시간 기준)
 // - 당일 예약(방문일이 오늘): 전액 환불 불가 → 0%
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
-    .select("id, status, date, time")
+    .select("id, status, date, time, theme_name, people")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -75,5 +76,12 @@ export async function POST(req: NextRequest) {
     .eq("phone", phone);
 
   if (error) return NextResponse.json({ error: "취소 중 오류가 발생했습니다." }, { status: 500 });
+
+  // 취소 안내 문자 (알리고 키 있을 때만 실제 발송)
+  await sendReservationSms("cancel", {
+    name, phone, theme_name: found.theme_name, date: found.date, time: found.time,
+    people: found.people, refund_rate: refundRate,
+  }).catch(() => {});
+
   return NextResponse.json({ ok: true, refundRate });
 }

@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { THEMES, TIME_SLOTS, DEPOSIT_PER_PERSON, STORES } from "@/lib/data";
 import { formatDate, formatPhone } from "@/lib/util";
 
+type Cfg = { depositPerPerson: number; timeSlots: string[]; disabledThemes: string[] };
+
 function todayStr() {
   const d = new Date();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -26,13 +28,32 @@ function ReserveInner() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const [cfg, setCfg] = useState<Cfg>({ depositPerPerson: DEPOSIT_PER_PERSON, timeSlots: TIME_SLOTS, disabledThemes: [] });
+  const [blocked, setBlocked] = useState<string[]>([]);
+  const [dayClosed, setDayClosed] = useState(false);
+
+  const availableThemes = useMemo(() => THEMES.filter((t) => !cfg.disabledThemes.includes(t.id)), [cfg.disabledThemes]);
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
-  const deposit = DEPOSIT_PER_PERSON * people;
+  const deposit = cfg.depositPerPerson * people;
 
   useEffect(() => {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
   }, [preset]);
+
+  // 관리자 설정 불러오기 (예약금·시간대·숨김테마)
+  useEffect(() => {
+    fetch("/api/config").then((r) => r.json()).then((c) => { if (c?.timeSlots) setCfg(c); }).catch(() => {});
+  }, []);
+
+  // 테마·날짜 선택 시 마감(차단/예약된) 시간 조회
+  useEffect(() => {
+    if (!themeId || !date) { setBlocked([]); setDayClosed(false); return; }
+    fetch(`/api/slots?theme=${themeId}&date=${date}`)
+      .then((r) => r.json())
+      .then((d) => { setBlocked(d.blocked || []); setDayClosed(!!d.dayClosed); if (d.blocked?.includes(time)) setTime(""); })
+      .catch(() => {});
+  }, [themeId, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit() {
     setErr("");
@@ -100,7 +121,7 @@ function ReserveInner() {
         <div className="field">
           <label>테마 선택</label>
           <div className="optrow">
-            {THEMES.map((t) => (
+            {availableThemes.map((t) => (
               <div
                 key={t.id}
                 className={"opt" + (themeId === t.id ? " on" : "")}
@@ -132,19 +153,27 @@ function ReserveInner() {
         {/* 시간 */}
         <div className="field">
           <label>시간</label>
-          <div className="optrow">
-            {TIME_SLOTS.map((tm) => (
-              <div
-                key={tm}
-                className={"opt" + (time === tm ? " on" : "")}
-                style={{ minWidth: 64, flex: "0 0 auto" }}
-                onClick={() => setTime(tm)}
-              >
-                {tm}
-              </div>
-            ))}
-          </div>
-          <div className="hint">※ 실제 가능 시간은 매장 사정에 따라 확정 시 안내됩니다.</div>
+          {dayClosed ? (
+            <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
+          ) : (
+            <div className="optrow">
+              {cfg.timeSlots.map((tm) => {
+                const isBlocked = blocked.includes(tm);
+                return (
+                  <div
+                    key={tm}
+                    className={"opt" + (time === tm ? " on" : "") + (isBlocked ? " soon" : "")}
+                    style={{ minWidth: 64, flex: "0 0 auto" }}
+                    onClick={() => { if (!isBlocked) setTime(tm); }}
+                    title={isBlocked ? "마감" : ""}
+                  >
+                    {tm}{isBlocked ? " 🚫" : ""}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="hint">※ 🚫 표시는 마감(예약 불가)된 시간입니다.</div>
         </div>
 
         {/* 예약자 정보 */}
@@ -160,7 +189,7 @@ function ReserveInner() {
         </div>
 
         <div className="notice info">
-          예약금 <b>{deposit.toLocaleString()}원</b> ({people}명 × {DEPOSIT_PER_PERSON.toLocaleString()}원) ·
+          예약금 <b>{deposit.toLocaleString()}원</b> ({people}명 × {cfg.depositPerPerson.toLocaleString()}원) ·
           결제 연결은 준비 중이며, 지금은 예약 신청만 접수됩니다.
         </div>
 

@@ -357,3 +357,11 @@ form.cform{border:1px solid rgba(141,99,214,.3);border-radius:16px;padding:26px;
 .theme-pop .bar i{display:block;height:100%;background:var(--cyan);border-radius:999px}
 .admin-card{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:18px;margin-bottom:16px}
 .admin-login{max-width:360px;margin:80px auto;text-align:center}
+/* 캘린더 */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{text-align:center;font-size:12px;color:var(--muted);font-weight:700;padding:4px 0}
+.cal-cell{min-height:62px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:6px 8px;cursor:pointer;transition:.12s;display:flex;flex-direction:column;gap:4px}
+.cal-cell:hover{border-color:rgba(47,116,230,.45)}
+.cal-cell.pick{border-color:var(--cyan);background:rgba(47,116,230,.1)}
+.cal-d{font-size:12.5px;color:var(--muted);font-weight:700}
+.cal-n{font-size:11px;font-weight:800;color:var(--cyan);background:rgba(47,116,230,.12);border-radius:6px;padding:1px 6px;align-self:flex-start}

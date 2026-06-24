@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
-import { themeById, DEPOSIT_PER_PERSON } from "@/lib/data";
+import { themeById } from "@/lib/data";
+import { getConfig } from "@/lib/settings";
+import { sendReservationSms } from "@/lib/sms";
 
 const COLS =
   "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at";
@@ -89,6 +91,16 @@ export async function PATCH(req: NextRequest) {
 
   const { error } = await db.from("reservations").update(patch).eq("id", id);
   if (error) return NextResponse.json({ error: "수정 중 오류가 발생했습니다." }, { status: 500 });
+
+  // 확정 처리 시 확정 안내 문자 (알리고 키 있을 때만 실제 발송)
+  if (patch.status === "confirmed") {
+    const { data: r } = await db
+      .from("reservations")
+      .select("name, phone, theme_name, date, time, people")
+      .eq("id", id)
+      .single();
+    if (r) await sendReservationSms("confirm", r).catch(() => {});
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -116,7 +128,7 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "이름을 입력해 주세요." }, { status: 400 });
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호를 확인해 주세요." }, { status: 400 });
 
-  const deposit = DEPOSIT_PER_PERSON * people;
+  const deposit = (await getConfig()).depositPerPerson * people;
   const { error } = await db.from("reservations").insert({
     store_id: theme.store, theme_id: theme.id, theme_name: theme.name,
     date, time, people, name, phone, deposit, status: "pending", source: "phone", memo,

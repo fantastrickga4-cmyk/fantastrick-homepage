@@ -1,0 +1,43 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
+import { isAdmin } from "@/lib/admin";
+import { DEFAULT_TEMPLATES } from "@/lib/sms";
+
+// 템플릿 3종 + 최근 발송내역 + 알리고 연동여부
+export async function GET(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  const db = getSupabase();
+  if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
+
+  const { data: tpls } = await db.from("sms_templates").select("type, body");
+  const map = new Map((tpls || []).map((t: { type: string; body: string }) => [t.type, t.body]));
+  const templates = {
+    confirm: map.get("confirm") ?? DEFAULT_TEMPLATES.confirm,
+    cancel: map.get("cancel") ?? DEFAULT_TEMPLATES.cancel,
+    reminder: map.get("reminder") ?? DEFAULT_TEMPLATES.reminder,
+  };
+  const { data: log } = await db
+    .from("sms_log")
+    .select("id, phone, body, type, status, error, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const aligoReady = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
+  return NextResponse.json({ ok: true, templates, log: log || [], aligoReady });
+}
+
+// 템플릿 수정
+export async function PUT(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  const db = getSupabase();
+  if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }); }
+  const type = String(body.type || "");
+  const text = String(body.body || "");
+  if (!["confirm", "cancel", "reminder"].includes(type)) return NextResponse.json({ error: "타입 오류" }, { status: 400 });
+  if (!text.trim()) return NextResponse.json({ error: "내용을 입력해 주세요." }, { status: 400 });
+  const { error } = await db.from("sms_templates").upsert({ type, body: text, updated_at: new Date().toISOString() }, { onConflict: "type" });
+  if (error) return NextResponse.json({ error: "저장 중 오류" }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
