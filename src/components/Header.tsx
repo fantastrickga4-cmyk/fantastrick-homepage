@@ -46,7 +46,7 @@ export default function Header() {
       <div className="hdr-in">
         <Link href="/" className="brand" aria-label="FANTASTRICK 홈">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="logo-img" src="/images/logo-white.png" alt="FANTASTRICK" />
+          <img className="logo-img" src="/images/logo-blue.png" alt="FANTASTRICK" />
         </Link>
         <nav className="main">
           {MENU.map((m) => (
@@ -74,7 +74,7 @@ export default function Header() {
         <div className="drawer-panel" role="dialog" aria-modal="true" aria-label="메뉴">
           <div className="drawer-head">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="logo-img" src="/images/logo-white.png" alt="FANTASTRICK" />
+            <img className="logo-img" src="/images/logo-blue.png" alt="FANTASTRICK" />
             <button className="drawer-close" onClick={() => setOpen(false)} aria-label="메뉴 닫기">✕</button>
           </div>
           {MENU.map((m, i) => (

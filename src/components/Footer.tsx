@@ -12,7 +12,7 @@ export default function Footer() {
           <div>
             <div className="brand" style={{ marginBottom: 12 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="logo-img" src="/images/logo-white.png" alt="FANTASTRICK" style={{ height: 30 }} />
+              <img className="logo-img" src="/images/logo-blue.png" alt="FANTASTRICK" style={{ height: 30 }} />
             </div>
             <p className="slogan-foot">일상이 멈추고, 이야기가 시작된다</p>
             <p style={{ margin: "8px 0 0" }}>

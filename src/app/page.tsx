@@ -259,9 +259,9 @@ export default function Home() {
           <div className="shead reveal">
             <div className="eyebrow">INTERACTIVE CONTENTS</div>
             <h2 className="title">인터랙티브 콘텐츠</h2>
-            <p className="lead" style={{ color: "#d3d9ec", maxWidth: 760 }}>
+            <p className="lead" style={{ color: "var(--muted)", maxWidth: 760 }}>
               대부분의 콘텐츠는 당신을 객석에 둡니다. 하지만{" "}
-              <b style={{ color: "#fff", fontWeight: 700 }}>인터랙티브 콘텐츠는, 당신을 무대 위에 세웁니다.</b>
+              <b style={{ color: "var(--text)", fontWeight: 700 }}>인터랙티브 콘텐츠는, 당신을 무대 위에 세웁니다.</b>
               <br />
               정해진 결말을 지켜보는 대신 당신의 선택과 행동이 이야기를 직접 이끌어가고 결정합니다.
               <br />
@@ -269,9 +269,9 @@ export default function Home() {
               <br />
               콘텐츠 안으로 걸어 들어가, 직접 이야기의 주인공이 되는 것.
             </p>
-            <p className="lead" style={{ marginTop: 16, borderLeft: "2px solid var(--cyan)", paddingLeft: 16, color: "#eef1f8", maxWidth: 730 }}>
+            <p className="lead" style={{ marginTop: 16, borderLeft: "2px solid var(--cyan)", paddingLeft: 16, color: "var(--text)", maxWidth: 730 }}>
               판타스트릭은 그 순간을 스토리·공간·장치로 구현합니다.{" "}
-              <b style={{ color: "#fff", fontWeight: 700 }}>판타스트릭이 준비한 콘텐츠의 문을 열어보세요.</b>
+              <b style={{ color: "var(--brand)", fontWeight: 700 }}>판타스트릭이 준비한 콘텐츠의 문을 열어보세요.</b>
             </p>
           </div>
           <div className="filters reveal">
