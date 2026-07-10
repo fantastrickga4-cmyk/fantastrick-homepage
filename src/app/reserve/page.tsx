@@ -7,11 +7,65 @@ import { formatDate, formatPhone } from "@/lib/util";
 
 type Cfg = { depositPerPerson: number; timeSlots: string[]; disabledThemes: string[] };
 
-function todayStr() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+// 상시 표시되는 인라인 월 달력 (클릭 팝업 없이 항상 떠 있음)
+function Calendar({ value, onChange }: { value: string; onChange: (d: string) => void }) {
+  const now = new Date();
+  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
+  const todayS = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const firstDow = new Date(view.y, view.m, 1).getDay();
+  const days = new Date(view.y, view.m + 1, 0).getDate();
+  const atMin = view.y < now.getFullYear() || (view.y === now.getFullYear() && view.m <= now.getMonth());
+
+  function move(delta: number) {
+    let y = view.y;
+    let m = view.m + delta;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    setView({ y, m });
+  }
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDow; i += 1) cells.push(null);
+  for (let d = 1; d <= days; d += 1) cells.push(d);
+  const dows = ["일", "월", "화", "수", "목", "금", "토"];
+
+  return (
+    <div className="rcal">
+      <div className="rcal-head">
+        <button type="button" className="rcal-nav" onClick={() => move(-1)} disabled={atMin} aria-label="이전 달">‹</button>
+        <b>{view.y}년 {view.m + 1}월</b>
+        <button type="button" className="rcal-nav" onClick={() => move(1)} aria-label="다음 달">›</button>
+      </div>
+      <div className="rcal-grid">
+        {dows.map((d, i) => (
+          <div key={d} className={"rcal-dow" + (i === 0 ? " sun" : i === 6 ? " sat" : "")}>{d}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (d === null) return <div key={`e${i}`} className="rcal-cell empty" aria-hidden="true" />;
+          const ds = `${view.y}-${pad2(view.m + 1)}-${pad2(d)}`;
+          const past = ds < todayS;
+          const dow = new Date(view.y, view.m, d).getDay();
+          return (
+            <button
+              key={ds}
+              type="button"
+              className={"rcal-cell" + (value === ds ? " on" : "") + (ds === todayS ? " today" : "") + (dow === 0 ? " sun" : dow === 6 ? " sat" : "")}
+              disabled={past}
+              aria-pressed={value === ds}
+              aria-label={`${view.m + 1}월 ${d}일`}
+              onClick={() => onChange(ds)}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function ReserveInner() {
@@ -136,20 +190,21 @@ function ReserveInner() {
           </div>
         </div>
 
-        {/* 날짜 / 인원 */}
-        <div className="grid2">
-          <div className="field">
-            <label>날짜</label>
-            <input type="date" min={todayStr()} value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>인원</label>
-            <select value={people} onChange={(e) => setPeople(Number(e.target.value))}>
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={n}>{n}명</option>
-              ))}
-            </select>
-          </div>
+        {/* 날짜 — 상시 인라인 달력 */}
+        <div className="field">
+          <label>날짜</label>
+          <Calendar value={date} onChange={setDate} />
+          {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
+        </div>
+
+        {/* 인원 */}
+        <div className="field">
+          <label>인원</label>
+          <select value={people} onChange={(e) => setPeople(Number(e.target.value))}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <option key={n} value={n}>{n}명</option>
+            ))}
+          </select>
         </div>
 
         {/* 시간 */}

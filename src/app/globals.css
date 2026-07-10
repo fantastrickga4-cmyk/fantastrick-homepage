@@ -339,6 +339,26 @@ footer ul li{padding:3px 0}
 .opt.on{border-color:var(--cyan);color:var(--cyan);background:rgba(59,123,240,.1)}
 .opt:hover:not(:disabled){border-color:var(--cyan)}
 .opt.soon,.opt:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- 예약 상시 인라인 달력 ---------- */
+.rcal{border:1px solid var(--line);border-radius:var(--r);background:var(--bg2);padding:12px 12px 14px}
+.rcal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rcal-head b{font-size:15px;font-weight:700;color:var(--text)}
+.rcal-nav{width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:.15s}
+.rcal-nav:hover:not(:disabled){border-color:var(--brand-bright);color:var(--brand-bright)}
+.rcal-nav:disabled{opacity:.35;cursor:not-allowed}
+.rcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.rcal-dow{text-align:center;font-size:11.5px;font-weight:700;color:var(--muted);padding:2px 0 4px}
+.rcal-dow.sun{color:var(--danger)} .rcal-dow.sat{color:var(--brand-bright)}
+.rcal-cell{height:44px;min-width:0;display:grid;place-items:center;border:1px solid transparent;border-radius:var(--r-sm);background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:.12s;font-family:inherit}
+.rcal-cell.sun{color:#f2a6ac} .rcal-cell.sat{color:#9dc0f5}
+.rcal-cell:hover:not(:disabled):not(.on){border-color:var(--brand-bright);background:rgba(59,123,240,.1)}
+.rcal-cell.today:not(.on){border-color:var(--line2)}
+.rcal-cell.on{background:var(--grad);color:#fff;font-weight:800;border-color:transparent;box-shadow:0 4px 14px -4px rgba(59,123,240,.5)}
+.rcal-cell:disabled{color:var(--faint);opacity:.4;cursor:not-allowed}
+.rcal-cell.empty{visibility:hidden;cursor:default}
+.rcal-sel{margin-top:10px;font-size:13px;color:var(--muted)}
+.rcal-sel b{color:var(--brand-bright);font-weight:700}
 .notice{font-size:13px;border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px}
 .notice.info{background:rgba(59,123,240,.09);border:1px solid rgba(59,123,240,.3);color:#cfe0ff}
 .notice.warn{background:rgba(224,85,97,.09);border:1px solid rgba(224,85,97,.3);color:#ffd2d7}
