@@ -21,15 +21,20 @@ export async function POST(req: NextRequest) {
   if (!pw) {
     return NextResponse.json({ error: "관리자 비밀번호가 설정되지 않았습니다(ADMIN_PASSWORD)." }, { status: 503 });
   }
+  const adminId = process.env.ADMIN_ID || "fantastrick";
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
-  const input = String(body.password || "");
-  if (!safeEqual(input, pw)) {
-    return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
+  const inputId = String(body.id || "");
+  const inputPw = String(body.password || "");
+  // 아이디·비밀번호 둘 다 상수시간 비교 (어느 쪽이 틀렸는지 노출하지 않음)
+  const idOk = safeEqual(inputId, adminId);
+  const pwOk = safeEqual(inputPw, pw);
+  if (!idOk || !pwOk) {
+    return NextResponse.json({ error: "아이디 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
   const token = makeAdminToken()!;
   const res = NextResponse.json({ ok: true });

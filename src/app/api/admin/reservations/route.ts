@@ -50,23 +50,38 @@ export async function GET(req: NextRequest) {
 
 type Row = { status: string; theme_id: string; theme_name: string; deposit: number; deposit_paid: boolean; date: string };
 function buildStats(rows: Row[]) {
-  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  // 모든 시각을 KST 기준으로 판정 (서버가 UTC라도 정확)
+  const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  const today = kstNow.toISOString().slice(0, 10);
+  const monthPrefix = today.slice(0, 7); // "YYYY-MM"
+  // 이번 주 월~일 범위 (KST)
+  const dow = kstNow.getUTCDay(); // 0=일 … 6=토
+  const diffToMon = (dow + 6) % 7; // 월요일까지 거슬러 올라갈 일수
+  const monday = new Date(kstNow); monday.setUTCDate(kstNow.getUTCDate() - diffToMon);
+  const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6);
+  const weekFrom = monday.toISOString().slice(0, 10);
+  const weekTo = sunday.toISOString().slice(0, 10);
+
   const byStatus: Record<string, number> = { pending: 0, confirmed: 0, cancelled: 0, noshow: 0 };
   const byTheme: Record<string, { name: string; count: number }> = {};
   let todayCount = 0;
   let depositPaidSum = 0;
+  let weekCount = 0;
+  let monthConfirmedDeposit = 0;
   for (const r of rows) {
     byStatus[r.status] = (byStatus[r.status] || 0) + 1;
     if (r.status !== "cancelled") {
       byTheme[r.theme_id] = byTheme[r.theme_id] || { name: r.theme_name, count: 0 };
       byTheme[r.theme_id].count++;
+      if (r.date >= weekFrom && r.date <= weekTo) weekCount++;
     }
     if (r.date === today && r.status !== "cancelled") todayCount++;
     if (r.deposit_paid) depositPaidSum += r.deposit || 0;
+    if (r.status === "confirmed" && r.date.slice(0, 7) === monthPrefix) monthConfirmedDeposit += r.deposit || 0;
   }
   const themes = Object.values(byTheme).sort((a, b) => b.count - a.count);
   const activeTotal = themes.reduce((s, t) => s + t.count, 0);
-  return { total: rows.length, byStatus, todayCount, depositPaidSum, themes, activeTotal };
+  return { total: rows.length, byStatus, todayCount, depositPaidSum, weekCount, monthConfirmedDeposit, themes, activeTotal };
 }
 
 // 예약 수정 (상태/입금/메모/환불완료)

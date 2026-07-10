@@ -13,6 +13,7 @@ type Reservation = {
 };
 type Stats = {
   total: number; byStatus: Record<string, number>; todayCount: number; depositPaidSum: number;
+  weekCount: number; monthConfirmedDeposit: number;
   themes: { name: string; count: number }[]; activeTotal: number;
 };
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
@@ -23,7 +24,7 @@ const TABS = [
 
 export default function AdminPage() {
   const [phase, setPhase] = useState<"checking" | "login" | "in">("checking");
-  const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
+  const [id, setId] = useState(""); const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
   const [tab, setTab] = useState("res");
 
   async function check() {
@@ -34,8 +35,8 @@ export default function AdminPage() {
 
   async function doLogin() {
     setLoginErr("");
-    const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) });
-    if (res.ok) { setPw(""); setPhase("in"); } else { const j = await res.json(); setLoginErr(j.error || "로그인 실패"); }
+    const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, password: pw }) });
+    if (res.ok) { setId(""); setPw(""); setPhase("in"); } else { const j = await res.json(); setLoginErr(j.error || "로그인 실패"); }
   }
   async function logout() { await fetch("/api/admin/logout", { method: "POST" }); setPhase("login"); }
 
@@ -44,10 +45,13 @@ export default function AdminPage() {
     return (
       <div className="admin-login">
         <h2 className="title" style={{ fontSize: 24 }}>판타스트릭 관리자</h2>
-        <p className="lead" style={{ margin: "8px auto 22px" }}>관리자 비밀번호를 입력하세요.</p>
+        <p className="lead" style={{ margin: "8px auto 22px" }}>관리자 아이디와 비밀번호를 입력하세요.</p>
         <div className="card" style={{ textAlign: "left" }}>
+          <div className="field"><label>아이디</label>
+            <input type="text" value={id} onChange={(e) => setId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} placeholder="fantastrick" autoComplete="username" autoFocus />
+          </div>
           <div className="field"><label>비밀번호</label>
-            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} autoFocus />
+            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} autoComplete="current-password" />
           </div>
           {loginErr && <div className="msg-err">⚠️ {loginErr}</div>}
           <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={doLogin}>로그인</button>
@@ -110,16 +114,53 @@ function ReservationsTab() {
     if (res.ok) load(true); else { const j = await res.json(); alert(j.error || "처리 실패"); }
   }
 
+  // CSV 내보내기 (현재 목록) — 고객 비밀번호(pin)는 포함하지 않음
+  function exportCsv() {
+    if (list.length === 0) { alert("내보낼 예약이 없습니다."); return; }
+    const cell = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["일시", "테마", "매장", "이름", "전화번호", "인원", "예약금", "상태", "신청일시"];
+    const rows = list.map((r) => [
+      `${r.date} ${r.time}`,
+      r.theme_name,
+      STORES.find((s) => s.id === r.store_id)?.tag || r.store_id,
+      r.name,
+      formatPhone(r.phone),
+      `${r.people}명`,
+      r.deposit,
+      ST_LABEL[r.status] || r.status,
+      r.created_at?.replace("T", " ").slice(0, 16) || "",
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");
+    // UTF-8 BOM: 엑셀 한글 깨짐 방지
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `예약_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <div className="admin-top" style={{ marginBottom: 14 }}>
         {newAlert > 0 && <button className="btn primary sm" onClick={() => { setNewAlert(0); setFStatus("pending"); }}>🔔 새 예약 {newAlert}건</button>}
         <div className="sp" />
         <button className="btn ghost sm" onClick={() => load()}>새로고침</button>
+        <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
         <button className="btn primary sm" onClick={() => setShowAdd(true)}>+ 수동 예약 등록</button>
       </div>
       {stats && (
         <>
+          <div className="stat-row dash4">
+            <div className="stat"><b>{stats.todayCount}</b><span>오늘 예약</span></div>
+            <div className="stat amber"><b>{stats.byStatus.pending || 0}</b><span>확정 대기(미입금)</span></div>
+            <div className="stat"><b>{stats.weekCount}</b><span>이번 주 예약(월~일)</span></div>
+            <div className="stat green"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
+          </div>
           <div className="stat-row">
             <div className="stat"><b>{stats.todayCount}</b><span>오늘 예약</span></div>
             <div className="stat amber"><b>{stats.byStatus.pending || 0}</b><span>확정 대기</span></div>
@@ -336,18 +377,29 @@ function SlotsTab() {
 
 /* ============ 설정 탭 ============ */
 function SettingsTab() {
-  const [deposit, setDeposit] = useState(0); const [slots, setSlots] = useState<string[]>([]); const [disabled, setDisabled] = useState<string[]>([]);
+  const [slots, setSlots] = useState<string[]>([]); const [disabled, setDisabled] = useState<string[]>([]);
   const [slotInput, setSlotInput] = useState(""); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
-  useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => { setDeposit(c.depositPerPerson); setSlots(c.timeSlots); setDisabled(c.disabledThemes || []); setLoaded(true); }); }, []);
+  useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => { setSlots(c.timeSlots); setDisabled(c.disabledThemes || []); setLoaded(true); }); }, []);
   async function save() {
     setMsg("");
-    const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ depositPerPerson: deposit, timeSlots: slots, disabledThemes: disabled }) });
+    const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ timeSlots: slots, disabledThemes: disabled }) });
     setMsg(res.ok ? "저장되었습니다 ✅" : "저장 실패");
   }
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
     <div className="admin-card" style={{ maxWidth: 560 }}>
-      <div className="field"><label>1인당 예약금 (원)</label><input type="number" value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} /></div>
+      <div className="field">
+        <label>테마별 예약금 (읽기 전용)</label>
+        <div style={{ border: "1px solid var(--line)", borderRadius: 9, overflow: "hidden" }}>
+          {THEMES.map((t, i) => (
+            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", fontSize: 13.5, borderTop: i ? "1px solid var(--line)" : "none" }}>
+              <span>{t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span></span>
+              <b style={{ fontFeatureSettings: '"tnum"' }}>{t.deposit.toLocaleString()}원</b>
+            </div>
+          ))}
+        </div>
+        <div className="hint">예약금은 테마별로 코드에서 관리됩니다. (변경은 개발자에게 요청)</div>
+      </div>
       <div className="field">
         <label>예약 가능 시간대</label>
         <div className="optrow" style={{ marginBottom: 8 }}>
