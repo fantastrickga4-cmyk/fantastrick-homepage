@@ -246,13 +246,14 @@ export default function Home() {
             </div>
           </div>
           <div className="about-visual reveal">
-            <Image
-              src="/images/permanence-poster.jpg"
-              alt="시간의 영속성 포스터"
-              width={1074}
-              height={1510}
-              sizes="(max-width:860px) 90vw, 520px"
-            />
+            <div className="about-frame">
+              <Image
+                src="/images/permanence-poster.jpg"
+                alt="시간의 영속성 포스터"
+                fill
+                sizes="(max-width:860px) 90vw, 520px"
+              />
+            </div>
             <div className="stamp"><b>SINCE 2015</b><span>강남에서 11년, 이머시브 한길</span></div>
           </div>
         </div>
