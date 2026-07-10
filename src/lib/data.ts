@@ -23,6 +23,7 @@ export type Theme = {
   cat: string; // 필터용: "s1" / "s3 murder" 등
   soon?: boolean;
   soonGenres?: string[];
+  deposit: number; // 테마 고정 예약금(원) — 인원과 무관
 };
 
 export const STORES: Store[] = [
@@ -64,6 +65,7 @@ export const THEMES: Theme[] = [
     difficulty: 4,
     genres: ["잠입", "SF 판타지"],
     cat: "s1",
+    deposit: 30000,
   },
   {
     id: "bookofduat",
@@ -75,6 +77,7 @@ export const THEMES: Theme[] = [
     difficulty: 3,
     genres: ["잠입", "SF 판타지"],
     cat: "s2",
+    deposit: 25000,
   },
   {
     id: "ldc",
@@ -86,6 +89,7 @@ export const THEMES: Theme[] = [
     difficulty: 2,
     genres: ["액션", "SF", "이머시브", "재난"],
     cat: "s3",
+    deposit: 120000,
   },
   {
     id: "time",
@@ -98,6 +102,7 @@ export const THEMES: Theme[] = [
     genres: ["SF", "추리"],
     murder: true,
     cat: "s3 murder",
+    deposit: 63000,
   },
 ];
 
@@ -114,6 +119,7 @@ export const SOON_THEMES: Theme[] = [
     genres: ["공포"],
     cat: "s3",
     soon: true,
+    deposit: 0,
   },
   {
     id: "soon-unknown",
@@ -126,6 +132,7 @@ export const SOON_THEMES: Theme[] = [
     genres: ["판타지", "아케이드"],
     cat: "s3",
     soon: true,
+    deposit: 0,
   },
 ];
 

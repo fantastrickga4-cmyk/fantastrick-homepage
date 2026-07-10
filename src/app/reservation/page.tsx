@@ -29,6 +29,7 @@ const POLICY_TEXT =
 export default function ReservationLookup() {
   const [phone, setPhone] = useState("");
   const [lookupName, setLookupName] = useState("");
+  const [pin, setPin] = useState("");
   const [list, setList] = useState<Reservation[] | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,10 +48,11 @@ export default function ReservationLookup() {
     setErr(""); setList(null); setDoneMsg("");
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
     if (!lookupName.trim()) return setErr("예약자 이름을 입력해 주세요.");
+    if (!/^\d{4}$/.test(pin)) return setErr("예약 비밀번호(숫자 4자리)를 입력해 주세요.");
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/reservations?phone=${encodeURIComponent(phone)}&name=${encodeURIComponent(lookupName.trim())}`
+        `/api/reservations?phone=${encodeURIComponent(phone)}&name=${encodeURIComponent(lookupName.trim())}&pin=${encodeURIComponent(pin)}`
       );
       const j = await res.json();
       if (!res.ok) setErr(j.error || "조회에 실패했습니다.");
@@ -93,6 +95,7 @@ export default function ReservationLookup() {
           id: target.id,
           phone,
           name: lookupName.trim(),
+          pin,
           refundBank: bank,
           refundAccount: account,
           refundHolder: holder,
@@ -138,13 +141,26 @@ export default function ReservationLookup() {
             onKeyDown={(e) => e.key === "Enter" && lookup()}
           />
         </div>
-        <div className="field" style={{ marginBottom: 12 }}>
+        <div className="field">
           <label>전화번호</label>
           <input
             type="tel"
             value={phone}
             placeholder="010-1234-5678"
             onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && lookup()}
+          />
+        </div>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label>예약 비밀번호 (숫자 4자리)</label>
+          <input
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            placeholder="예약 때 정한 4자리"
+            autoComplete="off"
+            onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
             onKeyDown={(e) => e.key === "Enter" && lookup()}
           />
         </div>

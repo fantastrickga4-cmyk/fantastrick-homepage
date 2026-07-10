@@ -4,6 +4,7 @@ import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from
 import { themeById } from "@/lib/data";
 import { getConfig } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
+import { sweepExpiredReservations } from "@/lib/expire";
 
 const TOO_MANY = { error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." };
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
   const people = Number(body.people || 0);
   const name = sanitizeText(String(body.name || ""));
   const phone = normalizePhone(String(body.phone || ""));
+  const pin = String(body.pin || "").trim();
 
   const theme = themeById(themeId);
   if (!theme || theme.soon) return NextResponse.json({ error: "예약할 수 없는 테마입니다." }, { status: 400 });
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "예약자 이름을 입력해 주세요." }, { status: 400 });
   if (name.length > 40) return NextResponse.json({ error: "이름이 너무 깁니다." }, { status: 400 });
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호 형식을 확인해 주세요." }, { status: 400 });
+  if (!/^\d{4}$/.test(pin)) return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
 
   const config = await getConfig();
   if (config.disabledThemes.includes(theme.id)) {
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "마감된 시간입니다. 다른 시간을 선택해 주세요." }, { status: 409 });
   }
 
-  const deposit = config.depositPerPerson * people;
+  const deposit = theme.deposit;
 
   const { data, error } = await db
     .from("reservations")
@@ -97,6 +100,7 @@ export async function POST(req: NextRequest) {
       people,
       name,
       phone,
+      pin,
       deposit,
       status: "pending",
     })
@@ -124,16 +128,22 @@ export async function GET(req: NextRequest) {
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
+  // 만료 예약(30분 미입금) 자동 정리 — 실패해도 조회는 진행
+  await sweepExpiredReservations(db).catch(() => {});
+
   const phone = normalizePhone(req.nextUrl.searchParams.get("phone") || "");
   const name = sanitizeText(req.nextUrl.searchParams.get("name") || "");
+  const pin = String(req.nextUrl.searchParams.get("pin") || "").trim();
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호 형식을 확인해 주세요." }, { status: 400 });
   if (!name) return NextResponse.json({ error: "예약자 이름을 입력해 주세요." }, { status: 400 });
+  if (!/^\d{4}$/.test(pin)) return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
 
   const { data, error } = await db
     .from("reservations")
     .select("id, store_id, theme_id, theme_name, date, time, people, name, deposit, deposit_paid, status, created_at")
     .eq("phone", phone)
     .eq("name", name)
+    .eq("pin", pin)
     .order("date", { ascending: false })
     .limit(50);
 

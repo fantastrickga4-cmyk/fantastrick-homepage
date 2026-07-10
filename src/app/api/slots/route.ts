@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { sweepExpiredReservations } from "@/lib/expire";
 
 // 특정 테마·날짜의 닫힌(예약불가) 시간 조회 — 예약 화면에서 사용
 export async function GET(req: NextRequest) {
   const db = getSupabase();
   if (!db) return NextResponse.json({ blocked: [], dayClosed: false });
+
+  // 만료 예약(30분 미입금) 자동 정리 — 실패해도 조회는 진행
+  await sweepExpiredReservations(db).catch(() => {});
 
   const theme = req.nextUrl.searchParams.get("theme") || "";
   const date = req.nextUrl.searchParams.get("date") || "";

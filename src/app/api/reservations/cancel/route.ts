@@ -39,12 +39,16 @@ export async function POST(req: NextRequest) {
   const id = String(body.id || "");
   const phone = normalizePhone(String(body.phone || ""));
   const name = sanitizeText(String(body.name || ""));
+  const pin = String(body.pin || "").trim();
   const refundBank = sanitizeText(String(body.refundBank || ""));
   const refundAccount = sanitizeText(String(body.refundAccount || ""));
   const refundHolder = sanitizeText(String(body.refundHolder || ""));
 
   if (!id || !isValidPhone(phone) || !name) {
     return NextResponse.json({ error: "예약 정보를 확인해 주세요." }, { status: 400 });
+  }
+  if (!/^\d{4}$/.test(pin)) {
+    return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
   }
   if (!refundBank || !refundAccount || !refundHolder) {
     return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
@@ -64,6 +68,7 @@ export async function POST(req: NextRequest) {
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
+    .eq("pin", pin)
     .single();
 
   if (findErr || !found) {

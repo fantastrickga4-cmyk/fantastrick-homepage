@@ -2,10 +2,18 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { THEMES, TIME_SLOTS, DEPOSIT_PER_PERSON, STORES } from "@/lib/data";
-import { formatDate, formatPhone } from "@/lib/util";
+import { THEMES, TIME_SLOTS, STORES } from "@/lib/data";
+import { formatDate, formatPhone, reservationDateState } from "@/lib/util";
 
-type Cfg = { depositPerPerson: number; timeSlots: string[]; disabledThemes: string[] };
+type Cfg = { timeSlots: string[]; disabledThemes: string[] };
+
+// 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
+function openDateLabel(dateStr: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!m) return "";
+  const o = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 7);
+  return `${o.getMonth() + 1}월 ${o.getDate()}일`;
+}
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -65,11 +73,11 @@ function Calendar({ value, onChange }: { value: string; onChange: (d: string) =>
                 (notOpen ? " locked" : "") +
                 (dow === 0 ? " sun" : dow === 6 ? " sat" : "")
               }
-              disabled={past || notOpen}
+              disabled={past}
               aria-pressed={value === ds}
               aria-label={notOpen ? `${view.m + 1}월 ${d}일 · ${openHint}` : `${view.m + 1}월 ${d}일`}
               title={notOpen ? openHint : undefined}
-              onClick={() => { if (!past && !notOpen) onChange(ds); }}
+              onClick={() => { if (!past) onChange(ds); }}
             >
               <span className="rcal-d">{d}</span>
               {notOpen && <span className="rcal-lk" aria-hidden="true">🔒</span>}
@@ -95,18 +103,22 @@ function ReserveInner() {
   const [people, setPeople] = useState(2);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
-  const [cfg, setCfg] = useState<Cfg>({ depositPerPerson: DEPOSIT_PER_PERSON, timeSlots: TIME_SLOTS, disabledThemes: [] });
+  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, disabledThemes: [] });
   const [blocked, setBlocked] = useState<string[]>([]);
   const [dayClosed, setDayClosed] = useState(false);
 
   const availableThemes = useMemo(() => THEMES.filter((t) => !cfg.disabledThemes.includes(t.id)), [cfg.disabledThemes]);
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
-  const deposit = cfg.depositPerPerson * people;
+  const deposit = theme?.deposit ?? 0;
+
+  // 선택한 날짜가 아직 예약 오픈 전인지 (오픈 전이면 시간·인원·신청 숨김)
+  const notOpenSelected = useMemo(() => (date ? reservationDateState(date) === "not_open" : false), [date]);
 
   useEffect(() => {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
@@ -130,15 +142,17 @@ function ReserveInner() {
     setErr("");
     if (!themeId) return setErr("테마를 선택해 주세요.");
     if (!date) return setErr("날짜를 선택해 주세요.");
+    if (notOpenSelected) return setErr("아직 예약 오픈 전인 날짜입니다. 다른 날짜를 선택해 주세요.");
     if (!time) return setErr("시간을 선택해 주세요.");
     if (!name.trim()) return setErr("예약자 이름을 입력해 주세요.");
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
+    if (!/^\d{4}$/.test(pin)) return setErr("비밀번호는 숫자 4자리로 입력해 주세요.");
     setLoading(true);
     try {
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ themeId, date, time, people, name, phone }),
+        body: JSON.stringify({ themeId, date, time, people, name, phone, pin }),
       });
       const j = await res.json();
       if (!res.ok) {
@@ -168,9 +182,13 @@ function ReserveInner() {
             <div className="r"><span>예약금</span><b>{deposit.toLocaleString()}원</b></div>
           </div>
           <div className="notice info" style={{ marginTop: 16 }}>
-            예약금 결제·확정 안내 문자는 곧 제공될 예정입니다. 예약 확인·취소는{" "}
-            <Link href="/reservation" style={{ color: "var(--cyan)", fontWeight: 700 }}>예약 조회</Link> 에서
-            전화번호로 하실 수 있어요.
+            예약금 결제·확정 안내를 도와드릴게요. 예약금은 <b>{deposit.toLocaleString()}원</b>입니다.
+            입력하신 전화번호로 곧 예약금 입금 안내 연락이 도착할 예정입니다.
+            <b> 예약금 입금이 확인되어야 비로소 예약이 확정 처리</b>됩니다.
+            <b> 30분 내 예약금 미입금 시 예약은 자동 취소</b>됩니다.
+            예약 확인 및 취소는{" "}
+            <Link href="/reservation" style={{ color: "var(--cyan)", fontWeight: 700 }}>예약조회</Link>
+            에서 진행하실 수 있습니다.
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
             <Link href="/reservation" className="btn primary">예약 조회·취소</Link>
@@ -212,8 +230,20 @@ function ReserveInner() {
           <label>날짜</label>
           <Calendar value={date} onChange={setDate} />
           {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
+          {date && notOpenSelected && (
+            <div className="rcal-sel" style={{ marginTop: 4 }}>
+              예약창 오픈 날짜: <b>{openDateLabel(date)} 저녁 9시</b>
+            </div>
+          )}
         </div>
 
+        {/* 오픈 전 날짜: 예약 단계 대신 안내만 */}
+        {notOpenSelected ? (
+          <div className="notice warn">
+            이 날짜는 아직 예약 오픈 전이에요. <b>{openDateLabel(date)} 저녁 9시</b>부터 예약 가능합니다.
+          </div>
+        ) : (
+        <>
         {/* 인원 */}
         <div className="field">
           <label>인원</label>
@@ -265,8 +295,23 @@ function ReserveInner() {
           </div>
         </div>
 
+        {/* 예약 비밀번호 — 조회·취소 시 본인 확인용 */}
+        <div className="field">
+          <label>예약 비밀번호 (숫자 4자리)</label>
+          <input
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            placeholder="숫자 4자리"
+            autoComplete="off"
+            onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+          />
+          <div className="hint">※ 예약 조회·취소할 때 필요해요. 잊지 않게 기억해 주세요.</div>
+        </div>
+
         <div className="notice info">
-          예약금 <b>{deposit.toLocaleString()}원</b> ({people}명 × {cfg.depositPerPerson.toLocaleString()}원) ·
+          예약금 <b>{deposit.toLocaleString()}원</b> ·
           결제 연결은 준비 중이며, 지금은 예약 신청만 접수됩니다.
         </div>
 
@@ -275,6 +320,8 @@ function ReserveInner() {
         <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
           {loading ? "접수 중…" : "예약 신청하기"}
         </button>
+        </>
+        )}
       </div>
 
       <p style={{ marginTop: 16, textAlign: "center" }}>

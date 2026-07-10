@@ -211,11 +211,6 @@ export default function Home() {
             <Link href="/reserve" className="btn primary">테마 예약하기 →</Link>
             <Link href="/business" className="btn gold-ghost">외주·컨설팅 문의</Link>
           </div>
-          <div className="meta">
-            <div><b>11년</b>이머시브 운영</div>
-            <div><b>3곳</b>강남 직영 매장</div>
-            <div><b>4종</b>대표 테마</div>
-          </div>
         </div>
         <div className="scrollcue">SCROLL ↓</div>
       </section>
@@ -254,7 +249,6 @@ export default function Home() {
                 sizes="(max-width:860px) 90vw, 520px"
               />
             </div>
-            <div className="stamp"><b>SINCE 2015</b><span>강남에서 11년, 이머시브 한길</span></div>
           </div>
         </div>
       </section>

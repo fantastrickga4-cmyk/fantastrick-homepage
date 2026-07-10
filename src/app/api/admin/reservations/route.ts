@@ -3,8 +3,8 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
 import { themeById } from "@/lib/data";
-import { getConfig } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
+import { sweepExpiredReservations } from "@/lib/expire";
 
 const COLS =
   "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at";
@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
+
+  // 만료 예약(30분 미입금) 자동 정리 — 실패해도 목록 조회는 진행
+  await sweepExpiredReservations(db).catch(() => {});
 
   const sp = req.nextUrl.searchParams;
   const status = sp.get("status"); // pending/confirmed/cancelled/noshow
@@ -128,7 +131,7 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "이름을 입력해 주세요." }, { status: 400 });
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호를 확인해 주세요." }, { status: 400 });
 
-  const deposit = (await getConfig()).depositPerPerson * people;
+  const deposit = theme.deposit;
   const { error } = await db.from("reservations").insert({
     store_id: theme.store, theme_id: theme.id, theme_name: theme.name,
     date, time, people, name, phone, deposit, status: "pending", source: "phone", memo,
