@@ -2,6 +2,15 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-10 — ✍️ 역할별 폰트 시스템 정리(재설계 X · 폰트 역할만)
+> UX 분석·결정 반영: **큰 제목=나눔명조 ExtraBold(세리프)**, 본문·버튼·숫자·라벨·카드제목=Pretendard(산세리프) 유지. 빌드 통과(에러 0)·콘솔 에러 0·데스크톱/모바일/비즈니스 실렌더로 한글 제목이 나눔명조로 보이는 것 확인.
+- **무용지물 Gothic A1 제거** (`layout.tsx`) — 기존 `next/font/google`의 Gothic A1은 한글 subset 미노출(라틴만 받는 낭비)이라 삭제. `--font-display` 주입도 CSS 변수로 이전.
+- **나눔명조 800 로드** (`layout.tsx`) — Google Fonts `<link>`로 `Nanum+Myeongjo:wght@800`만 로드(preconnect 포함). 한글 글리프는 unicode-range split 서빙이라 CWV 안전. `document.fonts.check` 로 실제 로드 확인.
+- **CSS 변수 정의** (`globals.css`) — `:root`에 `--font-display:"Nanum Myeongjo","Pretendard",serif` 추가.
+- **적용 맵** — ✅나눔명조: `.hero h1`·`h2.title`·`.reserve h2`·`.biz-hero h1`(큰 제목). 세리프 자간 완화(-.02em/-.01em → -.005em, 삐침 겹침 방지). ❌Pretendard 유지: `.eyebrow`(.3em 트래킹 라벨)·`.rev-summary .score`(숫자)·버튼·카드제목(`.tcard .tt h3` 17px)·배지·칩.
+- **숫자 tabular** — `.hero .meta b`·`.biz-hero .meta b`·`.stat b`·`.rev-summary .score`에 `font-feature-settings:"tnum"`(자릿수 정렬).
+- 수정 파일: `src/app/layout.tsx`, `src/app/globals.css`.
+
 ## 2026-07-10 — 🎨 디자인 업그레이드(재설계 X · 품질만 상향, 12항목)
 > 구조·정체성·페이지 구성·URL·콘텐츠는 그대로 두고 "디자인 품질"만 벤치마크급으로 끌어올림. 승인 계획서: `docs/디자인_업그레이드_계획서.html`. 빌드 통과(에러 0)·콘솔 에러 0·데스크톱/모바일 실렌더 확인 완료.
 - **① 모바일 햄버거 메뉴 실구현** (`Header.tsx`) — 기존엔 숨겨진 요소로 스크롤해 먹통이었음. `useState` 슬라이드 드로어(오버레이+패널)로 재작성: 메뉴 5개 + 예약/조회 버튼, `aria-expanded`/`aria-controls`, ESC·바깥클릭·링크클릭 시 닫힘, 열릴 때 body 스크롤 잠금 + 첫 항목 포커스. 데스크톱 동작 불변.
