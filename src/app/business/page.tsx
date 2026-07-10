@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useState, type CSSProperties } from "react";
 
 export default function BusinessPage() {
   const [sent, setSent] = useState(false);
@@ -19,8 +20,7 @@ export default function BusinessPage() {
       {/* HERO */}
       <section className="biz-hero">
         <div className="bg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/lockdowncity-street.jpg" alt="" />
+          <Image src="/images/lockdowncity-street.jpg" alt="" fill priority sizes="100vw" style={{ objectFit: "cover" }} />
         </div>
         <div className="wrap">
           <div className="eyebrow gold">FANTASTRICK BUSINESS · B2B</div>
@@ -112,10 +112,10 @@ export default function BusinessPage() {
             <p className="lead">강남 직영 3곳·테마 4종을 우리 손으로 기획·시공·운영하며 검증했습니다.</p>
           </div>
           <div className="ref-grid">
-            <div className="ref reveal"><div className="rt"><img src="/images/poster-bride.jpg" alt="태초의 신부" /></div><div className="rb"><b>태초의 신부</b><span>1호점 · 잠입 이머시브 · 100분</span></div></div>
-            <div className="ref reveal"><div className="rt"><img src="/images/poster-duat.png" alt="사자의 서" /></div><div className="rb"><b>사자의 서</b><span>2호점 · 잠입 이머시브 · 80분</span></div></div>
-            <div className="ref reveal"><div className="rt"><img src="/images/lockdowncity-street.jpg" alt="락다운시티" /></div><div className="rb"><b>락다운시티</b><span>3호점 TGC · SF 이머시브 · 100분</span></div></div>
-            <div className="ref reveal"><div className="rt"><img src="/images/permanence-escape.jpg" alt="시간의 영속성" /></div><div className="rb"><b>시간의 영속성</b><span>3호점 TGC · 머더룸 · 80분</span></div></div>
+            <div className="ref reveal" style={{ "--i": 0 } as CSSProperties}><div className="rt"><Image src="/images/poster-bride.jpg" alt="태초의 신부" fill sizes="(max-width:520px) 100vw, (max-width:860px) 50vw, 280px" /></div><div className="rb"><b>태초의 신부</b><span>1호점 · 잠입 이머시브 · 100분</span></div></div>
+            <div className="ref reveal" style={{ "--i": 1 } as CSSProperties}><div className="rt"><Image src="/images/poster-duat.png" alt="사자의 서" fill sizes="(max-width:520px) 100vw, (max-width:860px) 50vw, 280px" /></div><div className="rb"><b>사자의 서</b><span>2호점 · 잠입 이머시브 · 80분</span></div></div>
+            <div className="ref reveal" style={{ "--i": 2 } as CSSProperties}><div className="rt"><Image src="/images/lockdowncity-street.jpg" alt="락다운시티" fill sizes="(max-width:520px) 100vw, (max-width:860px) 50vw, 280px" /></div><div className="rb"><b>락다운시티</b><span>3호점 TGC · SF 이머시브 · 100분</span></div></div>
+            <div className="ref reveal" style={{ "--i": 3 } as CSSProperties}><div className="rt"><Image src="/images/permanence-escape.jpg" alt="시간의 영속성" fill sizes="(max-width:520px) 100vw, (max-width:860px) 50vw, 280px" /></div><div className="rb"><b>시간의 영속성</b><span>3호점 TGC · 머더룸 · 80분</span></div></div>
           </div>
         </div>
       </section>

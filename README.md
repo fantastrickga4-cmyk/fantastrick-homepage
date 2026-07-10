@@ -2,6 +2,22 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-10 — 🎨 디자인 업그레이드(재설계 X · 품질만 상향, 12항목)
+> 구조·정체성·페이지 구성·URL·콘텐츠는 그대로 두고 "디자인 품질"만 벤치마크급으로 끌어올림. 승인 계획서: `docs/디자인_업그레이드_계획서.html`. 빌드 통과(에러 0)·콘솔 에러 0·데스크톱/모바일 실렌더 확인 완료.
+- **① 모바일 햄버거 메뉴 실구현** (`Header.tsx`) — 기존엔 숨겨진 요소로 스크롤해 먹통이었음. `useState` 슬라이드 드로어(오버레이+패널)로 재작성: 메뉴 5개 + 예약/조회 버튼, `aria-expanded`/`aria-controls`, ESC·바깥클릭·링크클릭 시 닫힘, 열릴 때 body 스크롤 잠금 + 첫 항목 포커스. 데스크톱 동작 불변.
+- **② 브랜드 컬러 정본화** (`globals.css`) — 공식 3색 반영. 기존 토큰명(`--cyan`/`--cyan-deep`/`--gold`/`--danger`)은 유지(참조 보존)하되 값·의미를 브랜드로 조정: 딥블루 #043CB2(메인), 보라를 Phantom Violet(#622698, 다크 텍스트엔 #8f6ae0), 레드를 Illusion Red(#B20E19, 텍스트엔 #e05561). 시맨틱 토큰 `--brand/--brand-bright/--violet/--blood/--grad` 추가.
+- **③ 미정의 토큰 버그 수정 + Primary CTA 생기** — `--amber`·`--green` 실제 정의(관리자 `.stat.amber/.green` 참조 버그 해결). `.btn.primary`를 그라디언트(#3b7bf0→#043cb2)+hover 글로우+active `scale(.98)`로 격상.
+- **④ 포커스 링 + 소형 텍스트 대비** — 전역 `:focus-visible` 링, 폼 `outline:none`을 `:focus-visible`로 대체. `--faint` 대비 상향(#6a7298→#828cb0, AA), 터치타깃(.chip/.btn.sm/.menu-btn/.opt) min-height 44px.
+- **⑤ 히어로 시네마틱화** (`globals.css`·`page.tsx`) — 초저속 Ken Burns 줌(24s), 스크롤 패럴랙스(JS), 비네트+오로라 글로우, 진입 스태거(eyebrow→h1→sub→cta→meta). `prefers-reduced-motion` 전면 정지.
+- **⑥ 디스플레이 폰트 + 타입 스케일 토큰화** (`layout.tsx`) — 제목/eyebrow 전용 디스플레이 폰트를 `next/font/google`(Gothic A1, self-host)로 도입(본문 Pretendard 유지). `--fs-xs~--fs-2xl` 타입스케일 토큰 정의.
+- **⑦ 다크 크래프트 폴리시** — 히어로/비즈 배경 Fantasy Blue→Phantom Violet 오로라 글로우, 카드(.tcard/.cap/.ref) 호버 글로우 격상, **전역 필름 그레인 오버레이 1장**(`layout.tsx`의 `.grain`).
+- **⑧ 홈 리뷰/평점 섹션 신설** (`page.tsx`) — STORES↔BUSINESS 사이에 별점 요약(4.8/5) + 대표 후기 4건 발췌 카드 + "전체 후기 보기" 링크. 데이터는 정적 대표 샘플(전체·작성은 기존 `/reviews`).
+- **⑨ 스무스 스크롤 + reveal 스태거** — CSS `scroll-behavior` 유지 + `.reveal`에 인덱스(`--i`) 기반 `transition-delay` 스태거(비즈 역량카드·리뷰카드·레퍼런스).
+- **⑩ 스티키 핀 연출 1곳** — ABOUT 포스터를 데스크톱에서 `position:sticky`로 고정(좌측 텍스트가 흐르는 Apple식). 모바일 폴백=정적.
+- **⑪ next/image 전환 + 폼 시맨틱화** — 주요 이미지(히어로 LCP=`priority`, 포스터·지도·레퍼런스 lazy)를 `next/image`로(CLS 제거). 예약 화면 `.opt` div→`<button aria-pressed>`(마감시간 `disabled`).
+- **⑫ radius 3단계 통일 + 인라인 색 정리** — `--r-sm/--r/--r-lg/--r-full`로 축소·치환. 소형 인라인 `--faint`→`--muted` 등 주요부 정리.
+- 수정 파일: `src/app/globals.css`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/reserve/page.tsx`, `src/app/business/page.tsx`, `src/components/Header.tsx`.
+
 ## 2026-06-24 (이어서4)
 - 🗓️ **관리자 2차** — 캘린더 뷰(월별·날짜별 예약), 시간대 열기/닫기(마감·휴무), 설정(예약금·시간대·노출테마). 설정은 예약 화면에 실시간 반영(마감시간 🚫 표시·예약 차단).
 - 💬 **관리자 3차(문자/알림 구조)** — 문자 템플릿(확정/취소/리마인더) 편집·발송내역, 방문 전날 리마인더 자동발송(Vercel Cron 매일). 확정/취소 시 문자 발송 연결. ⚠️실제 발송은 **알리고(ALIGO) 키 등록 시 작동**(미등록 시 발송내역만 '미발송'으로 기록). 새 예약 30초 폴링 알림(#14).

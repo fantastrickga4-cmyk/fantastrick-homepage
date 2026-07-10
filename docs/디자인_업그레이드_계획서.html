@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>판타스트릭 · 디자인 업그레이드 계획서</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b12; --bg2:#0e1020; --card:#13152340; --card2:#161930; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+  --text:#eef0f8; --muted:#9aa3c2; --faint:#6b7398;
+  --blue:#3b7bf0; --blue-deep:#043CB2; --violet:#8f6ae0; --red:#e05561; --ok:#5fcf94; --amber:#e0b24a;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Pretendard",system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 28px}
+header.top{padding:60px 0 34px;border-bottom:1px solid var(--line);background:radial-gradient(800px 400px at 80% 0,rgba(59,123,240,.14),transparent 60%)}
+.kick{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--blue);text-transform:uppercase}
+header.top h1{font-size:clamp(28px,4.6vw,44px);font-weight:800;letter-spacing:-.02em;margin:16px 0 12px}
+header.top p{color:var(--muted);max-width:680px;font-size:15px}
+.scope{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
+.scope span{font-size:12.5px;border:1px solid var(--line2);border-radius:999px;padding:6px 14px;color:var(--muted)}
+.scope span.no{color:#ff9aa4;border-color:rgba(224,85,97,.4)}
+.scope span.yes{color:#8fe0b0;border-color:rgba(95,207,148,.4)}
+section{padding:46px 0;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--blue);text-transform:uppercase}
+h2{font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.01em;margin:12px 0 6px}
+.sub{color:var(--muted);font-size:14.5px;max-width:720px;margin-bottom:22px}
+h3{font-size:17px;font-weight:800;margin:26px 0 10px;display:flex;align-items:center;gap:9px}
+p{color:var(--muted);font-size:14.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(20,23,40,.5),rgba(10,12,24,.3));padding:20px}
+.card h4{font-size:15px;font-weight:800;margin-bottom:8px}
+.card p{font-size:13.5px}
+ul{list-style:none;display:grid;gap:9px;margin-top:10px}
+li{position:relative;padding-left:20px;color:var(--muted);font-size:14px}
+li::before{content:"›";position:absolute;left:2px;color:var(--blue);font-weight:800}
+li b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
+td b{color:var(--text)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
+.p-hi{color:#ff9aa4;background:rgba(224,85,97,.14);border:1px solid rgba(224,85,97,.35)}
+.p-mid{color:var(--amber);background:rgba(224,178,74,.12);border:1px solid rgba(224,178,74,.35)}
+.p-low{color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.p-ok{color:#8fe0b0;background:rgba(95,207,148,.12);border:1px solid rgba(95,207,148,.35)}
+.rank{display:inline-block;min-width:20px;font-family:var(--mono);color:var(--blue);font-weight:700}
+.bench{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.bench:last-child{border-bottom:none}
+.bench .n{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--blue);flex:0 0 34px}
+.bench .b-body{flex:1}
+.bench .b-name{font-size:16px;font-weight:800}
+.bench .b-name a{color:var(--blue);font-size:12.5px;font-family:var(--mono);margin-left:8px;text-decoration:none}
+.bench .b-name a:hover{text-decoration:underline}
+.bench .cat{font-size:11.5px;color:var(--faint);font-family:var(--mono);margin-left:8px}
+.bench .tech{font-size:13.5px;color:var(--muted);margin-top:6px}
+.bench .apply{font-size:13.5px;color:var(--text);margin-top:8px;padding:9px 12px;border-left:2px solid var(--blue);background:rgba(59,123,240,.07);border-radius:0 8px 8px 0}
+.bench .apply b{color:var(--blue)}
+.phase{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:16px}
+.phase .ph{padding:13px 18px;font-family:var(--mono);font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.phase.q .ph{background:rgba(95,207,148,.1);color:#8fe0b0;border-bottom:1px solid rgba(95,207,148,.22)}
+.phase.two .ph{background:rgba(59,123,240,.1);color:var(--blue);border-bottom:1px solid rgba(59,123,240,.22)}
+.phase.three .ph{background:rgba(143,106,224,.1);color:var(--violet);border-bottom:1px solid rgba(143,106,224,.22)}
+.phase .ph span{font-size:11px;opacity:.75}
+.phase ul{padding:14px 18px}
+.phase li b{color:var(--text)}
+.big{font-family:var(--mono);font-size:12px;color:var(--faint)}
+.note{border:1px solid rgba(224,85,97,.4);background:linear-gradient(180deg,rgba(224,85,97,.09),transparent);border-radius:12px;padding:16px 18px;margin-top:16px}
+.note b{color:#ff9aa4}
+.foot{padding:40px 0 70px;color:var(--faint);font-size:12.5px;font-family:var(--mono)}
+.foot a{color:var(--muted)}
+.axis-hi{color:#ff9aa4;font-weight:700} .axis-mid{color:var(--amber);font-weight:700} .axis-ok{color:#8fe0b0;font-weight:700}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="kick">FANTASTRICK · DESIGN UPGRADE PLAN · 2026-07-10</div>
+    <h1>디자인 업그레이드 계획서</h1>
+    <p>지금 홈페이지를 <b style="color:#fff">유지한 채, 디자인 품질만</b> 벤치마크급으로 끌어올리기 위한 계획입니다. 현재 사이트 진단 + 유명 홈페이지 5곳 비교분석 + 우선순위 실행안.</p>
+    <div class="scope">
+      <span class="no">✕ 재설계·새 컨셉 아님</span>
+      <span class="yes">✓ 현재 구조·정체성 유지</span>
+      <span class="yes">✓ 디자인 품질만 상향</span>
+      <span>분석: 프론트엔드 진단 · 시장 벤치마크</span>
+    </div>
+  </div>
+</header>
+
+<!-- 한 줄 결론 -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">CONCLUSION · 한 줄 결론</div>
+    <h2>못 만든 게 아니라, 무기를 안 꺼냈다</h2>
+    <p class="sub">두 분석의 결론이 일치했습니다: 현재 사이트는 <b style="color:var(--text)">완성도 중급</b>이고 여백·그리드 기본기는 이미 좋아요. 문제는 <b style="color:var(--text)">'없음'이 아니라 '평범함'</b> — 공식 브랜드 3색과 '시네마틱' 정체성을 두고도 안 쓰고 있습니다.</p>
+    <div class="grid2">
+      <div class="card"><h4>🎯 가장 큰 격차 2가지</h4><ul>
+        <li><b>히어로 임팩트 (하)</b> — '시네마틱' 브랜드인데 흐린 정지사진+그라디언트뿐. 모션·깊이·영상 전무</li>
+        <li><b>브랜드 컬러 미활용 (중)</b> — 공식 3색 두고 밝은 파랑 <span class="big">#2f74e6</span> 단색 지배</li>
+      </ul></div>
+      <div class="card"><h4>🛠️ 먼저 고칠 결함(코드로 확인)</h4><ul>
+        <li><b>🔴 모바일 햄버거 메뉴 먹통</b> — 숨겨진 요소로 스크롤 → 작동 안 함</li>
+        <li><b>미정의 토큰 버그</b> — <span class="big">--amber/--green</span> 정의 없이 참조</li>
+        <li><b>포커스 링·대비·홈 리뷰 부재</b></li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 현재 진단 -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">DIAGNOSIS · 현재 사이트 진단</div>
+    <h2>지금 무엇이 부족한가</h2>
+    <p class="sub">실제 코드(<span class="big">globals.css · page.tsx · Header.tsx</span>)와 라이브 사이트 기준. 재설계가 아니라 "이 위에 얹을" 개선점입니다.</p>
+    <table>
+      <thead><tr><th>영역</th><th>현재 상태</th><th>업그레이드 방향</th></tr></thead>
+      <tbody>
+        <tr><td><b>타이포</b></td><td>제목·본문 전부 Pretendard 800. 디스플레이 폰트 없음, 크기값 산발(13.5/14.5/10.5px…)</td><td>제목 전용 디스플레이 폰트 도입 + 타입 스케일 토큰화</td></tr>
+        <tr><td><b>컬러</b></td><td>밝은 파랑 <span class="big">#2f74e6</span> 단색 지배. 토큰명 오배치(<span class="big">--gold</span>=실제 보라). <span class="big">--amber/--green</span> 미정의 참조(버그)</td><td>공식 3색 정본화(#043CB2·#622698·#B20E19) + 토큰 정리</td></tr>
+        <tr><td><b>히어로</b></td><td>정지 이미지 <span class="big">opacity:.45</span> + 그라디언트 2겹. 모션 0</td><td>Ken Burns 줌·패럴랙스·비네트·진입 스태거</td></tr>
+        <tr><td><b>모션</b></td><td>reveal 페이드·카드 호버뿐. <span class="big">prefers-reduced-motion</span> 미처리</td><td>스무스 스크롤 + 스태거 + 마이크로 인터랙션</td></tr>
+        <tr><td><b>컴포넌트</b></td><td>버튼 radius 제각각, 카드 플랫, 폼 <span class="big">outline:none</span></td><td>radius 3단계 통일, 카드 depth/글로우, 포커스 링</td></tr>
+        <tr><td><b>접근성</b></td><td>모바일 메뉴 먹통, <span class="big">--faint</span> 대비 4.0:1(AA 미달), 선택칩이 <span class="big">div onClick</span></td><td>메뉴 실구현, 대비 상향, 시맨틱 button화</td></tr>
+        <tr><td><b>성능</b></td><td>폰트 CDN 렌더블로킹, 이미지 raw <span class="big">&lt;img&gt;</span>(CLS/LCP 손해)</td><td><span class="big">next/font</span> self-host, <span class="big">next/image</span> 전환</td></tr>
+        <tr><td><b>신뢰요소</b></td><td>홈에 리뷰·평점 0 (별도 /reviews만 존재)</td><td>홈에 별점 요약 + 후기 발췌 섹션 신설</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 벤치마크 -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">BENCHMARK · 유명 홈페이지 비교분석</div>
+    <h2>잘 만든 5곳에서 뭘 가져올까</h2>
+    <p class="sub">전부 지금 접속되는 라이브 사이트. 각 사이트의 "고급으로 느껴지는 기법" 중 <b style="color:var(--text)">우리가 바로 이식 가능한 것</b>만 추렸습니다.</p>
+
+    <div class="bench">
+      <div class="n">1</div><div class="b-body">
+        <div class="b-name">Secret Cinema <a href="https://www.secretcinema.com" target="_blank">secretcinema.com ↗</a><span class="cat">이머시브 체험 · 우리와 같은 구조</span></div>
+        <div class="tech">풀블리드 <b>영상 히어로</b> + 화이트 통일 로고 스트립(신뢰) + 가로 캐러셀 — 우리 구조의 "상위 호환".</div>
+        <div class="apply"><b>적용 →</b> 같은 히어로 이미지에 <b>Ken Burns 줌+패럴랙스</b>만 얹어 "영상 느낌"(영상 없이 CSS로). "SINCE 2015·강남 3직영·11년" 신뢰 스트립 강화.</div>
+      </div>
+    </div>
+    <div class="bench">
+      <div class="n">2</div><div class="b-body">
+        <div class="b-name">Punchdrunk <a href="https://punchdrunk.com" target="_blank">punchdrunk.com ↗</a><span class="cat">이머시브 공연 · 결이 같음</span></div>
+        <div class="tech">극도 미니멀 내비 + 초대형 이미지, <b>언론 인용문을 큰 타이포</b>로 배치해 신뢰를 디자인 요소화. 필름 그레이딩.</div>
+        <div class="apply"><b>적용 →</b> 히어로/예약 밴드는 <b>채도를 죽여 사진이 주인공</b>이 되게(파랑은 포인트만). 대표 후기를 <b>초대형 인용 블록</b>으로.</div>
+      </div>
+    </div>
+    <div class="bench">
+      <div class="n">3</div><div class="b-body">
+        <div class="b-name">Apple AirPods Pro <a href="https://www.apple.com/airpods-pro/" target="_blank">apple.com ↗</a><span class="cat">프리미엄 제품 · 스크롤텔링</span></div>
+        <div class="tech"><b>스티키 핀</b> + 스크롤 구동 시퀀스, 초대형 헤드라인 vs 극소 본문의 극적 대비, 광활한 여백.</div>
+        <div class="apply"><b>적용 →</b> 전 섹션 말고 <b>한 곳만(ABOUT/"인터랙티브 콘텐츠") 스티키 핀</b>: "무대 위에 세웁니다" 고정 + 배경 전환. 통계는 대형 숫자+카운트업.</div>
+      </div>
+    </div>
+    <div class="bench">
+      <div class="n">4</div><div class="b-body">
+        <div class="b-name">Linear <a href="https://linear.app" target="_blank">linear.app ↗</a><span class="cat">프리미엄 다크 SaaS · 이식성 최고</span></div>
+        <div class="tech"><b>오로라 그라디언트 글로우</b> + 그라디언트 보더 + <b>필름 그레인</b> 오버레이 + 정밀한 타이포 시스템. (우리도 다크라 그대로 이식 가능)</div>
+        <div class="apply"><b>적용 →</b> 배경에 <b>Fantasy Blue→Phantom Violet 오로라 글로우</b>, 카드 호버를 <b>그라디언트 보더+글로우</b>로 격상, 전역 <b>그레인 1장</b>으로 질감 상승.</div>
+      </div>
+    </div>
+    <div class="bench">
+      <div class="n">5</div><div class="b-body">
+        <div class="b-name">Cuberto <a href="https://cuberto.com" target="_blank">cuberto.com ↗</a><span class="cat">디자인 에이전시 · 모션 장인</span></div>
+        <div class="tech"><b>스무스 스크롤(관성)</b> + 초대형 타이포 + 마그네틱/커스텀 커서로 "버터 같은" 조작감.</div>
+        <div class="apply"><b>적용 →</b> <b>스무스 스크롤 도입</b>(콘텐츠 0 변경, 체감 최대). reveal <b>스태거</b> 지연. 커서는 톤 훼손 방지 위해 <b>버튼 마그네틱 호버만</b> 부분 채택.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 격차 분석 -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">GAP · 격차 분석</div>
+    <h2>현재 vs 벤치마크 (6축)</h2>
+    <table>
+      <thead><tr><th>디자인 축</th><th>현재</th><th>코멘트</th></tr></thead>
+      <tbody>
+        <tr><td><b>히어로 임팩트</b></td><td><span class="axis-hi">하 ★최대약점</span></td><td>정지사진+그라디언트, 모션·깊이·영상 전무. 벤치마크 5/5가 여기 투자</td></tr>
+        <tr><td><b>컬러·브랜드</b></td><td><span class="axis-mid">중 ★쉬운승리</span></td><td>공식 3색 미사용, 제네릭 파랑 단색. 변수값만 바꾸면 전 페이지 반영</td></tr>
+        <tr><td><b>모션·인터랙션</b></td><td><span class="axis-mid">중</span></td><td>기본은 있으나 스무스스크롤·스태거·스티키 부재 → 정형화</td></tr>
+        <tr><td><b>타이포 시스템</b></td><td><span class="axis-mid">하~중</span></td><td>단일 폰트·전부 800. 굵기/스타일 대비·디스플레이 페이스 없음</td></tr>
+        <tr><td><b>디테일 완성도</b></td><td><span class="axis-mid">중</span></td><td>기본 견고하나 그레인·글로우·focus-visible 미비 → 폴리시 한 끗 부족</td></tr>
+        <tr><td><b>여백·리듬</b></td><td><span class="axis-ok">중~상 ✓강점</span></td><td>96px·1180px 넉넉. 이미 좋아서 손댈 필요 적음</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:14px;font-size:14px"><b style="color:var(--text)">우선 공략 순서 = ① 히어로 임팩트(하) → ② 컬러·브랜드(쉬운 승리) → ③ 모션 정교함.</b> 여백·리듬은 강점이니 유지.</p>
+  </div>
+</section>
+
+<!-- 실행 계획 -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">ROADMAP · 실행 계획</div>
+    <h2>이 순서로 올립니다</h2>
+    <p class="sub">임팩트 × 노력 기준. <b style="color:var(--text)">Quick Win(반나절)만 쳐도 체감이 확 뜨고</b>, 단계 2까지 하면 "재설계 없이 한 급" 올라갑니다.</p>
+
+    <div class="phase q">
+      <div class="ph">QUICK WIN <span>반나절 · 저위험 · 먼저</span></div>
+      <ul>
+        <li><span class="rank">01</span> <b>🔴 모바일 햄버거 메뉴 실작동 구현</b> — 지금 먹통(가장 심각)</li>
+        <li><span class="rank">02</span> <b>브랜드 컬러 정본화</b> — 밝은 파랑 → 공식 3색(#043CB2·#622698·#B20E19). CSS 변수값만 바꿔 전 페이지 반영</li>
+        <li><span class="rank">03</span> <b>미정의 토큰 정의(버그) + Primary CTA 생기</b> — --amber/--green 정의, 버튼 그라디언트+글로우</li>
+        <li><span class="rank">04</span> <b>포커스 링 복원 + 소형 텍스트 대비 상향</b> — :focus-visible, --faint→--muted</li>
+      </ul>
+    </div>
+
+    <div class="phase two">
+      <div class="ph">단계 2 <span>1~2일 · 임팩트 최대</span></div>
+      <ul>
+        <li><span class="rank">05</span> <b>히어로 시네마틱화</b> — Ken Burns 줌 + 패럴랙스 + 진입 스태거 + 비네트/그레인 (CSS만, 영상 없이 시작)</li>
+        <li><span class="rank">06</span> <b>디스플레이 폰트 + 타입 스케일 토큰화</b> — 제목 전용 폰트(next/font self-host), 본문 Pretendard 유지</li>
+        <li><span class="rank">07</span> <b>다크 크래프트 폴리시</b> — 오로라 글로우 + 카드 그라디언트 보더/글로우 + 전역 그레인 1장</li>
+        <li><span class="rank">08</span> <b>홈 리뷰/평점 섹션 신설</b> — 별점 요약 + 후기 발췌(기존 /reviews 데이터 재사용)</li>
+      </ul>
+    </div>
+
+    <div class="phase three">
+      <div class="ph">단계 3 <span>여력 시 · 완성도</span></div>
+      <ul>
+        <li><span class="rank">09</span> <b>스무스 스크롤 + reveal 스태거</b> — 조작감 레벨업(콘텐츠 무변경)</li>
+        <li><span class="rank">10</span> <b>스티키 핀 연출 1곳</b> — "무대 위에 세웁니다" Apple식</li>
+        <li><span class="rank">11</span> <b>next/image 전환 + 폼 시맨틱화</b> — LCP/CLS, 선택칩 button화</li>
+        <li><span class="rank">12</span> <b>radius 3단계 통일 + 인라인 스타일 토큰 정리</b></li>
+      </ul>
+    </div>
+
+    <div class="note">
+      <p>⚠️ <b>범위 원칙:</b> 위 전부 <b>현재 구조·정체성을 그대로 두고</b> 값·연출·컴포넌트 디테일만 올리는 작업입니다. 페이지 구성·콘텐츠·URL은 안 바뀝니다. 라이브에 반영하려면 각 항목을 코드에 적용 후 <span class="big">git push</span> → 미리보기 확인 흐름으로 진행합니다.</p>
+    </div>
+  </div>
+</section>
+
+<div class="foot">
+  <div class="wrap">
+    FANTASTRICK · 디자인 업그레이드 계획서 · 2026-07-10<br>
+    벤치마크(라이브 확인):
+    <a href="https://www.secretcinema.com" target="_blank">Secret Cinema</a> ·
+    <a href="https://punchdrunk.com" target="_blank">Punchdrunk</a> ·
+    <a href="https://www.apple.com/airpods-pro/" target="_blank">Apple AirPods Pro</a> ·
+    <a href="https://linear.app" target="_blank">Linear</a> ·
+    <a href="https://cuberto.com" target="_blank">Cuberto</a>
+  </div>
+</div>
+
+</body>
+</html>

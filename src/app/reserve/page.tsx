@@ -122,14 +122,16 @@ function ReserveInner() {
           <label>테마 선택</label>
           <div className="optrow">
             {availableThemes.map((t) => (
-              <div
+              <button
                 key={t.id}
+                type="button"
                 className={"opt" + (themeId === t.id ? " on" : "")}
+                aria-pressed={themeId === t.id}
                 onClick={() => setThemeId(t.id)}
               >
                 {t.name}
-                <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 3 }}>{t.storeTag}</div>
-              </div>
+                <span style={{ display: "block", fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{t.storeTag}</span>
+              </button>
             ))}
           </div>
         </div>
@@ -160,15 +162,18 @@ function ReserveInner() {
               {cfg.timeSlots.map((tm) => {
                 const isBlocked = blocked.includes(tm);
                 return (
-                  <div
+                  <button
                     key={tm}
+                    type="button"
                     className={"opt" + (time === tm ? " on" : "") + (isBlocked ? " soon" : "")}
+                    aria-pressed={time === tm}
+                    disabled={isBlocked}
                     style={{ minWidth: 64, flex: "0 0 auto" }}
                     onClick={() => { if (!isBlocked) setTime(tm); }}
                     title={isBlocked ? "마감" : ""}
                   >
                     {tm}{isBlocked ? " 🚫" : ""}
-                  </div>
+                  </button>
                 );
               })}
             </div>

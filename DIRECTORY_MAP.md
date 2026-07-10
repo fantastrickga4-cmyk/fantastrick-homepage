@@ -18,9 +18,9 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │  └─ images\           ← 웹에서 쓰는 이미지(로고·포스터·지도 등, assets에서 복사)
 ├─ src\
 │  ├─ app\
-│  │  ├─ layout.tsx     ← 공통 틀(헤더·푸터·폰트)
-│  │  ├─ globals.css    ← 전체 디자인(시네마틱 CSS, 프로토타입에서 이식)
-│  │  ├─ page.tsx       ← 메인 홈페이지 (히어로·테마 캐러셀·매장·B2B 티저)
+│  │  ├─ layout.tsx     ← 공통 틀(헤더·푸터·폰트). 제목용 디스플레이 폰트=next/font(Gothic A1) + 전역 필름 그레인(.grain)
+│  │  ├─ globals.css    ← 전체 디자인(시네마틱 CSS). 브랜드 3색 토큰·타입스케일·radius 3단계·시네마틱 모션·포커스 링
+│  │  ├─ page.tsx       ← 메인 홈페이지 (히어로·테마 캐러셀·매장·리뷰 발췌·B2B 티저). next/image·히어로 패럴랙스
 │  │  ├─ reserve\       ← 예약 화면
 │  │  ├─ reservation\   ← 예약 조회·취소 (전화번호로)
 │  │  ├─ reviews\       ← 후기 목록·작성

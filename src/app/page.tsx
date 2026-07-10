@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 
 const FILTERS = [
@@ -10,6 +11,15 @@ const FILTERS = [
   { f: "s3", label: "3호점 · TGC" },
   { f: "murder", label: "머더룸" },
 ];
+
+// 홈 노출용 대표 후기(발췌 샘플) — 전체/작성은 /reviews 에서
+const HOME_REVIEWS = [
+  { theme: "태초의 신부 · 1호점", name: "이○윤", rating: 5, body: "장치 밀도가 진짜 다르네요. 문 하나 열 때마다 감탄했고 엔딩 후 히든페이지에서 소름. 강남 방탈출 중 원탑." },
+  { theme: "락다운시티 · TGC", name: "정○호", rating: 5, body: "공간 스케일이 압도적이에요. 배우 연기랑 연출이 영화 세트장 안에 들어온 느낌. 일행 다 만족했습니다." },
+  { theme: "시간의 영속성 · 머더룸", name: "K○Y", rating: 5, body: "머더룸 처음이었는데 몰입 완전 제대로. 내가 사건 한가운데 서 있는 기분, 끝나고도 여운이 오래 남아요." },
+  { theme: "사자의 서 · 2호점", name: "박○아", rating: 4, body: "스토리 결이 좋고 미술이 정말 예뻐요. 난이도는 적당해서 입문자 일행과 오기에도 딱 좋았습니다." },
+];
+const REVIEW_AVG = (HOME_REVIEWS.reduce((s, r) => s + r.rating, 0) / HOME_REVIEWS.length).toFixed(1);
 
 function Locks({ n }: { n: number }) {
   return (
@@ -74,6 +84,7 @@ export default function Home() {
   const trackRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
+  const heroBgRef = useRef<HTMLDivElement>(null);
   const allThemes: Theme[] = [...THEMES, ...SOON_THEMES];
 
   // 스크롤 등장 애니메이션
@@ -90,6 +101,24 @@ export default function Home() {
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
+  }, []);
+
+  // 히어로 가벼운 패럴랙스 (모션 최소화 선호 시 비활성)
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    const bg = heroBgRef.current;
+    if (!bg) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = Math.min(window.scrollY, 900);
+        bg.style.transform = `translate3d(0, ${y * 0.18}px, 0)`;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
   }, []);
 
   // 캐러셀 하단 바 갱신 + 마우스 드래그
@@ -156,9 +185,15 @@ export default function Home() {
     <>
       {/* HERO */}
       <section className="hero" id="home">
-        <div className="bg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/permanence-1.jpg" alt="" />
+        <div className="bg" ref={heroBgRef}>
+          <Image
+            src="/images/permanence-1.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: "cover" }}
+          />
         </div>
         <div className="wrap">
           <div className="eyebrow">강남 · 11년차 이머시브 방탈출 &amp; 머더룸</div>
@@ -211,8 +246,13 @@ export default function Home() {
             </div>
           </div>
           <div className="about-visual reveal">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/permanence-poster.jpg" alt="시간의 영속성 포스터" />
+            <Image
+              src="/images/permanence-poster.jpg"
+              alt="시간의 영속성 포스터"
+              width={1074}
+              height={1510}
+              sizes="(max-width:860px) 90vw, 520px"
+            />
             <div className="stamp"><b>SINCE 2015</b><span>강남에서 11년, 이머시브 한길</span></div>
           </div>
         </div>
@@ -290,9 +330,46 @@ export default function Home() {
               rel="noopener"
               title="구글 지도에서 크게 보기"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="store-map-img" src="/images/stores-map.png" alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점" />
+              <Image
+                className="store-map-img"
+                src="/images/stores-map.png"
+                alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점"
+                fill
+                sizes="(max-width:760px) 100vw, 620px"
+              />
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* REVIEWS — 별점 요약 + 대표 후기 발췌 */}
+      <section className="block alt" id="reviews">
+        <div className="wrap">
+          <div className="shead reveal">
+            <div className="eyebrow">REVIEWS · 플레이 후기</div>
+            <h2 className="title">직접 겪은 사람들의 이야기</h2>
+            <p className="lead">실제 플레이하신 분들이 남긴 생생한 후기입니다. 전화번호로 예약한 분만 작성할 수 있어요.</p>
+          </div>
+          <div className="rev-summary reveal">
+            <div>
+              <span className="score">{REVIEW_AVG}</span> <span className="of">/ 5.0</span>
+              <div className="s-stars" aria-hidden="true">★★★★★</div>
+              <div className="s-meta">플레이어 후기 평점 · 대표 후기 {HOME_REVIEWS.length}건 발췌</div>
+            </div>
+            <div className="sp" />
+            <Link href="/reviews" className="btn ghost sm">전체 후기 보기 →</Link>
+          </div>
+          <div className="rev-grid">
+            {HOME_REVIEWS.map((r, i) => (
+              <div key={r.name + i} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
+                <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>
+                  {"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span>
+                </div>
+                <div className="rq-theme">{r.theme}</div>
+                <div className="rq-body">“{r.body}”</div>
+                <div className="rq-who">— {r.name}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -312,9 +389,9 @@ export default function Home() {
             <Link href="/business" className="btn gold">비즈니스 페이지 보기 →</Link>
           </div>
           <div className="cap3">
-            <div className="cap reveal"><div className="ci">✎</div><div className="en">Contents</div><h4>콘텐츠 제작</h4><p>테마·시나리오·연출 기획부터 운영 설계까지. 방탈출·머더미스터리·브랜드 체험 콘텐츠 턴키 제작.</p></div>
-            <div className="cap reveal"><div className="ci">▦</div><div className="en">Space</div><h4>공간 디자인</h4><p>세트·인테리어·동선 설계. 이야기에 맞춘 몰입형 공간을 직접 시공·연출합니다.</p></div>
-            <div className="cap reveal"><div className="ci">⚙</div><div className="en">Tech / Device</div><h4>기술 · 장치</h4><p>잠금/해제 장치, 조명·음향·기믹 제어, 센서 트리거 등 이머시브 장치를 제작·납품·판매합니다.</p></div>
+            <div className="cap reveal" style={{ "--i": 0 } as CSSProperties}><div className="ci">✎</div><div className="en">Contents</div><h4>콘텐츠 제작</h4><p>테마·시나리오·연출 기획부터 운영 설계까지. 방탈출·머더미스터리·브랜드 체험 콘텐츠 턴키 제작.</p></div>
+            <div className="cap reveal" style={{ "--i": 1 } as CSSProperties}><div className="ci">▦</div><div className="en">Space</div><h4>공간 디자인</h4><p>세트·인테리어·동선 설계. 이야기에 맞춘 몰입형 공간을 직접 시공·연출합니다.</p></div>
+            <div className="cap reveal" style={{ "--i": 2 } as CSSProperties}><div className="ci">⚙</div><div className="en">Tech / Device</div><h4>기술 · 장치</h4><p>잠금/해제 장치, 조명·음향·기믹 제어, 센서 트리거 등 이머시브 장치를 제작·납품·판매합니다.</p></div>
           </div>
           <div className="biz-cta reveal">
             <div className="bt">
@@ -330,8 +407,13 @@ export default function Home() {
       {/* RESERVE BAND */}
       <section className="reserve" id="reserve">
         <div className="bg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/permanence-2.jpg" alt="" />
+          <Image
+            src="/images/permanence-2.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            style={{ objectFit: "cover" }}
+          />
         </div>
         <div className="wrap">
           <div className="eyebrow">RESERVATION</div>
