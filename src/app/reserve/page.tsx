@@ -48,21 +48,38 @@ function Calendar({ value, onChange }: { value: string; onChange: (d: string) =>
           if (d === null) return <div key={`e${i}`} className="rcal-cell empty" aria-hidden="true" />;
           const ds = `${view.y}-${pad2(view.m + 1)}-${pad2(d)}`;
           const past = ds < todayS;
+          // 예약 오픈 규칙: 이용일 1주일 전 저녁 9시(21:00)에 오픈
+          const openAt = new Date(view.y, view.m, d - 7, 21, 0, 0, 0);
+          const notOpen = !past && now < openAt;
+          const openHint = `${openAt.getMonth() + 1}월 ${openAt.getDate()}일 저녁 9시 오픈`;
           const dow = new Date(view.y, view.m, d).getDay();
           return (
             <button
               key={ds}
               type="button"
-              className={"rcal-cell" + (value === ds ? " on" : "") + (ds === todayS ? " today" : "") + (dow === 0 ? " sun" : dow === 6 ? " sat" : "")}
-              disabled={past}
+              className={
+                "rcal-cell" +
+                (value === ds ? " on" : "") +
+                (ds === todayS ? " today" : "") +
+                (past ? " past" : "") +
+                (notOpen ? " locked" : "") +
+                (dow === 0 ? " sun" : dow === 6 ? " sat" : "")
+              }
+              disabled={past || notOpen}
               aria-pressed={value === ds}
-              aria-label={`${view.m + 1}월 ${d}일`}
-              onClick={() => onChange(ds)}
+              aria-label={notOpen ? `${view.m + 1}월 ${d}일 · ${openHint}` : `${view.m + 1}월 ${d}일`}
+              title={notOpen ? openHint : undefined}
+              onClick={() => { if (!past && !notOpen) onChange(ds); }}
             >
-              {d}
+              <span className="rcal-d">{d}</span>
+              {notOpen && <span className="rcal-lk" aria-hidden="true">🔒</span>}
             </button>
           );
         })}
+      </div>
+      <div className="rcal-legend">
+        <span><span className="lk">🔒</span> 아직 예약 오픈 전</span>
+        <span>예약은 이용일 <b>일주일 전 저녁 9시</b>에 열립니다</span>
       </div>
     </div>
   );
