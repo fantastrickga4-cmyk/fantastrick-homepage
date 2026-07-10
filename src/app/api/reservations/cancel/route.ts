@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
-import { normalizePhone, isValidPhone } from "@/lib/util";
+import { normalizePhone, isValidPhone, sanitizeText } from "@/lib/util";
 import { sendReservationSms } from "@/lib/sms";
+import { rateLimit, getClientIp } from "@/lib/ratelimit";
 
 // 환불율 계산 (한국시간 기준)
 // - 당일 예약(방문일이 오늘): 전액 환불 불가 → 0%
@@ -20,6 +21,11 @@ function calcRefundRate(date: string, time: string): number {
 
 // 예약 취소 (예약 id + 전화번호 일치해야 취소 가능) + 환불 계좌 저장
 export async function POST(req: NextRequest) {
+  // 레이트 리밋: IP당 10회/분
+  if (!rateLimit(`res-cancel:${getClientIp(req)}`, 10, 60_000)) {
+    return NextResponse.json({ error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
+
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
@@ -32,16 +38,23 @@ export async function POST(req: NextRequest) {
 
   const id = String(body.id || "");
   const phone = normalizePhone(String(body.phone || ""));
-  const name = String(body.name || "").trim();
-  const refundBank = String(body.refundBank || "").trim();
-  const refundAccount = String(body.refundAccount || "").trim();
-  const refundHolder = String(body.refundHolder || "").trim();
+  const name = sanitizeText(String(body.name || ""));
+  const refundBank = sanitizeText(String(body.refundBank || ""));
+  const refundAccount = sanitizeText(String(body.refundAccount || ""));
+  const refundHolder = sanitizeText(String(body.refundHolder || ""));
 
   if (!id || !isValidPhone(phone) || !name) {
     return NextResponse.json({ error: "예약 정보를 확인해 주세요." }, { status: 400 });
   }
   if (!refundBank || !refundAccount || !refundHolder) {
     return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
+  }
+  // 입력 하드닝: 길이 상한 + 계좌번호는 숫자·하이픈만
+  if (name.length > 40 || refundBank.length > 60 || refundAccount.length > 60 || refundHolder.length > 60) {
+    return NextResponse.json({ error: "입력값이 너무 깁니다." }, { status: 400 });
+  }
+  if (!/^[0-9-]+$/.test(refundAccount)) {
+    return NextResponse.json({ error: "계좌번호는 숫자와 하이픈(-)만 입력해 주세요." }, { status: 400 });
   }
 
   // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간 가져오기

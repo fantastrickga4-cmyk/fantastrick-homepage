@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { THEMES } from "@/lib/data";
-import { formatDate, maskPhone } from "@/lib/util";
+import { formatDate } from "@/lib/util";
 
 type Review = {
   id: string;
@@ -162,7 +162,7 @@ export default function ReviewsPage() {
             <div key={r.id} className="rev">
               <div className="rev-theme">{r.theme_name}</div>
               <div className="rev-h">
-                <span className="who">{r.name} <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>{maskPhone(r.phone)}</span></span>
+                <span className="who">{r.name} <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>{r.phone}</span></span>
                 <span className="rev-stars">{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
               </div>
               <div className="rev-body">{r.body}</div>
