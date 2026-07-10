@@ -122,7 +122,7 @@ nav.main a:hover{color:var(--text)}
 
 /* ---------- HERO ---------- */
 .hero{min-height:100vh;display:flex;align-items:center;overflow:hidden}
-.hero .bg{position:absolute;inset:0;z-index:0;will-change:transform}
+.hero .bg{position:absolute;inset:-40px;z-index:0;will-change:transform}
 .hero .bg img{width:100%;height:100%;object-fit:cover;opacity:.9;transform-origin:70% 40%}
 /* Ken Burns 초저속 줌 + 진입 스태거는 모션 허용 시에만 */
 @media (prefers-reduced-motion:no-preference){
