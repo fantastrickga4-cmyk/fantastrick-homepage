@@ -187,6 +187,17 @@ nav.main a:hover{color:var(--text)}
   padding:0 16px;min-height:44px;display:inline-flex;align-items:center;cursor:pointer;transition:.15s}
 .chip.on,.chip:hover{color:var(--cyan);border-color:var(--cyan)}
 .theme-carousel{position:relative}
+/* 캐러셀 좌우 화살표 (드래그 대신 클릭으로 넘기기) */
+.car-arrow{position:absolute;top:calc(50% - 12px);transform:translateY(-50%);z-index:6;
+  width:46px;height:46px;border-radius:var(--r-full);border:1px solid var(--line2);
+  background:rgba(255,255,255,.94);backdrop-filter:blur(4px);color:var(--text);
+  font-size:26px;line-height:1;cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 6px 20px rgba(20,22,42,.16);transition:.16s}
+.car-arrow.prev{left:-10px} .car-arrow.next{right:-10px}
+.car-arrow:hover:not(:disabled){background:#fff;border-color:var(--brand-bright);color:var(--brand);transform:translateY(-50%) scale(1.06)}
+.car-arrow:active:not(:disabled){transform:translateY(-50%) scale(.96)}
+.car-arrow:disabled{opacity:0;pointer-events:none}
+@media(max-width:640px){.car-arrow{width:40px;height:40px;font-size:22px}.car-arrow.prev{left:2px}.car-arrow.next{right:2px}}
 .theme-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 14px;
   scrollbar-width:none;-ms-overflow-style:none;cursor:grab;user-select:none;scroll-behavior:smooth}
 .theme-track::-webkit-scrollbar{display:none}

@@ -81,11 +81,22 @@ function ThemeCard({ t }: { t: Theme }) {
 
 export default function Home() {
   const [filter, setFilter] = useState("all");
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const allThemes: Theme[] = [...THEMES, ...SOON_THEMES];
+
+  // 화살표 클릭 시 카드 한 장씩 이동
+  const scrollCards = (dir: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const card = track.querySelector<HTMLElement>(".tcard");
+    const step = card ? card.getBoundingClientRect().width + 16 : track.clientWidth * 0.8;
+    track.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
 
   // 스크롤 등장 애니메이션
   useEffect(() => {
@@ -162,8 +173,11 @@ export default function Home() {
     if (!track) return;
 
     const updBar = () => {
-      if (!bar || !thumb) return;
       const max = track.scrollWidth - track.clientWidth;
+      // 화살표 활성/비활성 (시작·끝)
+      setAtStart(track.scrollLeft <= 2);
+      setAtEnd(max <= 2 || track.scrollLeft >= max - 2);
+      if (!bar || !thumb) return;
       if (max <= 2) {
         bar.classList.add("hidden");
         return;
@@ -322,6 +336,8 @@ export default function Home() {
             ))}
           </div>
           <div className="theme-carousel reveal">
+            <button type="button" className="car-arrow prev" aria-label="이전 테마" disabled={atStart} onClick={() => scrollCards(-1)}>‹</button>
+            <button type="button" className="car-arrow next" aria-label="다음 테마" disabled={atEnd} onClick={() => scrollCards(1)}>›</button>
             <div className="theme-track" ref={trackRef}>
               {allThemes.filter(visible).map((t) => (
                 <ThemeCard key={t.id} t={t} />
