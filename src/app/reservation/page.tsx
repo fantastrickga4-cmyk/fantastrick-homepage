@@ -23,8 +23,14 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "취소됨",
 };
 
-const POLICY_TEXT =
-  "테마시작 시간기준 24시간 이후면 100% 환불, 24시간 미만으로 남아있을경우 80%, 당일예약 변경 및 취소는 전액 환불이 불가능합니다. 그래도 진행하시겠습니까?";
+// 환불 계산 (KST 기준): 테마 시작까지 24시간 이상=100%, 24시간 미만=80%
+function refundInfo(date: string, time: string, deposit: number) {
+  const start = new Date(`${date}T${time}:00+09:00`).getTime();
+  const hours = (start - Date.now()) / 3_600_000;
+  const rate = hours >= 24 ? 100 : 80;
+  const amount = Math.floor((deposit * rate) / 100);
+  return { hours, rate, amount };
+}
 
 export default function ReservationLookup() {
   const [phone, setPhone] = useState("");
@@ -41,6 +47,7 @@ export default function ReservationLookup() {
   const [holder, setHolder] = useState("");
   const [modalErr, setModalErr] = useState("");
   const [showPolicy, setShowPolicy] = useState(false);
+  const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
 
@@ -67,10 +74,10 @@ export default function ReservationLookup() {
   function openCancel(r: Reservation) {
     setTarget(r);
     setBank(""); setAccount(""); setHolder("");
-    setModalErr(""); setShowPolicy(false);
+    setModalErr(""); setShowPolicy(false); setAgree(false);
   }
   function closeModal() {
-    setTarget(null); setShowPolicy(false); setSubmitting(false);
+    setTarget(null); setShowPolicy(false); setSubmitting(false); setAgree(false);
   }
 
   // 완료 버튼 → 환불 정보 검증 후 정책 확인창 표시
@@ -80,6 +87,7 @@ export default function ReservationLookup() {
       setModalErr("은행 · 계좌번호 · 예금주를 모두 입력해 주세요.");
       return;
     }
+    setAgree(false);
     setShowPolicy(true);
   }
 
@@ -252,21 +260,51 @@ export default function ReservationLookup() {
         </div>
       )}
 
-      {/* 정책 확인창 — 예 / 아니오 */}
-      {target && showPolicy && (
-        <div className="modal-overlay" style={{ zIndex: 310 }}>
-          <div className="modal" style={{ maxWidth: 420 }}>
-            <h3>환불 규정 안내</h3>
-            <p className="modal-policy">{POLICY_TEXT}</p>
-            <div className="modal-btns">
-              <button className="btn ghost" onClick={() => setShowPolicy(false)} disabled={submitting}>아니오</button>
-              <button className="btn danger" onClick={confirmCancel} disabled={submitting}>
-                {submitting ? "처리 중…" : "예"}
-              </button>
+      {/* 환불 규정 확인 팝업 — 환불액 자동 계산 + (80%일 때) 동의 체크 필수 */}
+      {target && showPolicy && (() => {
+        const ri = refundInfo(target.date, target.time, target.deposit);
+        const need = ri.rate < 100; // 80% 환불이면 동의 체크 필요
+        return (
+          <div className="modal-overlay" style={{ zIndex: 310 }}>
+            <div className="modal" style={{ maxWidth: 440 }}>
+              <h3>환불 규정 안내</h3>
+              {need ? (
+                <p className="modal-policy">
+                  테마 시작까지 <b>24시간 미만</b>이 남아, 환불 규정에 따라{" "}
+                  <b style={{ color: "var(--danger)" }}>총 예약금의 80%</b>만 환불됩니다.
+                </p>
+              ) : (
+                <p className="modal-policy">
+                  테마 시작 <b>24시간 이상</b> 전이라{" "}
+                  <b style={{ color: "var(--ok)" }}>전액(100%) 환불</b>됩니다.
+                </p>
+              )}
+
+              <div className="refund-box">
+                <div className="r"><span>총 예약금</span><b>{target.deposit.toLocaleString()}원</b></div>
+                <div className="r"><span>환불율</span><b>{ri.rate}%</b></div>
+                <div className="r total"><span>환불 예정액</span><b>{ri.amount.toLocaleString()}원</b></div>
+              </div>
+
+              {need && (
+                <label className="agree-row">
+                  <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+                  <span>위 <b>80% 환불 규정</b>에 동의합니다.</span>
+                </label>
+              )}
+
+              {modalErr && <div className="msg-err">⚠️ {modalErr}</div>}
+
+              <div className="modal-btns" style={{ marginTop: 16 }}>
+                <button className="btn ghost" onClick={() => { setShowPolicy(false); setAgree(false); }} disabled={submitting}>돌아가기</button>
+                <button className="btn danger" onClick={confirmCancel} disabled={submitting || (need && !agree)}>
+                  {submitting ? "처리 중…" : "확인 · 취소 진행"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

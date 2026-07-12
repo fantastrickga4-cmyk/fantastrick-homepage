@@ -19,7 +19,7 @@ type Stats = {
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
 const TABS = [
   { k: "res", label: "예약 관리" }, { k: "cal", label: "캘린더" }, { k: "slot", label: "시간대" },
-  { k: "set", label: "설정" }, { k: "sms", label: "문자" },
+  { k: "rev", label: "리뷰" }, { k: "set", label: "설정" }, { k: "sms", label: "문자" },
 ];
 
 export default function AdminPage() {
@@ -75,6 +75,7 @@ export default function AdminPage() {
       {tab === "res" && <ReservationsTab />}
       {tab === "cal" && <CalendarTab />}
       {tab === "slot" && <SlotsTab />}
+      {tab === "rev" && <ReviewsAdminTab />}
       {tab === "set" && <SettingsTab />}
       {tab === "sms" && <SmsTab />}
     </div>
@@ -375,15 +376,122 @@ function SlotsTab() {
   );
 }
 
+/* ============ 리뷰 탭 ============ */
+type AdminReview = {
+  id: string; theme_id: string; theme_name: string; name: string; phone: string;
+  rating: number; body: string; source: string | null; status: string; created_at: string;
+};
+const REV_ST_LABEL: Record<string, string> = { pending: "대기", approved: "게시", rejected: "거부" };
+
+function ReviewsAdminTab() {
+  const [status, setStatus] = useState("pending");
+  const [list, setList] = useState<AdminReview[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoaded(false);
+    const res = await fetch(`/api/admin/reviews?status=${status}`);
+    if (res.ok) { const j = await res.json(); setList(j.reviews || []); }
+    setLoaded(true);
+  }, [status]);
+  useEffect(() => { load(); }, [load]);
+
+  async function act(action: string, extra: Record<string, unknown>) {
+    const res = await fetch("/api/admin/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...extra }) });
+    if (res.ok) load(); else { const j = await res.json(); alert(j.error || "처리 실패"); }
+  }
+
+  return (
+    <>
+      <ReviewAdd onDone={load} />
+      <div className="admin-tools">
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="pending">대기</option>
+          <option value="approved">게시</option>
+          <option value="all">전체</option>
+        </select>
+        <button className="btn sm" onClick={load}>새로고침</button>
+      </div>
+      <div style={{ marginBottom: 10, fontSize: 13, color: "var(--muted)" }}>총 {list.length}건</div>
+      {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p> :
+        list.length === 0 ? <div className="notice info">해당 상태의 후기가 없습니다.</div> :
+        list.map((r) => (
+          <div key={r.id} className="rrow open">
+            <div className="head" style={{ cursor: "default" }}>
+              <span className="tname">{r.theme_name}</span>
+              <span className="rev-stars" style={{ color: "var(--gold, #e9b949)" }}>{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
+              <span className="who">{r.name}{r.phone ? ` · ${formatPhone(r.phone)}` : ""}</span>
+              {r.source && <span className="src-tag">{r.source}</span>}
+              <span className={`badge-st st-${r.status === "approved" ? "confirmed" : r.status === "rejected" ? "cancelled" : "pending"}`}>{REV_ST_LABEL[r.status] || r.status}</span>
+            </div>
+            <div className="detail">
+              <div className="rev-body" style={{ whiteSpace: "pre-wrap", margin: "4px 0 10px", color: "var(--text)" }}>{r.body}</div>
+              <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 10 }}>{r.created_at?.replace("T", " ").slice(0, 16)}</div>
+              <div className="act-row">
+                {r.status === "pending" && <>
+                  <button className="btn sm" style={{ background: "var(--green)", color: "#062", borderColor: "var(--green)" }} onClick={() => act("moderate", { id: r.id, status: "approved" })}>승인(게시)</button>
+                  <button className="btn sm" onClick={() => act("moderate", { id: r.id, status: "rejected" })}>거부</button>
+                </>}
+                {r.status === "approved" && <button className="btn sm ghost" onClick={() => act("moderate", { id: r.id, status: "pending" })}>게시 취소</button>}
+                {r.status === "rejected" && <button className="btn sm ghost" onClick={() => act("moderate", { id: r.id, status: "approved" })}>다시 게시</button>}
+                <button className="btn sm danger" onClick={() => { if (confirm("이 후기를 삭제할까요?")) act("delete", { id: r.id }); }}>삭제</button>
+              </div>
+            </div>
+          </div>
+        ))}
+    </>
+  );
+}
+
+function ReviewAdd({ onDone }: { onDone: () => void }) {
+  const [themeId, setThemeId] = useState(THEMES[0].id);
+  const [name, setName] = useState(""); const [rating, setRating] = useState(5);
+  const [body, setBody] = useState(""); const [source, setSource] = useState("네이버");
+  const [err, setErr] = useState(""); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  async function submit() {
+    setErr(""); setMsg(""); setBusy(true);
+    const res = await fetch("/api/admin/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", themeId, name, rating, body, source }) });
+    setBusy(false);
+    if (res.ok) { setName(""); setBody(""); setRating(5); setMsg("등록되었습니다 ✅ (즉시 게시)"); onDone(); }
+    else { const j = await res.json(); setErr(j.error || "등록 실패"); }
+  }
+  return (
+    <div className="admin-card">
+      <b>➕ 외부 후기 직접 등록 (네이버·구글 등 · 즉시 게시)</b>
+      <div className="admin-tools" style={{ marginTop: 12, marginBottom: 8 }}>
+        <select value={themeId} onChange={(e) => setThemeId(e.target.value)}>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>)}</select>
+        <input type="text" placeholder="닉네임" value={name} onChange={(e) => setName(e.target.value)} />
+        <select value={rating} onChange={(e) => setRating(Number(e.target.value))}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{"★".repeat(n)} ({n})</option>)}</select>
+        <input type="text" placeholder="출처 (네이버/구글/직접)" value={source} onChange={(e) => setSource(e.target.value)} list="rev-src" />
+        <datalist id="rev-src"><option value="네이버" /><option value="구글" /><option value="직접" /></datalist>
+      </div>
+      <textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="후기 본문 (5자 이상)" style={{ width: "100%", background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 9, color: "var(--text)", padding: 10, fontFamily: "inherit", fontSize: 13.5 }} />
+      {err && <div className="msg-err" style={{ marginTop: 8 }}>⚠️ {err}</div>}
+      {msg && <div className="notice ok" style={{ marginTop: 8 }}>{msg}</div>}
+      <button className="btn primary sm" style={{ marginTop: 10 }} onClick={submit} disabled={busy}>{busy ? "등록 중…" : "등록(즉시 게시)"}</button>
+    </div>
+  );
+}
+
 /* ============ 설정 탭 ============ */
 function SettingsTab() {
   const [slots, setSlots] = useState<string[]>([]); const [disabled, setDisabled] = useState<string[]>([]);
   const [slotInput, setSlotInput] = useState(""); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
-  useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => { setSlots(c.timeSlots); setDisabled(c.disabledThemes || []); setLoaded(true); }); }, []);
+  const [naverUrl, setNaverUrl] = useState(""); const [googleUrl, setGoogleUrl] = useState("");
+  const [extRating, setExtRating] = useState(""); const [extCount, setExtCount] = useState("");
+  useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
+    setSlots(c.timeSlots); setDisabled(c.disabledThemes || []);
+    setNaverUrl(c.naverUrl || ""); setGoogleUrl(c.googleUrl || "");
+    setExtRating(c.extRating ? String(c.extRating) : ""); setExtCount(c.extCount ? String(c.extCount) : "");
+    setLoaded(true);
+  }); }, []);
   async function save() {
     setMsg("");
-    const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ timeSlots: slots, disabledThemes: disabled }) });
-    setMsg(res.ok ? "저장되었습니다 ✅" : "저장 실패");
+    const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      timeSlots: slots, disabledThemes: disabled,
+      naverUrl, googleUrl, extRating: Number(extRating) || 0, extCount: Number(extCount) || 0,
+    }) });
+    if (res.ok) setMsg("저장되었습니다 ✅"); else { const j = await res.json(); setMsg(j.error || "저장 실패"); }
   }
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
@@ -419,6 +527,20 @@ function SettingsTab() {
             {t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span>
           </label>
         ))}
+      </div>
+      <div className="field">
+        <label>외부 리뷰 링크 (홈·후기 페이지에 버튼으로 노출)</label>
+        <input type="url" value={naverUrl} onChange={(e) => setNaverUrl(e.target.value)} placeholder="네이버 플레이스 리뷰 URL (https://…)" style={{ marginBottom: 8 }} />
+        <input type="url" value={googleUrl} onChange={(e) => setGoogleUrl(e.target.value)} placeholder="구글 리뷰 URL (https://…)" />
+        <div className="hint">URL을 비우면 해당 버튼은 노출되지 않아요.</div>
+      </div>
+      <div className="field">
+        <label>외부 표시 평점·리뷰수 (선택 · 뱃지로 노출)</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" step="0.1" min="0" max="5" value={extRating} onChange={(e) => setExtRating(e.target.value)} placeholder="평점 (예 4.9)" style={{ flex: 1 }} />
+          <input type="number" min="0" value={extCount} onChange={(e) => setExtCount(e.target.value)} placeholder="리뷰수 (예 320)" style={{ flex: 1 }} />
+        </div>
+        <div className="hint">0이거나 비우면 뱃지를 숨겨요.</div>
       </div>
       {msg && <div className="notice ok">{msg}</div>}
       <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={save}>설정 저장</button>

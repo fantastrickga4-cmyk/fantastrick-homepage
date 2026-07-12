@@ -9,14 +9,10 @@ import { rateLimit, getClientIp } from "@/lib/ratelimit";
 // - 테마 시작까지 24시간 이상 남음: 100%
 // - 24시간 미만 남음: 80%
 function calcRefundRate(date: string, time: string): number {
+  // 테마 시작(KST)까지 24시간 이상 남으면 100%, 24시간 미만이면 80%
   const startKST = new Date(`${date}T${time}:00+09:00`);
-  const now = new Date();
-  // 오늘(KST) 날짜 문자열
-  const todayKST = new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-  if (date === todayKST) return 0; // 당일 예약/방문
-  const hours = (startKST.getTime() - now.getTime()) / 3600000;
-  if (hours >= 24) return 100;
-  return 80;
+  const hours = (startKST.getTime() - Date.now()) / 3600000;
+  return hours >= 24 ? 100 : 80;
 }
 
 // 예약 취소 (예약 id + 전화번호 일치해야 취소 가능) + 환불 계좌 저장

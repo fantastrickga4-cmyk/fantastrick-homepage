@@ -469,6 +469,15 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .modal .close-x{float:right;background:none;border:none;color:var(--faint);font-size:20px;cursor:pointer;line-height:1}
 .modal-policy{font-size:14.5px;color:var(--text);line-height:1.7;margin:6px 0 20px}
 .modal-policy b{color:var(--cyan)}
+/* 환불 규정 팝업 — 환불액 자동계산 박스 + 동의 체크 */
+.refund-box{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg2);padding:12px 14px;margin:14px 0 4px}
+.refund-box .r{display:flex;justify-content:space-between;padding:3px 0;font-size:14px;color:var(--muted)}
+.refund-box .r b{color:var(--text);font-weight:700}
+.refund-box .r.total{border-top:1px dashed var(--line2);margin-top:7px;padding-top:9px}
+.refund-box .r.total span{color:var(--text);font-weight:700}
+.refund-box .r.total b{color:var(--brand);font-weight:800;font-size:18px}
+.agree-row{display:flex;align-items:center;gap:9px;margin:14px 0 2px;font-size:14px;color:var(--text);cursor:pointer;user-select:none}
+.agree-row input{width:18px;height:18px;accent-color:var(--brand);cursor:pointer;flex:0 0 auto}
 .modal-btns{display:flex;gap:10px}
 .modal-btns .btn{flex:1;justify-content:center}
 .btn.danger{background:var(--blood);color:#fff}

@@ -14,7 +14,8 @@ export async function GET(req: NextRequest) {
   const theme = req.nextUrl.searchParams.get("theme");
   let q = db
     .from("reviews")
-    .select("id, theme_id, theme_name, name, phone, rating, body, created_at")
+    .select("id, theme_id, theme_name, name, phone, rating, body, source, created_at")
+    .eq("status", "approved") // 승인된 후기만 공개
     .order("created_at", { ascending: false })
     .limit(100);
   if (theme && theme !== "all") q = q.eq("theme_id", theme);
@@ -82,8 +83,10 @@ export async function POST(req: NextRequest) {
     phone,
     rating,
     body: text,
+    status: "pending", // 작성 즉시 대기 — 관리자 승인 후 공개
+    source: "자체",
   });
 
   if (error) return NextResponse.json({ error: "리뷰 저장 중 오류가 발생했습니다." }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, pending: true, message: "후기가 접수되었어요. 관리자 확인 후 게시됩니다." });
 }

@@ -11,6 +11,7 @@ type Review = {
   phone: string;
   rating: number;
   body: string;
+  source?: string | null;
   created_at: string;
 };
 
@@ -35,6 +36,7 @@ export default function ReviewsPage() {
   const [filter, setFilter] = useState("all");
   const [reviews, setReviews] = useState<Review[] | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [ext, setExt] = useState<{ naverUrl: string; googleUrl: string } | null>(null);
 
   // 작성 폼 상태
   const [themeId, setThemeId] = useState("");
@@ -58,7 +60,10 @@ export default function ReviewsPage() {
     }
   }
 
-  useEffect(() => { load("all"); }, []);
+  useEffect(() => {
+    load("all");
+    fetch("/api/config").then((r) => r.json()).then((c) => setExt({ naverUrl: c.naverUrl || "", googleUrl: c.googleUrl || "" })).catch(() => {});
+  }, []);
 
   async function submit() {
     setErr(""); setOk(false);
@@ -80,7 +85,7 @@ export default function ReviewsPage() {
         setOk(true);
         setName(""); setPhone(""); setRating(0); setBody(""); setThemeId("");
         load(filter);
-        setTimeout(() => setShowForm(false), 1200);
+        setTimeout(() => setShowForm(false), 2600);
       }
     } catch {
       setErr("네트워크 오류가 발생했습니다.");
@@ -98,12 +103,20 @@ export default function ReviewsPage() {
           {showForm ? "닫기" : "후기 쓰기"}
         </button>
       </div>
-      <p className="lead" style={{ margin: "6px 0 20px" }}>실제 플레이하신 분들의 생생한 후기예요.</p>
+      <p className="lead" style={{ margin: "6px 0 14px" }}>실제 플레이하신 분들의 생생한 후기예요.</p>
+
+      {/* 외부 리뷰 링크 */}
+      {(ext?.naverUrl || ext?.googleUrl) && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+          {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="btn ghost sm">네이버 플레이스 리뷰 →</a>}
+          {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="btn ghost sm">구글 리뷰 →</a>}
+        </div>
+      )}
 
       {/* 작성 폼 */}
       {showForm && (
         <div className="card" style={{ marginBottom: 22 }}>
-          {ok && <div className="notice ok">✅ 후기가 등록되었습니다. 감사합니다!</div>}
+          {ok && <div className="notice ok">✅ 후기가 접수됐어요. 관리자 확인 후 게시됩니다. 감사합니다!</div>}
           <div className="field">
             <label>테마</label>
             <select value={themeId} onChange={(e) => setThemeId(e.target.value)}>
@@ -132,7 +145,7 @@ export default function ReviewsPage() {
             <textarea rows={4} value={body} placeholder="플레이 경험을 들려주세요 (5자 이상)" onChange={(e) => setBody(e.target.value)} />
           </div>
           <div className="hint" style={{ marginBottom: 12 }}>
-            ※ 해당 전화번호로 그 테마를 예약한 기록이 있어야 후기를 남길 수 있어요. 전화번호는 가운데 자리를 가려 표시됩니다.
+            ※ 해당 전화번호로 그 테마를 예약한 기록이 있어야 후기를 남길 수 있어요. 작성한 후기는 <b>관리자 확인 후 게시</b>됩니다. 전화번호는 가운데 자리를 가려 표시됩니다.
           </div>
           {err && <div className="msg-err">⚠️ {err}</div>}
           <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
@@ -160,7 +173,7 @@ export default function ReviewsPage() {
         <div className="rev-list">
           {reviews.map((r) => (
             <div key={r.id} className="rev">
-              <div className="rev-theme">{r.theme_name}</div>
+              <div className="rev-theme">{r.theme_name}{r.source && r.source !== "자체" ? <span style={{ marginLeft: 8, fontSize: 11, color: "var(--faint)", fontWeight: 600 }}>· {r.source}</span> : null}</div>
               <div className="rev-h">
                 <span className="who">{r.name} <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>{r.phone}</span></span>
                 <span className="rev-stars">{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>

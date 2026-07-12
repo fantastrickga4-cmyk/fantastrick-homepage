@@ -12,14 +12,10 @@ const FILTERS = [
   { f: "murder", label: "머더룸" },
 ];
 
-// 홈 노출용 대표 후기(발췌 샘플) — 전체/작성은 /reviews 에서
-const HOME_REVIEWS = [
-  { theme: "태초의 신부 · 1호점", name: "이○윤", rating: 5, body: "장치 밀도가 진짜 다르네요. 문 하나 열 때마다 감탄했고 엔딩 후 히든페이지에서 소름. 강남 방탈출 중 원탑." },
-  { theme: "락다운시티 · TGC", name: "정○호", rating: 5, body: "공간 스케일이 압도적이에요. 배우 연기랑 연출이 영화 세트장 안에 들어온 느낌. 일행 다 만족했습니다." },
-  { theme: "시간의 영속성 · 머더룸", name: "K○Y", rating: 5, body: "머더룸 처음이었는데 몰입 완전 제대로. 내가 사건 한가운데 서 있는 기분, 끝나고도 여운이 오래 남아요." },
-  { theme: "사자의 서 · 2호점", name: "박○아", rating: 4, body: "스토리 결이 좋고 미술이 정말 예뻐요. 난이도는 적당해서 입문자 일행과 오기에도 딱 좋았습니다." },
-];
-const REVIEW_AVG = (HOME_REVIEWS.reduce((s, r) => s + r.rating, 0) / HOME_REVIEWS.length).toFixed(1);
+// 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
+type HomeReview = {
+  id: string; theme_name: string; name: string; rating: number; body: string; source?: string | null;
+};
 
 function Locks({ n }: { n: number }) {
   return (
@@ -88,6 +84,16 @@ export default function Home() {
   const thumbRef = useRef<HTMLDivElement>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
   const allThemes: Theme[] = [...THEMES, ...SOON_THEMES];
+
+  // 실제 승인 후기 + 외부 리뷰 링크 (마운트 시 로드)
+  const [reviews, setReviews] = useState<HomeReview[] | null>(null);
+  const [ext, setExt] = useState<{ naverUrl: string; googleUrl: string; extRating: number; extCount: number } | null>(null);
+  useEffect(() => {
+    fetch("/api/reviews").then((r) => r.json()).then((j) => setReviews(j.reviews || [])).catch(() => setReviews([]));
+    fetch("/api/config").then((r) => r.json()).then((c) => setExt({ naverUrl: c.naverUrl || "", googleUrl: c.googleUrl || "", extRating: c.extRating || 0, extCount: c.extCount || 0 })).catch(() => {});
+  }, []);
+  const revAvg = reviews && reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
+  const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 4);
 
   // 화살표 클릭 시 카드 한 장씩 이동
   const scrollCards = (dir: number) => {
@@ -396,25 +402,45 @@ export default function Home() {
           </div>
           <div className="rev-summary reveal">
             <div>
-              <span className="score">{REVIEW_AVG}</span> <span className="of">/ 5.0</span>
+              <span className="score">{revAvg ?? (ext?.extRating ? ext.extRating.toFixed(1) : "—")}</span> <span className="of">/ 5.0</span>
               <div className="s-stars" aria-hidden="true">★★★★★</div>
-              <div className="s-meta">플레이어 후기 평점 · 대표 후기 {HOME_REVIEWS.length}건 발췌</div>
+              <div className="s-meta">
+                {revAvg
+                  ? `플레이어 후기 평점 · 후기 ${reviews!.length}건`
+                  : ext?.extRating
+                    ? `외부 리뷰 평점${ext.extCount ? ` · ${ext.extCount}건` : ""}`
+                    : "첫 후기를 기다리고 있어요"}
+              </div>
             </div>
             <div className="sp" />
-            <Link href="/reviews" className="btn ghost sm">전체 후기 보기 →</Link>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="btn ghost sm">네이버 플레이스 리뷰 →</a>}
+              {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="btn ghost sm">구글 리뷰 →</a>}
+              <Link href="/reviews" className="btn ghost sm">전체 후기 보기 →</Link>
+            </div>
           </div>
-          <div className="rev-grid">
-            {HOME_REVIEWS.map((r, i) => (
-              <div key={r.name + i} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
-                <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>
-                  {"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span>
+          {topReviews.length > 0 ? (
+            <div className="rev-grid">
+              {topReviews.map((r, i) => (
+                <div key={r.id} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
+                  <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>
+                    {"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span>
+                  </div>
+                  <div className="rq-theme">{r.theme_name}{r.source && r.source !== "자체" ? ` · ${r.source}` : ""}</div>
+                  <div className="rq-body">“{r.body}”</div>
+                  <div className="rq-who">— {r.name}</div>
                 </div>
-                <div className="rq-theme">{r.theme}</div>
-                <div className="rq-body">“{r.body}”</div>
-                <div className="rq-who">— {r.name}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : reviews === null ? (
+            <div className="notice info reveal">후기를 불러오는 중…</div>
+          ) : (
+            <div className="rev-empty reveal" style={{ textAlign: "center", padding: "36px 20px", border: "1px dashed var(--line)", borderRadius: 14 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>아직 등록된 후기가 없어요</div>
+              <p style={{ color: "var(--muted)", margin: "0 0 16px" }}>첫 후기를 기다리고 있어요. 플레이 후 소중한 후기를 남겨주세요.</p>
+              <Link href="/reviews" className="btn primary sm">후기 남기기 →</Link>
+            </div>
+          )}
         </div>
       </section>
 
