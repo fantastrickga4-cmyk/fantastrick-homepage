@@ -1,9 +1,9 @@
-/* 판타스트릭 전역 스타일 — 라이트 테마 전환(2026-07-10): 웜 아이보리 팔레트·브랜드 컬러 유지·시네마틱 모션 */
+/* 판타스트릭 전역 스타일 — 라이트 테마(2026-07-13): 쿨 갤러리 팔레트(A안·차가운 흰빛)·브랜드 컬러 유지·시네마틱 모션 */
 :root{
-  /* ---- 표면/텍스트 (라이트: 웜 아이보리 제도지 톤) ---- */
-  --bg:#f4f1ea; --bg2:#eae6dc; --surface:#ffffff; --surface2:#f3efe6;
-  --text:#17182a; --muted:#565b74;
-  --faint:#7b8199;            /* 옅은 텍스트도 AA 근접 */
+  /* ---- 표면/텍스트 (라이트: 쿨 갤러리 — 미술관 같은 모던 화이트) ---- */
+  --bg:#f4f6f9; --bg2:#e9ecf1; --surface:#ffffff; --surface2:#f0f2f6;
+  --text:#131620; --muted:#535a69;
+  --faint:#8b93a3;            /* 옅은 텍스트도 AA 근접 */
   --line:rgba(20,22,42,.12); --line2:rgba(20,22,42,.20);
 
   /* ---- 공식 브랜드 3색 정본화(시맨틱 토큰) ---- */
@@ -100,7 +100,7 @@ nav.main a:hover{color:var(--text)}
 .drawer-scrim{position:absolute;inset:0;background:rgba(20,22,42,.4);backdrop-filter:blur(6px);
   opacity:0;animation:fadeIn .2s ease forwards}
 .drawer-panel{position:absolute;top:0;right:0;bottom:0;width:min(84vw,340px);
-  background:linear-gradient(180deg,#ffffff,#f3efe6);border-left:1px solid var(--line);
+  background:linear-gradient(180deg,#ffffff,#f0f2f6);border-left:1px solid var(--line);
   box-shadow:-20px 0 60px rgba(20,22,42,.18);padding:20px 20px 28px;display:flex;flex-direction:column;gap:6px;
   transform:translateX(100%);animation:slideIn .28s cubic-bezier(.2,.7,.2,1) forwards;overflow-y:auto}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -137,7 +137,7 @@ nav.main a:hover{color:var(--text)}
 @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.08)}}
 @keyframes heroIn{to{opacity:1;transform:none}}
 .hero .bg::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(244,241,234,.95) 8%,rgba(244,241,234,.64) 52%,rgba(244,241,234,.42)),
+  background:linear-gradient(90deg,rgba(244,246,249,.95) 8%,rgba(244,246,249,.64) 52%,rgba(244,246,249,.42)),
             radial-gradient(900px 520px at 74% 28%,rgba(47,111,224,.12),transparent 60%),
             radial-gradient(760px 520px at 22% 88%,rgba(122,59,184,.10),transparent 62%)}
 .hero .wrap{position:relative;z-index:2;padding-top:90px;padding-bottom:60px}
@@ -163,7 +163,7 @@ nav.main a:hover{color:var(--text)}
 .about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:54px;align-items:start}
 @media(max-width:860px){.about-grid{grid-template-columns:1fr;gap:34px}}
 .pillars{display:grid;gap:14px}
-.pillar{display:flex;gap:14px;padding:18px;border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,#ffffff,#f3efe6)}
+.pillar{display:flex;gap:14px;padding:18px;border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,#ffffff,#f0f2f6)}
 .pillar .pn{flex:0 0 42px;height:42px;border-radius:var(--r-sm);display:grid;place-items:center;font-size:20px;
   background:rgba(47,111,224,.1);color:var(--cyan);border:1px solid rgba(47,111,224,.25)}
 .pillar h4{margin:0 0 2px;font-size:16px}
@@ -215,7 +215,7 @@ nav.main a:hover{color:var(--text)}
   box-shadow:0 18px 50px rgba(4,60,178,.35),0 0 30px rgba(98,38,152,.18)}
 .tcard.soon{cursor:default}
 .tcard.soon:hover{transform:none;border-color:var(--line);box-shadow:none}
-.tcard.soon .thumb{background:linear-gradient(135deg,#eae6dc,#f3efe6)}
+.tcard.soon .thumb{background:linear-gradient(135deg,#e9ecf1,#f0f2f6)}
 .tcard.soon .thumb::after{background:linear-gradient(180deg,transparent 45%,rgba(234,230,220,.6))}
 .tcard.soon .thumb .phtxt{position:relative;z-index:2;font-size:15px;font-weight:800;letter-spacing:.16em;color:var(--cyan);opacity:.85}
 .tcard.soon .tt h3{color:var(--muted)}
@@ -245,7 +245,7 @@ nav.main a:hover{color:var(--text)}
 .diff .lock.on{color:var(--cyan)}
 
 /* ---------- STORES ---------- */
-.store{border:1px solid var(--line);border-radius:var(--r);padding:12px 15px;background:linear-gradient(180deg,#ffffff,#f3efe6)}
+.store{border:1px solid var(--line);border-radius:var(--r);padding:12px 15px;background:linear-gradient(180deg,#ffffff,#f0f2f6)}
 .store .store-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .store .tag{font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.04em;flex:0 0 auto}
 .store.tgc .tag{color:var(--gold)}
@@ -268,7 +268,7 @@ nav.main a:hover{color:var(--text)}
 /* ---------- 홈 리뷰/평점 섹션 ---------- */
 .rev-summary{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:26px;
   border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 26px;
-  background:linear-gradient(180deg,#ffffff,#f3efe6)}
+  background:linear-gradient(180deg,#ffffff,#f0f2f6)}
 .rev-summary .score{font-family:"Pretendard",sans-serif;font-size:52px;font-weight:800;line-height:1;color:var(--text);font-feature-settings:"tnum"}
 .rev-summary .of{color:var(--faint);font-size:16px;font-weight:600}
 .rev-summary .s-stars{color:#e0930c;font-size:20px;letter-spacing:2px}
@@ -287,7 +287,7 @@ nav.main a:hover{color:var(--text)}
 .biz{background:
   radial-gradient(760px 420px at 85% 0%,rgba(122,59,184,.08),transparent 60%),
   radial-gradient(720px 420px at 10% 100%,rgba(47,111,224,.07),transparent 62%),
-  linear-gradient(180deg,#f3efe6,#eae6dc);
+  linear-gradient(180deg,#f0f2f6,#e9ecf1);
   border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .biz-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:40px}
 .cap3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
@@ -309,7 +309,7 @@ nav.main a:hover{color:var(--text)}
 .reserve{padding:84px 0;text-align:center;position:relative;overflow:hidden}
 .reserve .bg{position:absolute;inset:0;z-index:0}
 .reserve .bg img{width:100%;height:100%;object-fit:cover;opacity:.35}
-.reserve .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(244,241,234,.82),rgba(244,241,234,.94))}
+.reserve .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(244,246,249,.82),rgba(244,246,249,.94))}
 .reserve .wrap{position:relative;z-index:2}
 .reserve h2{font-family:var(--font-display);font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-.005em;margin:0 0 10px}
 .reserve p{color:var(--muted);margin:0 0 26px}
@@ -407,7 +407,7 @@ footer ul li{padding:3px 0}
 .biz-hero .bg{position:absolute;inset:0;z-index:0}
 .biz-hero .bg img{width:100%;height:100%;object-fit:cover;opacity:.9}
 .biz-hero .bg::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(244,241,234,.95) 8%,rgba(244,241,234,.6) 52%,rgba(244,241,234,.42)),
+  background:linear-gradient(90deg,rgba(244,246,249,.95) 8%,rgba(244,246,249,.6) 52%,rgba(244,246,249,.42)),
             radial-gradient(900px 500px at 78% 35%,rgba(122,59,184,.1),transparent 60%),
             radial-gradient(700px 460px at 18% 90%,rgba(47,111,224,.08),transparent 62%)}
 .biz-hero .wrap{position:relative;z-index:2;padding-top:100px;padding-bottom:50px}
@@ -424,7 +424,7 @@ footer ul li{padding:3px 0}
 .svc{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media(max-width:860px){.svc{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.svc{grid-template-columns:1fr}}
-.svc .s{border:1px solid var(--line);border-radius:var(--r);padding:20px;background:linear-gradient(180deg,#ffffff,#f3efe6)}
+.svc .s{border:1px solid var(--line);border-radius:var(--r);padding:20px;background:linear-gradient(180deg,#ffffff,#f0f2f6)}
 .svc .s b{display:block;font-size:16px;margin-bottom:5px}
 .svc .s span{font-size:13px;color:var(--muted)}
 .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;counter-reset:st}
@@ -447,7 +447,7 @@ footer ul li{padding:3px 0}
 .ref .rb{padding:13px 15px}
 .ref .rb b{font-size:14.5px}
 .ref .rb span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
-.contact{background:radial-gradient(800px 400px at 80% 0,rgba(122,59,184,.08),transparent 60%),linear-gradient(180deg,#f3efe6,#eae6dc);border-top:1px solid var(--line)}
+.contact{background:radial-gradient(800px 400px at 80% 0,rgba(122,59,184,.08),transparent 60%),linear-gradient(180deg,#f0f2f6,#e9ecf1);border-top:1px solid var(--line)}
 .cgrid{display:grid;grid-template-columns:.9fr 1.1fr;gap:44px}
 @media(max-width:860px){.cgrid{grid-template-columns:1fr;gap:28px}}
 .cinfo .line{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line);font-size:14px}
