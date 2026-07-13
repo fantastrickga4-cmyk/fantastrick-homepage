@@ -207,8 +207,9 @@ function ReserveInner() {
               <div className="modal-policy">
                 <p>예약금은 <b>{deposit.toLocaleString()}원</b>입니다.</p>
                 <p>예약금 입금이 확인되어야 비로소 예약이 확정 처리됩니다.</p>
-                <p>입금하실 때 <b>보내는 분(예금주)을 예약자 이름과 동일하게</b> 해주셔야 정상 처리됩니다.</p>
+                <p>입금하실 때 <b>보내는 분(예금주)을 예약자 이름과 동일하게</b><br />해주셔야 정상 처리됩니다.</p>
                 <p><b>30분 내 예약금 미입금 시 예약은 자동 취소</b>됩니다.</p>
+                <p>예약금 환불 요청 시 처리까지 <b>최대 24시간</b>이 소요될 수 있습니다. 입금 전 참고 부탁드립니다.</p>
               </div>
               <label className="agree-row">
                 <input type="checkbox" checked={depositAck} onChange={(e) => setDepositAck(e.target.checked)} />
