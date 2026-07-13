@@ -236,45 +236,24 @@ export default function Home() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="hero" id="home">
-        <div className="bg" ref={heroBgRef}>
-          {/* 기본 배경 = 사진(폴백·LCP). 영상 파일이 있으면 그 위에 재생됨 */}
-          <Image
-            src="/images/permanence-1.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-          {/* 히어로 배경 영상: /public/videos/hero.mp4 넣으면 자동 재생. 없으면 onError로 숨겨 사진 노출 */}
-          <video
-            className="hero-video"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = "none"; }}
-          >
-            <source src="/videos/hero.webm" type="video/webm" />
-            <source src="/videos/hero.mp4" type="video/mp4" />
-          </video>
-        </div>
-        <div className="wrap">
-          <div className="eyebrow">강남 · 11년차 이머시브 방탈출 &amp; 머더룸</div>
-          <h1>
-            일상이 멈추고,
-            <br />
-            <span className="accent">이야기가 시작된다</span>
-          </h1>
-          <p className="sub">
-            계단을 내려오는 순간, 당신은 사건의 한가운데에 섭니다.
-            <br />
-            판타스트릭은 직접 만든 공간·장치·이야기로 한 편의 사건을 선사합니다.
-          </p>
+      {/* HERO — 타이포(FANTASY + TRICK = FANTASTRICK) */}
+      <section className="hero-t" id="home">
+        <div className="ht-mesh" aria-hidden="true" />
+        <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
+        <div className="ht-stack">
+          <div className="ht-eyebrow">PREMIUM ESCAPE ROOM</div>
+          <div className="ht-slogan">
+            <span>환상을</span>
+            <span>기술로써</span>
+            <span>현실에 구현한다.</span>
+          </div>
+          <div className="ht-wm">
+            <span className="ht-w ht-fantasy">FANTAS<span className="ht-y">Y</span></span>
+            <span className="ht-plus">+</span>
+            <span className="ht-w ht-trick">TRICK</span>
+            <span className="ht-shine" aria-hidden="true">FANTASTRICK</span>
+          </div>
+          <div className="ht-rule" aria-hidden="true" />
           <div className="cta">
             <Link href="/reserve" className="btn primary">테마 예약하기 →</Link>
             <Link href="/business" className="btn gold-ghost">외주·컨설팅 문의</Link>

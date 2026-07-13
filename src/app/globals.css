@@ -153,6 +153,65 @@ nav.main a:hover{color:var(--text)}
 .scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;color:var(--muted);font-size:11px;letter-spacing:.2em;text-align:center;animation:bob 2s infinite}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
 
+/* ---------- HERO (타이포 · FANTASY + TRICK = FANTASTRICK) ---------- */
+.hero-t{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;background:var(--bg)}
+.hero-t .ht-mesh{position:absolute;inset:-12%;z-index:0;filter:blur(70px) saturate(1.05);opacity:.3;pointer-events:none;
+  background:radial-gradient(38% 44% at 24% 32%,color-mix(in oklab,var(--brand-bright) 34%,transparent),transparent 70%),
+    radial-gradient(40% 40% at 76% 28%,color-mix(in oklab,var(--violet) 26%,transparent),transparent 70%),
+    radial-gradient(46% 48% at 60% 82%,color-mix(in oklab,var(--blood) 13%,transparent),transparent 70%),var(--bg);
+  animation:htMesh 30s ease-in-out infinite alternate}
+@keyframes htMesh{100%{transform:translate3d(-1.6%,1.2%,0) scale(1.05)}}
+.hero-t .ht-ghost{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:1;white-space:nowrap;pointer-events:none;user-select:none;
+  font-family:"Bodoni Moda",serif;font-weight:900;font-size:clamp(120px,30vw,460px);line-height:1;letter-spacing:-.03em;
+  color:transparent;-webkit-text-stroke:1px rgba(47,111,224,.04);mix-blend-mode:multiply;animation:htGhost 50s ease-in-out infinite alternate}
+@keyframes htGhost{100%{transform:translate3d(1%,-.8%,0)}}
+.hero-t .ht-stack{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;padding:80px 22px 40px}
+.hero-t .ht-eyebrow{color:var(--brand-bright);font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;opacity:0;animation:htUp .6s cubic-bezier(.16,1,.3,1) .1s both}
+.hero-t .ht-slogan{font-family:var(--font-display);font-weight:800;color:var(--text);font-size:clamp(18px,3vw,30px);letter-spacing:.01em;display:flex;flex-wrap:wrap;justify-content:center;gap:.4em}
+.hero-t .ht-slogan span{display:inline-block;opacity:0;animation:htSg .7s cubic-bezier(.16,1,.3,1) both}
+.hero-t .ht-slogan span:nth-child(1){animation-delay:.35s}
+.hero-t .ht-slogan span:nth-child(2){animation-delay:.7s}
+.hero-t .ht-slogan span:nth-child(3){animation-delay:1.05s}
+.hero-t .ht-wm{position:relative;font-family:"Bodoni Moda",serif;font-weight:900;font-variation-settings:"opsz" 96;text-transform:uppercase;letter-spacing:.06em;
+  line-height:1;white-space:nowrap;font-size:clamp(32px,8.2vw,116px);display:flex;align-items:baseline;justify-content:center;color:var(--text);animation:htGlow 5s ease-in-out 3.4s infinite}
+.hero-t .ht-w{display:inline-flex}
+.hero-t .ht-fantasy{color:var(--brand-bright);opacity:0;animation:htWinL 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
+.hero-t .ht-trick{color:var(--blood);opacity:0;animation:htWinR 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
+.hero-t .ht-y{display:inline-block;overflow:hidden;color:var(--brand-bright);animation:htDy .7s cubic-bezier(.16,1,.3,1) 2.4s both}
+.hero-t .ht-plus{display:inline-block;overflow:hidden;color:var(--muted);font-weight:700;font-family:"Pretendard",sans-serif;font-size:.5em;transform:translateY(-.12em);
+  opacity:0;max-width:0;margin:0;animation:htPl 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
+.hero-t .ht-shine{position:absolute;inset:0;display:flex;align-items:baseline;justify-content:center;pointer-events:none;opacity:0;
+  font-family:"Bodoni Moda",serif;font-weight:900;font-variation-settings:"opsz" 96;text-transform:uppercase;letter-spacing:.06em;
+  background:linear-gradient(105deg,transparent 43%,rgba(255,255,255,.95) 48.5%,#e6f0ff 50%,rgba(255,255,255,.95) 51.5%,transparent 57%);
+  background-size:280% 100%;background-position:88% 0;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  animation:htGlint 4.2s cubic-bezier(.4,0,.2,1) 3.0s both}
+.hero-t .ht-rule{height:1px;width:min(520px,52vw);transform:scaleX(0);transform-origin:center;
+  background:linear-gradient(90deg,transparent,var(--brand-bright) 16%,var(--violet) 50%,var(--blood) 84%,transparent);animation:htRule .9s cubic-bezier(.16,1,.3,1) 3.1s both}
+.hero-t .cta{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center;opacity:0;animation:htUp .7s cubic-bezier(.16,1,.3,1) 3.5s both}
+@keyframes htUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes htSg{from{opacity:0;filter:blur(4px);transform:translateY(8px)}to{opacity:1;filter:blur(0);transform:none}}
+@keyframes htWinL{0%{opacity:0}18%{opacity:1;color:var(--brand-bright)}70%{color:var(--brand-bright)}100%{opacity:1;color:var(--text)}}
+@keyframes htWinR{0%{opacity:0}18%{opacity:1;color:var(--blood)}70%{color:var(--blood)}100%{opacity:1;color:var(--text)}}
+@keyframes htDy{0%{max-width:1.1ch;opacity:1}100%{max-width:0;opacity:0}}
+@keyframes htPl{0%{opacity:0;max-width:0;margin:0}13%{opacity:1;max-width:1.4em;margin:0 .16em}53%{opacity:1;max-width:1.4em;margin:0 .16em}100%{opacity:0;max-width:0;margin:0}}
+@keyframes htGlint{0%{opacity:1;background-position:88% 0}90%{opacity:1;background-position:-32% 0}100%{opacity:0;background-position:-38% 0}}
+@keyframes htRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes htGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(47,111,224,0))}50%{filter:drop-shadow(0 0 18px rgba(47,111,224,.18))}}
+.hero-t .ht-stack{max-width:100%}
+/* 모바일: 워드마크가 넘치지 않게 축소(넘치면 stack이 넓어져 버튼도 안 감쌈) */
+@media (max-width:600px){
+  .hero-t .ht-wm{font-size:clamp(22px,7.4vw,34px);letter-spacing:.02em}
+  .hero-t .ht-slogan{font-size:clamp(15px,4.6vw,22px)}
+  .hero-t .ht-stack{gap:16px;padding:70px 18px 36px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero-t .ht-mesh,.hero-t .ht-ghost,.hero-t .ht-wm{animation:none}
+  .hero-t .ht-eyebrow,.hero-t .ht-slogan span,.hero-t .cta{animation:none;opacity:1;filter:none;transform:none}
+  .hero-t .ht-fantasy,.hero-t .ht-trick{animation:none;opacity:1;color:var(--text)}
+  .hero-t .ht-y,.hero-t .ht-plus,.hero-t .ht-shine{display:none}
+  .hero-t .ht-rule{animation:none;transform:scaleX(1)}
+}
+
 /* ---------- generic section spacing ---------- */
 .block{padding:96px 0}
 .block.alt{background:linear-gradient(180deg,var(--bg2),var(--bg))}
