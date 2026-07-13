@@ -309,6 +309,7 @@ function ReserveInner() {
         </div>
 
         <div className="notice info">
+          <b>전화번호를 제대로 입력</b>해야만 예약금 관련 안내를 받으실 수 있습니다.<br />
           예약 조회·취소할 때 <b>비밀번호</b>가 필요해요. 잊지 않게 기억해 주세요.
         </div>
 
