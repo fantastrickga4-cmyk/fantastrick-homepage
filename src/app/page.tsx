@@ -268,45 +268,7 @@ export default function Home() {
         <div className="scrollcue">SCROLL ↓</div>
       </section>
 
-      {/* ABOUT */}
-      <section className="block" id="about">
-        <div className="wrap about-grid">
-          <div className="reveal">
-            <div className="eyebrow">ABOUT · 우리는 누구인가</div>
-            <h2 className="title">
-              환상(Fantasy)을 기술(Trick)로
-              <br />현실에 옮깁니다
-            </h2>
-            <p className="lead">
-              판타스트릭은 환상과 공감을 기술로 현실화하는 이머시브 콘텐츠 브랜드입니다. 게임 속으로
-              들어가는 듯한 공간 연출과 높은 장치 밀도로, 플레이가 끝난 뒤에도 이야기가 한 겹 더 이어집니다.
-            </p>
-            <div className="pillars" style={{ marginTop: 24 }}>
-              <div className="pillar"><div className="pn">◎</div><div><h4>몰입 연출</h4><p>계단을 내려오면 일상이 멈추는, 공간 전체가 무대인 이머시브 설계.</p></div></div>
-              <div className="pillar"><div className="pn">⚙</div><div><h4>높은 장치 밀도</h4><p>직접 제작한 잠금·연출·센서 장치로 몰입을 만들어냅니다.</p></div></div>
-              <div className="pillar"><div className="pn">✦</div><div><h4>히든페이지</h4><p>엔딩 후에도 이어지는 숨은 이야기 — 다시 찾고 싶은 이유.</p></div></div>
-            </div>
-            <div className="worldtags">
-              <span>세계관 <b>Tricky Game Center</b></span>
-              <span>캐릭터 <b>Fanta</b></span>
-              <span>캐릭터 <b>Tricky</b></span>
-              <span>머더룸 <b>당신이 직접 해결하는 사건</b></span>
-            </div>
-          </div>
-          <div className="about-visual reveal">
-            <div className="about-frame">
-              <Image
-                src="/images/permanence-poster.jpg"
-                alt="시간의 영속성 포스터"
-                fill
-                sizes="(max-width:860px) 90vw, 520px"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* THEMES */}
+      {/* 인터랙티브 콘텐츠 */}
       <section className="block alt" id="themes">
         <div className="wrap">
           <div className="shead reveal">
@@ -354,46 +316,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* STORES */}
-      <section className="block" id="stores">
-        <div className="wrap">
-          <div className="shead reveal">
-            <div className="eyebrow">STORES · 오시는 길</div>
-            <h2 className="title">강남 직영 3곳</h2>
-            <p className="lead">강남역·신논현역 도보권. 모든 매장은 인접해 있어 단체 이용도 가능합니다.</p>
-          </div>
-          <div className="stores-layout reveal">
-            <div className="stores-left">
-              {STORES.map((s) => (
-                <div key={s.id} className={"store" + (s.tgc ? " tgc" : "")}>
-                  <div className="store-head"><span className="tag">{s.tag}</span><h3>{s.name}</h3></div>
-                  <div className="addr">{s.addr}</div>
-                  <div className="hours">{s.hours}</div>
-                  <div className="themes">테마 · <b>{s.themes}</b></div>
-                </div>
-              ))}
-            </div>
-            <a
-              className="stores-right"
-              href="https://www.google.com/maps/d/viewer?mid=1_BzwJnCB42RENrmvTm-HNCyFHwm8zCA"
-              target="_blank"
-              rel="noopener"
-              title="구글 지도에서 크게 보기"
-            >
-              <Image
-                className="store-map-img"
-                src="/images/stores-map.png"
-                alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점"
-                fill
-                sizes="(max-width:760px) 100vw, 620px"
-              />
-            </a>
-          </div>
-        </div>
-      </section>
-
       {/* REVIEWS — 별점 요약 + 대표 후기 발췌 */}
-      <section className="block alt" id="reviews">
+      <section className="block" id="reviews">
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">REVIEWS · 플레이 후기</div>
@@ -474,24 +398,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* RESERVE BAND */}
-      <section className="reserve" id="reserve">
-        <div className="bg">
-          <Image
-            src="/images/permanence-2.jpg"
-            alt=""
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-        </div>
+      {/* STORES (오시는 길) — 마지막 */}
+      <section className="block alt" id="stores">
         <div className="wrap">
-          <div className="eyebrow">RESERVATION</div>
-          <h2>오늘 하루를, 잠시 두고 오세요</h2>
-          <p>원하는 매장과 테마를 골라 시간을 예약하세요. 강남역·신논현역 도보권.</p>
-          <Link href="/reserve" className="btn primary" style={{ fontSize: 16, padding: "16px 30px" }}>
-            테마 예약하러 가기 →
-          </Link>
+          <div className="shead reveal">
+            <div className="eyebrow">STORES · 오시는 길</div>
+            <h2 className="title">강남 직영 3곳</h2>
+            <p className="lead">강남역·신논현역 도보권. 모든 매장은 인접해 있어 단체 이용도 가능합니다.</p>
+          </div>
+          <div className="stores-layout reveal">
+            <div className="stores-left">
+              {STORES.map((s) => (
+                <div key={s.id} className={"store" + (s.tgc ? " tgc" : "")}>
+                  <div className="store-head"><span className="tag">{s.tag}</span><h3>{s.name}</h3></div>
+                  <div className="addr">{s.addr}</div>
+                  <div className="hours">{s.hours}</div>
+                  <div className="themes">테마 · <b>{s.themes}</b></div>
+                </div>
+              ))}
+            </div>
+            <a
+              className="stores-right"
+              href="https://www.google.com/maps/d/viewer?mid=1_BzwJnCB42RENrmvTm-HNCyFHwm8zCA"
+              target="_blank"
+              rel="noopener"
+              title="구글 지도에서 크게 보기"
+            >
+              <Image
+                className="store-map-img"
+                src="/images/stores-map.png"
+                alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점"
+                fill
+                sizes="(max-width:760px) 100vw, 620px"
+              />
+            </a>
+          </div>
         </div>
       </section>
 

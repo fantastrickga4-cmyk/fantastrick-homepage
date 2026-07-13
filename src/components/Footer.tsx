@@ -23,11 +23,10 @@ export default function Footer() {
           <div>
             <h5>바로가기</h5>
             <ul>
-              <li><Link href="/#about">브랜드 소개</Link></li>
-              <li><Link href="/#themes">테마</Link></li>
-              <li><Link href="/#stores">매장 · 오시는 길</Link></li>
+              <li><Link href="/#themes">인터랙티브 콘텐츠</Link></li>
               <li><Link href="/reviews">리뷰</Link></li>
               <li><Link href="/business">비즈니스(B2B)</Link></li>
+              <li><Link href="/#stores">오시는 길</Link></li>
             </ul>
           </div>
           <div>

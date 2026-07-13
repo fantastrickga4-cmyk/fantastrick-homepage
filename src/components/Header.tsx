@@ -5,11 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 // 공통 헤더 — 스크롤하면 배경이 생기는 시네마틱 헤더 + 모바일 드로어 메뉴
 const MENU = [
-  { href: "/#about", label: "소개" },
-  { href: "/#themes", label: "테마" },
-  { href: "/#stores", label: "매장" },
-  { href: "/reviews", label: "리뷰" },
+  { href: "/#themes", label: "콘텐츠" },
+  { href: "/#reviews", label: "리뷰" },
   { href: "/#business", label: "비즈니스" },
+  { href: "/#stores", label: "오시는길" },
 ];
 
 export default function Header() {
