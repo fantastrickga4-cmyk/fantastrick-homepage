@@ -51,7 +51,7 @@ export const STORES: Store[] = [
     tag: "3호점 ★",
     name: "판타스트릭 TGC",
     addr: "강남대로83길 34, B1",
-    phone: "",
+    phone: "010-5536-0483",
     hours: "평일 12:00–23:30 · 주말 10:00–23:30 · 연중무휴",
     themes: "락다운시티 · 시간의 영속성(머더룸)",
     tgc: true,
