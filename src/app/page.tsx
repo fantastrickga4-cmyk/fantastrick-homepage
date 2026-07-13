@@ -287,7 +287,7 @@ export default function Home() {
                 <div key={s.id} className={"store" + (s.tgc ? " tgc" : "")}>
                   <div className="store-head"><span className="tag">{s.tag}</span><h3>{s.name}</h3></div>
                   <div className="store-meta">테마 · <b>{s.themes}</b></div>
-                  <div className="store-addr">{s.addr} · <a href={`tel:${s.phone.replace(/-/g, "")}`} className="store-tel">{s.phone}</a></div>
+                  <div className="store-addr">{s.addr}{s.phone && <> · <a href={`tel:${s.phone.replace(/-/g, "")}`} className="store-tel">{s.phone}</a></>}</div>
                 </div>
               ))}
               <p className="stores-note">매장별 운영시간은 예약 시 안내드립니다.</p>
