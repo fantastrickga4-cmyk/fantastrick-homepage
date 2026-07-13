@@ -124,6 +124,9 @@ nav.main a:hover{color:var(--text)}
 .hero{min-height:100vh;display:flex;align-items:center;overflow:hidden}
 .hero .bg{position:absolute;inset:-40px;z-index:0;will-change:transform}
 .hero .bg img{width:100%;height:100%;object-fit:cover;opacity:.9;transform-origin:70% 40%}
+/* 히어로 배경 영상 — 사진 위에 덮여 재생(파일 없으면 onError로 숨김→사진 노출).
+   z-index 없이 DOM 순서로 사진<영상<::after(밝은 워시) 쌓임 유지 → 글자 가독성 보존 */
+.hero .bg .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
 /* Ken Burns 초저속 줌 + 진입 스태거는 모션 허용 시에만 */
 @media (prefers-reduced-motion:no-preference){
   .hero .bg img{animation:kenburns 24s ease-out both}

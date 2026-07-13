@@ -239,6 +239,7 @@ export default function Home() {
       {/* HERO */}
       <section className="hero" id="home">
         <div className="bg" ref={heroBgRef}>
+          {/* 기본 배경 = 사진(폴백·LCP). 영상 파일이 있으면 그 위에 재생됨 */}
           <Image
             src="/images/permanence-1.jpg"
             alt=""
@@ -247,6 +248,20 @@ export default function Home() {
             sizes="100vw"
             style={{ objectFit: "cover" }}
           />
+          {/* 히어로 배경 영상: /public/videos/hero.mp4 넣으면 자동 재생. 없으면 onError로 숨겨 사진 노출 */}
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = "none"; }}
+          >
+            <source src="/videos/hero.webm" type="video/webm" />
+            <source src="/videos/hero.mp4" type="video/mp4" />
+          </video>
         </div>
         <div className="wrap">
           <div className="eyebrow">강남 · 11년차 이머시브 방탈출 &amp; 머더룸</div>
