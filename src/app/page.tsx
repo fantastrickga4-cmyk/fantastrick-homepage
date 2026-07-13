@@ -65,7 +65,7 @@ export default function Home() {
     fetch("/api/config").then((r) => r.json()).then((c) => setExt({ naverUrl: c.naverUrl || "", googleUrl: c.googleUrl || "", extRating: c.extRating || 0, extCount: c.extCount || 0 })).catch(() => {});
   }, []);
   const revAvg = reviews && reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
-  const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 4);
+  const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   // 스크롤 등장 애니메이션
   useEffect(() => {
@@ -193,49 +193,56 @@ export default function Home() {
       <section className="block" id="reviews">
         <div className="wrap">
           <div className="shead reveal">
-            <div className="eyebrow">REVIEWS · 플레이 후기</div>
+            <div className="eyebrow">REVIEWS</div>
             <h2 className="title">직접 겪은 사람들의 이야기</h2>
-            <p className="lead">실제 플레이하신 분들이 남긴 생생한 후기입니다. 전화번호로 예약한 분만 작성할 수 있어요.</p>
           </div>
           <div className="rev-summary reveal">
-            <div>
-              <span className="score">{revAvg ?? (ext?.extRating ? ext.extRating.toFixed(1) : "—")}</span> <span className="of">/ 5.0</span>
+            <div className="rs-score">
+              <span className="score">{revAvg ?? (ext?.extRating ? ext.extRating.toFixed(1) : "—")}</span>
+              <span className="of">/ 5.0</span>
               <div className="s-stars" aria-hidden="true">★★★★★</div>
-              <div className="s-meta">
+            </div>
+            <div className="rs-meta">
+              <div className="s-src">
                 {revAvg
-                  ? `플레이어 후기 평점 · 후기 ${reviews!.length}건`
+                  ? `플레이어 후기 · ${reviews!.length}건`
                   : ext?.extRating
                     ? `외부 리뷰 평점${ext.extCount ? ` · ${ext.extCount}건` : ""}`
                     : "첫 후기를 기다리고 있어요"}
               </div>
-            </div>
-            <div className="sp" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="btn ghost sm">네이버 플레이스 리뷰 →</a>}
-              {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="btn ghost sm">구글 리뷰 →</a>}
-              <Link href="/reviews" className="btn ghost sm">전체 후기 보기 →</Link>
+              <div className="rs-links">
+                {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="tlink">구글에서 더 보기 →</a>}
+                {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="tlink">네이버 →</a>}
+              </div>
             </div>
           </div>
           {topReviews.length > 0 ? (
-            <div className="rev-grid">
-              {topReviews.map((r, i) => (
-                <div key={r.id} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
-                  <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>
-                    {"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span>
+            <>
+              <div className="rev-grid">
+                {topReviews.map((r, i) => (
+                  <div key={r.id} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
+                    <div className="rq-mark" aria-hidden="true">“</div>
+                    <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>{"★".repeat(r.rating)}</div>
+                    <p className="rq-body">{r.body}</p>
+                    <div className="rq-foot">
+                      <span className="rq-theme">{r.theme_name}</span>
+                      <span className="rq-who">{r.name?.[0] ?? "익"}</span>
+                    </div>
                   </div>
-                  <div className="rq-theme">{r.theme_name}{r.source && r.source !== "자체" ? ` · ${r.source}` : ""}</div>
-                  <div className="rq-body">“{r.body}”</div>
-                  <div className="rq-who">— {r.name}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <div className="rev-more"><Link href="/reviews" className="tlink">전체 후기 →</Link></div>
+            </>
           ) : reviews === null ? (
             <div className="notice info reveal">후기를 불러오는 중…</div>
           ) : (
-            <div className="rev-empty reveal" style={{ textAlign: "center", padding: "36px 20px", border: "1px dashed var(--line)", borderRadius: 14 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>아직 등록된 후기가 없어요</div>
-              <p style={{ color: "var(--muted)", margin: "0 0 16px" }}>첫 후기를 기다리고 있어요. 플레이 후 소중한 후기를 남겨주세요.</p>
-              <Link href="/reviews" className="btn primary sm">후기 남기기 →</Link>
+            <div className="rev-empty reveal">
+              {ext?.extRating ? (
+                <><div className="re-big">{ext.extRating.toFixed(1)}</div><p>외부 리뷰에 남겨진 실제 방문자 평점이에요.</p></>
+              ) : (
+                <p>첫 후기의 주인공이 되어주세요.</p>
+              )}
+              <Link href="/reviews" className="btn primary sm">플레이하고 후기 남기기 →</Link>
             </div>
           )}
         </div>
@@ -247,26 +254,22 @@ export default function Home() {
           <div className="biz-head reveal">
             <div>
               <div className="eyebrow gold">BUSINESS · B2B</div>
-              <h2 className="title">우리는, 직접 만듭니다</h2>
-              <p className="lead">
-                11년간 직영 매장을 운영하며 쌓은 콘텐츠·공간·장치 역량을 외부 프로젝트에도 제공합니다. 브랜드
-                공간, 체험형 콘텐츠, 이머시브 장치가 필요하다면 처음부터 끝까지 함께합니다.
-              </p>
+              <h2 className="title">직접, 만듭니다</h2>
+              <p className="lead">11년 직영으로 검증한 콘텐츠·공간·장치 제작.</p>
             </div>
-            <Link href="/business" className="btn gold">비즈니스 페이지 보기 →</Link>
+            <Link href="/business" className="btn gold">제작 역량 보기 →</Link>
           </div>
           <div className="cap3">
-            <div className="cap reveal" style={{ "--i": 0 } as CSSProperties}><div className="ci">✎</div><div className="en">Contents</div><h4>콘텐츠 제작</h4><p>테마·시나리오·연출 기획부터 운영 설계까지. 방탈출·머더미스터리·브랜드 체험 콘텐츠 턴키 제작.</p></div>
-            <div className="cap reveal" style={{ "--i": 1 } as CSSProperties}><div className="ci">▦</div><div className="en">Space</div><h4>공간 디자인</h4><p>세트·인테리어·동선 설계. 이야기에 맞춘 몰입형 공간을 직접 시공·연출합니다.</p></div>
-            <div className="cap reveal" style={{ "--i": 2 } as CSSProperties}><div className="ci">⚙</div><div className="en">Tech / Device</div><h4>기술 · 장치</h4><p>잠금/해제 장치, 조명·음향·기믹 제어, 센서 트리거 등 이머시브 장치를 제작·납품·판매합니다.</p></div>
+            <div className="cap reveal" style={{ "--i": 0 } as CSSProperties}><span className="cno">01</span><div className="en">Contents</div><h4>콘텐츠 제작</h4><span className="ckw">시나리오 · 연출 · 운영 설계</span></div>
+            <div className="cap reveal" style={{ "--i": 1 } as CSSProperties}><span className="cno">02</span><div className="en">Space</div><h4>공간 디자인</h4><span className="ckw">세트 · 인테리어 · 동선 시공</span></div>
+            <div className="cap reveal" style={{ "--i": 2 } as CSSProperties}><span className="cno">03</span><div className="en">Tech / Device</div><h4>기술 · 장치</h4><span className="ckw">잠금장치 · 조명·음향 · 센서 기믹</span></div>
           </div>
           <div className="biz-cta reveal">
-            <div className="bt">
-              <h4>컨설팅 · 외주 제작 · 장치 도입이 필요하세요?</h4>
-              <p>역량·서비스·진행 방식·레퍼런스·문의를 비즈니스 전용 페이지에 정리해 두었습니다. (직영 매장 3곳·테마 4종이 곧 포트폴리오입니다.)</p>
+            <p className="bt-line">컨설팅 · 외주 제작 · 장치 도입 — <b>직영 3곳 · 테마 4종</b>이 곧 포트폴리오입니다.</p>
+            <div className="bt-actions">
+              <Link href="/business" className="btn gold">비즈니스 문의 →</Link>
+              <a href="mailto:fantastrick@fantastrick.co.kr" className="btn gold-ghost">이메일</a>
             </div>
-            <Link href="/business" className="btn gold">비즈니스(B2B) 페이지로 →</Link>
-            <a href="mailto:fantastrick@fantastrick.co.kr" className="btn gold-ghost">fantastrick@fantastrick.co.kr</a>
           </div>
         </div>
       </section>
@@ -276,19 +279,19 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">STORES · 오시는 길</div>
-            <h2 className="title">강남 직영 3곳</h2>
-            <p className="lead">강남역·신논현역 도보권. 모든 매장은 인접해 있어 단체 이용도 가능합니다.</p>
+            <h2 className="title">강남 한 블록, 세 개의 문</h2>
+            <p className="lead">강남역·신논현역 사이 — 세 매장 모두 걸어서 오갈 수 있습니다.</p>
           </div>
           <div className="stores-layout reveal">
             <div className="stores-left">
               {STORES.map((s) => (
                 <div key={s.id} className={"store" + (s.tgc ? " tgc" : "")}>
                   <div className="store-head"><span className="tag">{s.tag}</span><h3>{s.name}</h3></div>
-                  <div className="addr">{s.addr}</div>
-                  <div className="hours">{s.hours}</div>
-                  <div className="themes">테마 · <b>{s.themes}</b></div>
+                  <div className="store-meta">테마 · <b>{s.themes}</b></div>
+                  <div className="store-addr">{s.addr}</div>
                 </div>
               ))}
+              <p className="stores-note">매장별 운영시간은 예약 시 안내드립니다.</p>
             </div>
             <a
               className="stores-right"
@@ -304,6 +307,7 @@ export default function Home() {
                 fill
                 sizes="(max-width:760px) 100vw, 620px"
               />
+              <span className="map-cap">세 매장 모두 도보권</span>
             </a>
           </div>
         </div>
