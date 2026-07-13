@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { THEMES, TIME_SLOTS, STORES } from "@/lib/data";
-import { formatDate, formatPhone, reservationDateState } from "@/lib/util";
+import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
 type Cfg = { timeSlots: string[]; disabledThemes: string[] };
 
@@ -146,6 +146,7 @@ function ReserveInner() {
     if (!time) return setErr("시간을 선택해 주세요.");
     if (!name.trim()) return setErr("예약자 이름을 입력해 주세요.");
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
+    if (!isValidPhone(phone)) return setErr("전화번호 형식을 확인해 주세요. (예: 010-1234-5678)");
     if (!/^\d{4}$/.test(pin)) return setErr("비밀번호는 숫자 4자리로 입력해 주세요.");
     setLoading(true);
     try {
@@ -290,7 +291,18 @@ function ReserveInner() {
           </div>
           <div className="field">
             <label>전화번호</label>
-            <input type="tel" value={phone} placeholder="010-1234-5678" onChange={(e) => setPhone(e.target.value)} />
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              placeholder="010-1234-5678"
+              maxLength={13}
+              onChange={(e) => {
+                const d = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
+                const f = d.length > 7 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
+                setPhone(f);
+              }}
+            />
           </div>
         </div>
 
