@@ -198,12 +198,12 @@ export default function Home() {
     const onDown = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
       down = true; moved = false; sx = e.clientX; sl = track.scrollLeft;
-      track.classList.add("dragging");
     };
     const onMove = (e: PointerEvent) => {
       if (!down) return;
       const dx = e.clientX - sx;
-      if (Math.abs(dx) > 5) moved = true;
+      // 실제로 5px 넘게 움직였을 때만 드래그로 간주(그 전엔 순수 클릭 → 링크 이동 보장)
+      if (Math.abs(dx) > 5 && !moved) { moved = true; track.classList.add("dragging"); }
       track.scrollLeft = sl - dx;
     };
     const stop = () => { down = false; track.classList.remove("dragging"); };
