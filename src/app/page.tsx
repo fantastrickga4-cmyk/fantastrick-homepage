@@ -4,14 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 
-const FILTERS = [
-  { f: "all", label: "전체" },
-  { f: "s1", label: "1호점" },
-  { f: "s2", label: "2호점" },
-  { f: "s3", label: "3호점 · TGC" },
-  { f: "murder", label: "머더룸" },
-];
-
 // 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
 type HomeReview = {
   id: string; theme_name: string; name: string; rating: number; body: string; source?: string | null;
@@ -27,27 +19,8 @@ function Locks({ n }: { n: number }) {
   );
 }
 
-function ThemeCard({ t }: { t: Theme }) {
-  if (t.soon) {
-    return (
-      <div className="tcard soon" data-cat={t.cat}>
-        <div className="thumb ph">
-          <span className="phtxt">COMING SOON</span>
-          <div className="badge">
-            {t.genres.map((g) => (
-              <span key={g} className="genre">{g}</span>
-            ))}
-          </div>
-          <div className="store-tag">{t.storeTag}</div>
-          <div className="tt"><h3>{t.name}</h3></div>
-        </div>
-        <div className="meta">
-          <span className="sp">새 테마 · 공개 예정</span>
-          <span className="go">준비중</span>
-        </div>
-      </div>
-    );
-  }
+// 활성 테마 카드 — 세로 포스터 갤러리(기본 포스터+이름+CASE, 호버 시 매장·시간·난이도·대표장르)
+function ThemeCard({ t, no }: { t: Theme; no: number }) {
   return (
     <Link className="tcard" data-cat={t.cat} href={`/reserve?theme=${t.id}`}>
       <div
@@ -56,34 +29,33 @@ function ThemeCard({ t }: { t: Theme }) {
         role="img"
         aria-label={`${t.name} 포스터`}
       >
-        <div className="badge">
-          {t.murder && <span className="murder">머더룸</span>}
-          {t.genres.map((g) => (
-            <span key={g} className="genre">{g}</span>
-          ))}
+        <span className="tcase">CASE No.{String(no).padStart(2, "0")}</span>
+        {t.murder && <span className="tmurder">머더룸</span>}
+        <div className="tt">
+          <span className="store">{t.storeTag}</span>
+          <h3>{t.name}</h3>
+          <span className="tmeta">
+            {t.minutes}분 · <Locks n={t.difficulty} /> · {t.genres[0]}
+          </span>
         </div>
-        <div className="store-tag">{t.storeTag}</div>
-        <div className="tt"><h3>{t.name}</h3></div>
-      </div>
-      <div className="meta">
-        <span className="sp">
-          <b>{t.minutes}분</b> · <Locks n={t.difficulty} />
-        </span>
-        <span className="go">예약 →</span>
       </div>
     </Link>
   );
 }
 
+// 준비중 테마 — 하단 슬림 스트립(클릭 불가)
+function SoonCard({ t }: { t: Theme }) {
+  return (
+    <div className="scard" data-cat={t.cat}>
+      <span className="stag">COMING SOON</span>
+      <span className="sname">{t.name}</span>
+      {t.soonGenres && t.soonGenres[0] && <span className="sgen">{t.soonGenres[0]}</span>}
+    </div>
+  );
+}
+
 export default function Home() {
-  const [filter, setFilter] = useState("all");
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const thumbRef = useRef<HTMLDivElement>(null);
   const heroBgRef = useRef<HTMLDivElement>(null);
-  const allThemes: Theme[] = [...THEMES, ...SOON_THEMES];
 
   // 실제 승인 후기 + 외부 리뷰 링크 (마운트 시 로드)
   const [reviews, setReviews] = useState<HomeReview[] | null>(null);
@@ -94,15 +66,6 @@ export default function Home() {
   }, []);
   const revAvg = reviews && reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 4);
-
-  // 화살표 클릭 시 카드 한 장씩 이동
-  const scrollCards = (dir: number) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const card = track.querySelector<HTMLElement>(".tcard");
-    const step = card ? card.getBoundingClientRect().width + 16 : track.clientWidth * 0.8;
-    track.scrollBy({ left: dir * step, behavior: "smooth" });
-  };
 
   // 스크롤 등장 애니메이션
   useEffect(() => {
@@ -171,68 +134,6 @@ export default function Home() {
     };
   }, []);
 
-  // 캐러셀 하단 바 갱신 + 마우스 드래그
-  useEffect(() => {
-    const track = trackRef.current;
-    const bar = barRef.current;
-    const thumb = thumbRef.current;
-    if (!track) return;
-
-    const updBar = () => {
-      const max = track.scrollWidth - track.clientWidth;
-      // 화살표 활성/비활성 (시작·끝)
-      setAtStart(track.scrollLeft <= 2);
-      setAtEnd(max <= 2 || track.scrollLeft >= max - 2);
-      if (!bar || !thumb) return;
-      if (max <= 2) {
-        bar.classList.add("hidden");
-        return;
-      }
-      bar.classList.remove("hidden");
-      const ratio = track.clientWidth / track.scrollWidth;
-      thumb.style.width = ratio * 100 + "%";
-      thumb.style.left = (track.scrollLeft / max) * (100 - ratio * 100) + "%";
-    };
-
-    let down = false, sx = 0, sl = 0, moved = false;
-    const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
-      down = true; moved = false; sx = e.clientX; sl = track.scrollLeft;
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!down) return;
-      const dx = e.clientX - sx;
-      // 실제로 5px 넘게 움직였을 때만 드래그로 간주(그 전엔 순수 클릭 → 링크 이동 보장)
-      if (Math.abs(dx) > 5 && !moved) { moved = true; track.classList.add("dragging"); }
-      track.scrollLeft = sl - dx;
-    };
-    const stop = () => { down = false; track.classList.remove("dragging"); };
-    const onClickCapture = (e: Event) => { if (moved) e.preventDefault(); };
-
-    track.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
-    track.addEventListener("click", onClickCapture, true);
-    track.addEventListener("scroll", updBar, { passive: true });
-    window.addEventListener("resize", updBar);
-    updBar();
-
-    return () => {
-      track.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-      track.removeEventListener("click", onClickCapture, true);
-      track.removeEventListener("scroll", updBar);
-      window.removeEventListener("resize", updBar);
-    };
-  }, [filter]);
-
-  const visible = (t: Theme) => {
-    if (filter === "all") return true;
-    return (t.cat || "").split(" ").includes(filter);
-  };
 
   return (
     <>
@@ -267,46 +168,24 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">INTERACTIVE CONTENTS</div>
-            <h2 className="title">인터랙티브 콘텐츠</h2>
-            <p className="lead" style={{ color: "var(--muted)", maxWidth: 760 }}>
-              대부분의 콘텐츠는 당신을 객석에 둡니다. 하지만{" "}
-              <b style={{ color: "var(--text)", fontWeight: 700 }}>인터랙티브 콘텐츠는, 당신을 무대 위에 세웁니다.</b>
-              <br />
-              정해진 결말을 지켜보는 대신 당신의 선택과 행동이 이야기를 직접 이끌어가고 결정합니다.
-              <br />
-              방탈출과 오프라인 머더미스터리, 이머시브 공연까지 — 형태는 달라도 본질은 하나입니다.
-              <br />
-              콘텐츠 안으로 걸어 들어가, 직접 이야기의 주인공이 되는 것.
-            </p>
-            <p className="lead" style={{ marginTop: 16, borderLeft: "2px solid var(--cyan)", paddingLeft: 16, color: "var(--text)", maxWidth: 730 }}>
-              판타스트릭은 그 순간을 스토리·공간·장치로 구현합니다.{" "}
-              <b style={{ color: "var(--brand)", fontWeight: 700 }}>판타스트릭이 준비한 콘텐츠의 문을 열어보세요.</b>
-            </p>
+            <h2 className="title">당신을 무대 위에 세우는 이야기</h2>
+            <p className="lead">방탈출 · 머더미스터리 · 이머시브 — 지금 문이 열린 콘텐츠.</p>
           </div>
-          <div className="filters reveal">
-            {FILTERS.map((c) => (
-              <button
-                key={c.f}
-                className={"chip" + (filter === c.f ? " on" : "")}
-                onClick={() => {
-                  setFilter(c.f);
-                  if (trackRef.current) trackRef.current.scrollLeft = 0;
-                }}
-              >
-                {c.label}
-              </button>
+          <div className="theme-grid reveal">
+            {THEMES.map((t, i) => (
+              <ThemeCard key={t.id} t={t} no={i + 1} />
             ))}
           </div>
-          <div className="theme-carousel reveal">
-            <button type="button" className="car-arrow prev" aria-label="이전 테마" disabled={atStart} onClick={() => scrollCards(-1)}>‹</button>
-            <button type="button" className="car-arrow next" aria-label="다음 테마" disabled={atEnd} onClick={() => scrollCards(1)}>›</button>
-            <div className="theme-track" ref={trackRef}>
-              {allThemes.filter(visible).map((t) => (
-                <ThemeCard key={t.id} t={t} />
-              ))}
+          {SOON_THEMES.length > 0 && (
+            <div className="soon-strip reveal">
+              <span className="soon-label">준비중 콘텐츠</span>
+              <div className="soon-row">
+                {SOON_THEMES.map((t) => (
+                  <SoonCard key={t.id} t={t} />
+                ))}
+              </div>
             </div>
-            <div className="car-bar" ref={barRef}><div className="car-thumb" ref={thumbRef} /></div>
-          </div>
+          )}
         </div>
       </section>
 
