@@ -75,6 +75,8 @@ h2.title{font-family:var(--font-display);font-size:var(--fs-2xl);font-weight:800
 .btn.gold-ghost{background:transparent;border-color:rgba(143,106,224,.5);color:var(--gold)}
 .btn.gold-ghost:hover{background:rgba(98,38,152,.1)}
 .btn.sm{padding:9px 15px;font-size:13px;border-radius:var(--r-sm);min-height:44px}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.25);box-shadow:none!important;transform:none!important}
+.btn:disabled:hover{box-shadow:none!important;transform:none!important}
 
 /* ---------- HEADER ---------- */
 header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.25s}

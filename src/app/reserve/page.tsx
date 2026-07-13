@@ -107,6 +107,8 @@ function ReserveInner() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false); // 접수 후 예약금 안내 팝업
+  const [depositAck, setDepositAck] = useState(false);    // "확인했습니다" 체크 여부
 
   const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, disabledThemes: [] });
   const [blocked, setBlocked] = useState<string[]>([]);
@@ -160,6 +162,7 @@ function ReserveInner() {
         setErr(j.error || "예약에 실패했습니다.");
       } else {
         setDone(true);
+        setShowDeposit(true);
       }
     } catch {
       setErr("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
@@ -196,6 +199,27 @@ function ReserveInner() {
             <Link href="/" className="btn ghost">홈으로</Link>
           </div>
         </div>
+
+        {showDeposit && (
+          <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deposit-title">
+            <div className="modal">
+              <h3 id="deposit-title">예약금 입금 안내</h3>
+              <div className="modal-policy">
+                <p>예약금은 <b>{deposit.toLocaleString()}원</b>입니다.</p>
+                <p>예약금 입금이 확인되어야 비로소 예약이 확정 처리됩니다.</p>
+                <p>입금하실 때 <b>보내는 분(예금주)을 예약자 이름과 동일하게</b> 해주셔야 정상 처리됩니다.</p>
+                <p><b>30분 내 예약금 미입금 시 예약은 자동 취소</b>됩니다.</p>
+              </div>
+              <label className="agree-row">
+                <input type="checkbox" checked={depositAck} onChange={(e) => setDepositAck(e.target.checked)} />
+                위 내용을 확인했습니다.
+              </label>
+              <div className="modal-btns">
+                <button className="btn primary" disabled={!depositAck} onClick={() => setShowDeposit(false)}>확인</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
