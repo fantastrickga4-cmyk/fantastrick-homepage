@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { THEMES, TIME_SLOTS, STORES } from "@/lib/data";
+import { THEMES, TIME_SLOTS, STORES, slotsForStoreDate, type StoreSlots } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
-type Cfg = { timeSlots: string[]; disabledThemes: string[] };
+type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots> };
 
 // 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
 function openDateLabel(dateStr: string): string {
@@ -122,6 +122,14 @@ function ReserveInner() {
   // 선택한 날짜가 아직 예약 오픈 전인지 (오픈 전이면 시간·인원·신청 숨김)
   const notOpenSelected = useMemo(() => (date ? reservationDateState(date) === "not_open" : false), [date]);
 
+  // 선택한 테마(매장)·날짜(요일)에 실제 예약 가능한 시간대
+  const activeSlots = useMemo(
+    () => slotsForStoreDate(cfg.storeSlots, cfg.timeSlots, theme?.store, date),
+    [cfg.storeSlots, cfg.timeSlots, theme?.store, date],
+  );
+  // 그 요일은 아예 예약을 안 받는 매장(휴무) 인지
+  const noSlotsDay = useMemo(() => !!(themeId && date && activeSlots.length === 0), [themeId, date, activeSlots]);
+
   useEffect(() => {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
   }, [preset]);
@@ -145,6 +153,7 @@ function ReserveInner() {
     if (!themeId) return setErr("테마를 선택해 주세요.");
     if (!date) return setErr("날짜를 선택해 주세요.");
     if (notOpenSelected) return setErr("아직 예약 오픈 전인 날짜입니다. 다른 날짜를 선택해 주세요.");
+    if (noSlotsDay) return setErr("선택한 날짜는 예약을 받지 않는 요일입니다. 다른 날짜를 선택해 주세요.");
     if (!time) return setErr("시간을 선택해 주세요.");
     if (!name.trim()) return setErr("예약자 이름을 입력해 주세요.");
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
@@ -283,11 +292,11 @@ function ReserveInner() {
         {/* 시간 */}
         <div className="field">
           <label>시간</label>
-          {dayClosed ? (
+          {dayClosed || noSlotsDay ? (
             <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
           ) : (
             <div className="optrow">
-              {cfg.timeSlots.map((tm) => {
+              {activeSlots.map((tm) => {
                 const isBlocked = blocked.includes(tm);
                 return (
                   <button

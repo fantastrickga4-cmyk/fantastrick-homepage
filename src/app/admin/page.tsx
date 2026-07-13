@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { STORES, THEMES, TIME_SLOTS } from "@/lib/data";
+import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, type StoreSlots } from "@/lib/data";
 import { formatDate, formatPhone } from "@/lib/util";
 
 type Reservation = {
@@ -12,7 +12,7 @@ type Reservation = {
   created_at: string; confirmed_at: string | null; cancelled_at: string | null;
 };
 type Stats = {
-  total: number; byStatus: Record<string, number>; todayCount: number; depositPaidSum: number;
+  total: number; byStatus: Record<string, number>; pendingUnpaid: number; todayCount: number; depositPaidSum: number;
   weekCount: number; monthConfirmedDeposit: number;
   themes: { name: string; count: number }[]; activeTotal: number;
 };
@@ -90,6 +90,7 @@ function ReservationsTab() {
   const [showAdd, setShowAdd] = useState(false);
   const [fStatus, setFStatus] = useState("all"); const [fStore, setFStore] = useState("all");
   const [fTheme, setFTheme] = useState("all"); const [fFrom, setFFrom] = useState(""); const [fTo, setFTo] = useState(""); const [q, setQ] = useState("");
+  const [fDeposit, setFDeposit] = useState("all"); // all | unpaid (입금대기만)
   const prevPending = useRef<number | null>(null); const [newAlert, setNewAlert] = useState(0);
 
   const load = useCallback(async (silent = false) => {
@@ -97,6 +98,7 @@ function ReservationsTab() {
     if (fStatus !== "all") p.set("status", fStatus);
     if (fStore !== "all") p.set("store", fStore);
     if (fTheme !== "all") p.set("theme", fTheme);
+    if (fDeposit === "unpaid") p.set("deposit", "unpaid");
     if (fFrom) p.set("from", fFrom); if (fTo) p.set("to", fTo); if (q.trim()) p.set("q", q.trim());
     const res = await fetch(`/api/admin/reservations?${p.toString()}`);
     if (!res.ok) return;
@@ -105,9 +107,9 @@ function ReservationsTab() {
     const pendingNow = j.stats?.byStatus?.pending ?? 0;
     if (silent && prevPending.current !== null && pendingNow > prevPending.current) setNewAlert((n) => n + (pendingNow - prevPending.current!));
     prevPending.current = pendingNow;
-  }, [fStatus, fStore, fTheme, fFrom, fTo, q]);
+  }, [fStatus, fStore, fTheme, fDeposit, fFrom, fTo, q]);
 
-  useEffect(() => { load(); }, [fStatus, fStore, fTheme, fFrom, fTo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [fStatus, fStore, fTheme, fDeposit, fFrom, fTo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => load(true), 30000); return () => clearInterval(t); }, [load]);
 
   async function patch(id: string, body: Record<string, unknown>) {
@@ -149,6 +151,11 @@ function ReservationsTab() {
     <>
       <div className="admin-top" style={{ marginBottom: 14 }}>
         {newAlert > 0 && <button className="btn primary sm" onClick={() => { setNewAlert(0); setFStatus("pending"); }}>🔔 새 예약 {newAlert}건</button>}
+        {stats && stats.pendingUnpaid > 0 && (
+          <button className={"btn sm " + (fDeposit === "unpaid" ? "primary" : "")} style={fDeposit === "unpaid" ? undefined : { background: "var(--amber)", color: "#5a3d00", borderColor: "var(--amber)" }} onClick={() => { setNewAlert(0); if (fDeposit === "unpaid") { setFDeposit("all"); setFStatus("all"); } else { setFStatus("pending"); setFDeposit("unpaid"); } }}>
+            💰 입금대기 {stats.pendingUnpaid}건{fDeposit === "unpaid" ? " ✕" : ""}
+          </button>
+        )}
         <div className="sp" />
         <button className="btn ghost sm" onClick={() => load()}>새로고침</button>
         <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
@@ -479,8 +486,10 @@ function SettingsTab() {
   const [slotInput, setSlotInput] = useState(""); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
   const [naverUrl, setNaverUrl] = useState(""); const [googleUrl, setGoogleUrl] = useState("");
   const [extRating, setExtRating] = useState(""); const [extCount, setExtCount] = useState("");
+  const [storeSlots, setStoreSlots] = useState<Record<string, StoreSlots>>({});
   useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
     setSlots(c.timeSlots); setDisabled(c.disabledThemes || []);
+    setStoreSlots(c.storeSlots && typeof c.storeSlots === "object" ? c.storeSlots : {});
     setNaverUrl(c.naverUrl || ""); setGoogleUrl(c.googleUrl || "");
     setExtRating(c.extRating ? String(c.extRating) : ""); setExtCount(c.extCount ? String(c.extCount) : "");
     setLoaded(true);
@@ -488,7 +497,7 @@ function SettingsTab() {
   async function save() {
     setMsg("");
     const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      timeSlots: slots, disabledThemes: disabled,
+      timeSlots: slots, disabledThemes: disabled, storeSlots,
       naverUrl, googleUrl, extRating: Number(extRating) || 0, extCount: Number(extCount) || 0,
     }) });
     if (res.ok) setMsg("저장되었습니다 ✅"); else { const j = await res.json(); setMsg(j.error || "저장 실패"); }
@@ -509,7 +518,7 @@ function SettingsTab() {
         <div className="hint">예약금은 테마별로 코드에서 관리됩니다. (변경은 개발자에게 요청)</div>
       </div>
       <div className="field">
-        <label>예약 가능 시간대</label>
+        <label>기본 예약 시간대 <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>(아래 매장별 설정이 없는 매장에 적용)</span></label>
         <div className="optrow" style={{ marginBottom: 8 }}>
           {slots.map((s) => <div key={s} className="opt on" style={{ minWidth: 64, flex: "0 0 auto" }} onClick={() => setSlots(slots.filter((x) => x !== s))}>{s} ✕</div>)}
         </div>
@@ -518,6 +527,12 @@ function SettingsTab() {
           <button className="btn sm" onClick={() => { if (slotInput && !slots.includes(slotInput)) { setSlots([...slots, slotInput].sort()); setSlotInput(""); } }}>추가</button>
         </div>
         <div className="hint">시간을 클릭하면 삭제돼요.</div>
+      </div>
+
+      <div className="field">
+        <label>매장별 · 요일별 예약 시간대 <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>(선택 · 매장마다 다르게)</span></label>
+        <div className="hint" style={{ marginTop: 0, marginBottom: 10 }}>매장을 켜면 그 매장은 기본 대신 아래 시간표를 써요. 특정 요일만 다르게(또는 휴무) 지정할 수 있어요. 예: 2호점 월~목 휴무.</div>
+        <StoreSlotsEditor storeSlots={storeSlots} setStoreSlots={setStoreSlots} fallback={slots} />
       </div>
       <div className="field">
         <label>예약 받을 테마 (체크 해제 시 예약 화면에서 숨김)</label>
@@ -544,6 +559,85 @@ function SettingsTab() {
       </div>
       {msg && <div className="notice ok">{msg}</div>}
       <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={save}>설정 저장</button>
+    </div>
+  );
+}
+
+// 시간 칩 목록 편집 (추가/클릭삭제) — 재사용
+function SlotChips({ list, onChange, emptyLabel }: { list: string[]; onChange: (v: string[]) => void; emptyLabel?: string }) {
+  const [inp, setInp] = useState("");
+  return (
+    <div>
+      <div className="optrow" style={{ marginBottom: 6 }}>
+        {list.length === 0 ? <span style={{ color: "var(--faint)", fontSize: 12.5, alignSelf: "center" }}>{emptyLabel || "시간 없음"}</span> :
+          list.map((s) => <div key={s} className="opt on" style={{ minWidth: 58, flex: "0 0 auto" }} onClick={() => onChange(list.filter((x) => x !== s))}>{s} ✕</div>)}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input type="time" value={inp} onChange={(e) => setInp(e.target.value)} style={{ flex: 1, maxWidth: 150 }} />
+        <button className="btn sm" onClick={() => { if (inp && !list.includes(inp)) { onChange([...list, inp].sort()); setInp(""); } }}>추가</button>
+      </div>
+    </div>
+  );
+}
+
+// 매장별 · 요일별 시간대 편집기
+function StoreSlotsEditor({ storeSlots, setStoreSlots, fallback }: { storeSlots: Record<string, StoreSlots>; setStoreSlots: (v: Record<string, StoreSlots>) => void; fallback: string[] }) {
+  const upd = (storeId: string, next: StoreSlots | null) => {
+    const copy = { ...storeSlots };
+    if (next === null) delete copy[storeId]; else copy[storeId] = next;
+    setStoreSlots(copy);
+  };
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      {STORES.map((store) => {
+        const ss = storeSlots[store.id];
+        const on = !!ss;
+        return (
+          <div key={store.id} className="admin-card" style={{ margin: 0, padding: "12px 14px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
+              <input type="checkbox" checked={on} style={{ width: "auto" }}
+                onChange={(e) => upd(store.id, e.target.checked ? { default: [...fallback], byDow: {} } : null)} />
+              {store.tag} <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>{store.name}</span>
+            </label>
+            {on && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", marginBottom: 5 }}>기본 시간대 <span style={{ fontWeight: 400, color: "var(--faint)" }}>(요일별 지정 안 한 날에 적용)</span></div>
+                <SlotChips list={ss.default} onChange={(v) => upd(store.id, { ...ss, default: v })} emptyLabel="시간 없음 (지정 안 한 요일은 모두 휴무)" />
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", margin: "12px 0 5px" }}>요일별 지정</div>
+                <div style={{ display: "grid", gap: 6 }}>
+                  {DOW_LABELS.map((label, dow) => {
+                    const key = String(dow);
+                    const has = Object.prototype.hasOwnProperty.call(ss.byDow, key);
+                    const mode = !has ? "default" : (ss.byDow[key].length === 0 ? "closed" : "custom");
+                    const setMode = (m: string) => {
+                      const byDow = { ...ss.byDow };
+                      if (m === "default") delete byDow[key];
+                      else if (m === "closed") byDow[key] = [];
+                      else byDow[key] = ss.byDow[key]?.length ? ss.byDow[key] : [...ss.default];
+                      upd(store.id, { ...ss, byDow });
+                    };
+                    return (
+                      <div key={dow} style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                        <b style={{ minWidth: 18, paddingTop: 7, color: dow === 0 ? "var(--red, #e05561)" : dow === 6 ? "var(--brand, #3b7bf0)" : "var(--text)" }}>{label}</b>
+                        <select value={mode} onChange={(e) => setMode(e.target.value)} style={{ width: "auto", minWidth: 90 }}>
+                          <option value="default">기본 사용</option>
+                          <option value="closed">휴무</option>
+                          <option value="custom">직접 지정</option>
+                        </select>
+                        {mode === "custom" && (
+                          <div style={{ flex: 1, minWidth: 210 }}>
+                            <SlotChips list={ss.byDow[key]} onChange={(v) => upd(store.id, { ...ss, byDow: { ...ss.byDow, [key]: v } })} emptyLabel="시간 추가하기" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

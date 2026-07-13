@@ -24,12 +24,14 @@ export async function GET(req: NextRequest) {
   const theme = sp.get("theme");
   const from = sp.get("from");
   const to = sp.get("to");
+  const deposit = sp.get("deposit"); // "unpaid" → 미입금만
   const q = (sp.get("q") || "").trim();
 
   let query = db.from("reservations").select(COLS).order("date", { ascending: false }).order("time", { ascending: true }).limit(500);
   if (status && status !== "all") query = query.eq("status", status);
   if (store && store !== "all") query = query.eq("store_id", store);
   if (theme && theme !== "all") query = query.eq("theme_id", theme);
+  if (deposit === "unpaid") query = query.eq("deposit_paid", false);
   if (from) query = query.gte("date", from);
   if (to) query = query.lte("date", to);
   if (q) {
@@ -68,8 +70,10 @@ function buildStats(rows: Row[]) {
   let depositPaidSum = 0;
   let weekCount = 0;
   let monthConfirmedDeposit = 0;
+  let pendingUnpaid = 0; // 입금대기 = 대기 상태 & 미입금
   for (const r of rows) {
     byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+    if (r.status === "pending" && !r.deposit_paid) pendingUnpaid++;
     if (r.status !== "cancelled") {
       byTheme[r.theme_id] = byTheme[r.theme_id] || { name: r.theme_name, count: 0 };
       byTheme[r.theme_id].count++;
@@ -81,7 +85,7 @@ function buildStats(rows: Row[]) {
   }
   const themes = Object.values(byTheme).sort((a, b) => b.count - a.count);
   const activeTotal = themes.reduce((s, t) => s + t.count, 0);
-  return { total: rows.length, byStatus, todayCount, depositPaidSum, weekCount, monthConfirmedDeposit, themes, activeTotal };
+  return { total: rows.length, byStatus, pendingUnpaid, todayCount, depositPaidSum, weekCount, monthConfirmedDeposit, themes, activeTotal };
 }
 
 // 예약 수정 (상태/입금/메모/환불완료)

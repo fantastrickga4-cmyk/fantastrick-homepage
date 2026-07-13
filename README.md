@@ -2,6 +2,18 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-14 — 🛠️ 관리자 이식(기존 워드프레스 Booked) 1차: 입금대기 큐 + 매장별·요일별 시간대
+> 기존 `fantastrick.co.kr`(워드프레스+Booked 예약 플러그인)의 관리자 기능을 **읽기 전용으로 분석**(원본 무변경)해 우리 Next.js 관리자로 이식하는 작업. 분석 보고서 `docs/관리자_이식_분석_보고서.html`. 그중 P1 두 가지 구현. 빌드·타입 통과, prod DB 왕복 E2E(저장→config 반영→요일계산→원복)까지 PASS.
+- **① 입금대기 전용 큐** — 예약 관리 탭에 "💰 입금대기 N건" 버튼(대기&미입금 건이 있을 때만 노란색으로 노출). 누르면 대기+미입금만 필터, 다시 누르면 해제. `api/admin/reservations` GET에 `deposit=unpaid` 필터 + 통계에 `pendingUnpaid` 추가.
+- **② 매장별·요일별 예약 시간대** — 기존은 시간대가 전 매장 공통이라 2호점(월~목 부분운영)에도 예약칸이 떴음. 이제 설정 탭에서 매장을 켜면 그 매장 전용 시간표를 쓰고, 요일마다 "기본 사용/휴무/직접 지정" 선택 가능. 설정 없는 매장은 기존 전역 시간대(fallback) 그대로 → **하위호환 유지**.
+  - `lib/data.ts`: `StoreSlots` 타입 + `slotsForStoreDate()` 헬퍼 + `DOW_LABELS`·`isSlotTime` 추가.
+  - `lib/settings.ts`: `AppConfig.storeSlots`(app_settings의 `store_slots` 키) 추가.
+  - `api/admin/settings` PUT: `storeSlots` 저장 + `sanitizeStoreSlots`(알 수 없는 매장·잘못된 시간 자동 제거).
+  - `api/reservations` POST: 시간 검증을 `slotsForStoreDate(store, 요일)` 기준으로 변경(서버도 요일별 반영).
+  - `app/reserve/page.tsx`: 선택 테마(매장)·날짜(요일)로 `activeSlots` 계산해 렌더, 휴무 요일이면 "예약 안 받음" 안내.
+  - 관리자 설정탭: `StoreSlotsEditor`·`SlotChips` 컴포넌트 신설.
+- 수정: `src/lib/data.ts`, `src/lib/settings.ts`, `src/app/api/admin/settings/route.ts`, `src/app/api/admin/reservations/route.ts`, `src/app/api/reservations/route.ts`, `src/app/reserve/page.tsx`, `src/app/admin/page.tsx`. 신규 문서: `docs/관리자_이식_분석_보고서.html`.
+
 ## 2026-07-13 — 🎨 밝은 팔레트 교체: 웜 아이보리 → 쿨 갤러리(A안)
 > 밝은 팔레트 3안 비교(`docs/샘플_라이트팔레트_비교.html`) 중 **A안 "쿨 갤러리"(차가운 흰빛·미술관 모던)** 채택. 브랜드 3색(블루 #043cb2·퍼플 #622698·레드 #b20e19)은 그대로 두고 배경·텍스트 중립톤만 웜→쿨로 교체. 홈 실렌더로 히어로 톤 전환 확인.
 - **`globals.css`** — 표면/텍스트 토큰 교체: `--bg` #f4f1ea→#f4f6f9, `--bg2` #eae6dc→#e9ecf1, `--surface2` #f3efe6→#f0f2f6, `--text` #17182a→#131620, `--muted` #565b74→#535a69, `--faint` #7b8199→#8b93a3. 토큰을 우회하던 하드코딩 웜색(그라디언트 표면·히어로 오버레이 `rgba(244,241,234,…)` 등)도 전부 쿨톤으로 일괄 치환.

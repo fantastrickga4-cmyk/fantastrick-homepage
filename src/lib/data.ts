@@ -140,10 +140,45 @@ export const SOON_THEMES: Theme[] = [
   },
 ];
 
-// 예약 가능한 시간대 (매장 운영시간 기준 — 추후 매장별 세분화 가능)
+// 예약 가능한 시간대 (매장 운영시간 기준 — 전역 기본값. 매장별 설정이 없으면 이걸 사용)
 export const TIME_SLOTS = [
   "10:00", "11:30", "13:00", "14:30", "16:00", "17:30", "19:00", "20:30", "22:00",
 ];
+
+// 요일 라벨 (0=일 … 6=토)
+export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 매장별 예약 시간대 설정.
+//   default: 그 매장의 기본 시간대(모든 요일 공통)
+//   byDow  : 특정 요일만 다르게. 키(0~6)가 있으면 default 대신 그 값을 사용.
+//            빈 배열([]) = 그 요일은 휴무(예약칸 없음).
+export type StoreSlots = {
+  default: string[];
+  byDow: Record<string, string[]>;
+};
+
+// 특정 매장·날짜에 실제 예약 가능한 시간대를 계산한다.
+//   storeSlots 미설정 매장 → 전역 fallback(TIME_SLOTS) 사용 (기존 동작 유지)
+//   설정된 매장 → 그 요일 override가 있으면 그것, 없으면 매장 default
+export function slotsForStoreDate(
+  storeSlots: Record<string, StoreSlots> | undefined,
+  fallback: string[],
+  storeId: string | undefined,
+  date: string,
+): string[] {
+  const ss = storeId ? storeSlots?.[storeId] : undefined;
+  if (!ss) return fallback;
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + "T00:00:00Z") : null;
+  if (!valid || isNaN(valid.getTime())) return ss.default;
+  const dow = String(valid.getUTCDay());
+  if (ss.byDow && Object.prototype.hasOwnProperty.call(ss.byDow, dow)) return ss.byDow[dow] || [];
+  return ss.default;
+}
+
+// 시간 문자열(HH:MM) 정규화 검사
+export function isSlotTime(s: unknown): s is string {
+  return typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
 
 // 예약금 (1인 기준, 원) — 추후 매장/테마별로 조정 가능
 export const DEPOSIT_PER_PERSON = 10000;

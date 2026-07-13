@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>판타스트릭 관리자 이식 분석 보고서</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --line:#2a2f3d;
+    --text:#e8eaf0; --muted:#9aa2b4; --faint:#6b7386;
+    --brand:#3b7bf0; --brand2:#043cb2; --violet:#8f6ae0; --green:#37c98b; --amber:#f3b552; --red:#e06565;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0d0f15,#12141c);color:var(--text);
+    font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 22px 90px}
+  header.hero{border:1px solid var(--line);border-radius:20px;padding:34px 30px;
+    background:radial-gradient(120% 140% at 0% 0%,rgba(59,123,240,.16),transparent 55%),var(--panel)}
+  .eyebrow{color:var(--violet);font-weight:800;letter-spacing:.18em;font-size:12px;text-transform:uppercase}
+  h1{font-size:30px;margin:10px 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;max-width:70ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--muted)}
+  .pill b{color:var(--text)}
+  .warn{margin-top:16px;background:rgba(243,181,82,.09);border:1px solid rgba(243,181,82,.35);
+    border-radius:12px;padding:12px 15px;font-size:13.5px;color:#f6d79a}
+  h2{font-size:21px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);letter-spacing:-.01em}
+  h2 .n{color:var(--brand);font-variant-numeric:tabular-nums}
+  h3{font-size:16.5px;margin:26px 0 6px}
+  p{margin:8px 0}
+  .lead{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+  .tag{display:inline-block;font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .p1{background:rgba(224,101,101,.16);color:#f2a0a0;border:1px solid rgba(224,101,101,.4)}
+  .p2{background:rgba(243,181,82,.15);color:#f3ca8f;border:1px solid rgba(243,181,82,.38)}
+  .p3{background:rgba(154,162,180,.14);color:#c2c8d4;border:1px solid rgba(154,162,180,.32)}
+  .none{background:rgba(224,101,101,.14);color:#eaa;border:1px solid rgba(224,101,101,.3)}
+  .part{background:rgba(243,181,82,.14);color:#f3ca8f;border:1px solid rgba(243,181,82,.3)}
+  .have{background:rgba(55,201,139,.14);color:#7fe0b6;border:1px solid rgba(55,201,139,.32)}
+  code{background:#0c0e14;border:1px solid var(--line);border-radius:6px;padding:1.5px 6px;font-size:12.5px;
+    color:#9fd0ff;font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+  .feat{border-left:3px solid var(--line);padding:2px 0 2px 18px;margin:20px 0}
+  .feat.pri-P1{border-color:var(--red)} .feat.pri-P2{border-color:var(--amber)} .feat.pri-P3{border-color:var(--faint)}
+  .feat h3{margin-top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .kv{font-size:13.5px;margin:6px 0}
+  .kv b{color:var(--violet)}
+  .easy{color:var(--muted);font-size:13px;font-style:italic;margin:4px 0 10px}
+  .sprint{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:14px 0}
+  .sprint h3{margin:0 0 8px;font-size:16px}
+  .sprint ol{margin:6px 0 0;padding-left:20px}
+  .sprint li{margin:6px 0;font-size:14px}
+  .s1{border-left:4px solid var(--red)} .s2{border-left:4px solid var(--amber)} .s3{border-left:4px solid var(--green)}
+  ul.skip{list-style:none;padding:0;margin:10px 0}
+  ul.skip li{padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  ul.skip li b{color:var(--text)}
+  .bottom{background:linear-gradient(120deg,rgba(59,123,240,.14),rgba(143,106,224,.12));
+    border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin-top:30px;font-size:15px}
+  .foot{margin-top:40px;color:var(--faint);font-size:12.5px;text-align:center}
+  .num{color:var(--green);font-weight:800;font-variant-numeric:tabular-nums}
+  @media(max-width:640px){h1{font-size:24px}.wrap{padding:30px 15px 60px}th,td{padding:8px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">기존 사이트 → 새 홈페이지 이식 분석</div>
+    <h1>판타스트릭 관리자 기능 이식 보고서</h1>
+    <p class="sub">기존 <b>fantastrick.co.kr</b>(워드프레스+Booked)의 관리자 기능을, 우리가 새로 만든
+      <b>Next.js 관리자 페이지</b>로 옮기기 위해 "무엇이 이미 되고 / 무엇이 빠졌고 / 어떻게 채울지"를 정리했습니다.</p>
+    <div class="meta-row">
+      <span class="pill">기존: <b>WordPress 5.5 + Booked</b></span>
+      <span class="pill">우리: <b>Next.js + Supabase</b></span>
+      <span class="pill">현재 관리자 탭 <b>6개</b></span>
+      <span class="pill">분석일 <b>2026-07-14</b></span>
+    </div>
+    <div class="warn">🔒 기존 사이트는 <b>읽기 전용으로 분석만</b> 했고 어떤 것도 변경하지 않았습니다. (로그인→화면 열람→스크린샷)</div>
+  </header>
+
+  <h2>한눈에 보기 <span style="font-size:13px;color:var(--faint);font-weight:400">— 14개 기능 갭 요약</span></h2>
+  <div class="card" style="padding:6px 14px">
+  <table>
+    <thead><tr><th>#</th><th>기능 (기존 Booked 기준)</th><th>우리 현재</th><th>우선순위</th><th>공수</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>입금대기 전용 큐(입금확인 탭)</td><td><span class="tag part">부분있음</span></td><td><span class="tag p1">P1</span></td><td>小</td></tr>
+      <tr><td>2</td><td>요일별·매장별 타임슬롯</td><td><span class="tag none">없음</span></td><td><span class="tag p1">P1</span></td><td>中</td></tr>
+      <tr><td>3</td><td>예약버퍼(임박예약 차단)</td><td><span class="tag part">부분있음</span></td><td><span class="tag p2">P2</span></td><td>小</td></tr>
+      <tr><td>4</td><td>예약가능기간 제한(Before/After)</td><td><span class="tag part">부분있음</span></td><td><span class="tag p2">P2</span></td><td>小</td></tr>
+      <tr><td>5</td><td>취소마감(Cancellation Buffer)</td><td><span class="tag none">없음</span></td><td><span class="tag p2">P2</span></td><td>中</td></tr>
+      <tr><td>6</td><td>슬롯당 예약수 제한</td><td><span class="tag have">있음(1팀)</span></td><td>—</td><td>—</td></tr>
+      <tr><td>7</td><td>SMS 잔여건수 표시</td><td><span class="tag none">없음</span></td><td><span class="tag p2">P2</span></td><td>小</td></tr>
+      <tr><td>8</td><td>테마별×이벤트별 문자 템플릿</td><td><span class="tag part">부분있음</span></td><td><span class="tag p1">P1</span></td><td>中</td></tr>
+      <tr><td>9</td><td>입금확인·관리자취소 문자 이벤트</td><td><span class="tag part">부분있음</span></td><td><span class="tag p1">P1</span></td><td>小</td></tr>
+      <tr><td>10</td><td>테마별 누적 예약수(인기지표)</td><td><span class="tag part">부분있음</span></td><td><span class="tag p3">P3</span></td><td>小</td></tr>
+      <tr><td>11</td><td>테마 상세 메타(난이도·인원·시간·평점·갤러리)</td><td><span class="tag part">부분있음</span></td><td><span class="tag p2">P2</span></td><td>中</td></tr>
+      <tr><td>12</td><td>팝업 공지사항(모달)</td><td><span class="tag none">없음</span></td><td><span class="tag p2">P2</span></td><td>中</td></tr>
+      <tr><td>13</td><td>비회원(Guest) 예약</td><td><span class="tag have">있음(기본)</span></td><td>—</td><td>—</td></tr>
+      <tr><td>14</td><td>Custom Fields(예약폼 커스텀 입력)</td><td><span class="tag none">없음</span></td><td><span class="tag p3">P3</span></td><td>中</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>기존 사이트 예약 시스템의 정체</h2>
+  <div class="card">
+    <p class="lead">기존 관리자는 <b>워드프레스 + Booked 예약 플러그인</b>이었습니다. "예약확인" 메뉴가 곧 예약 운영의 심장입니다.</p>
+    <table>
+      <thead><tr><th>메뉴</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td><b>예약확인</b></td><td>월별 캘린더 뷰 + 테마별 필터(사자의 서·태초의 신부·락다운시티·시간의 영속성). 상단에 <b>“SMS 남은 건수 : 2,759건”</b> → 실제 문자 발송 중</td></tr>
+        <tr><td><b>입금확인</b></td><td>입금 안 된 예약만 모아 승인 대기 큐로 관리</td></tr>
+        <tr><td><b>테마 설정</b></td><td>테마=캘린더 4개. 누적 예약수: 태초의 신부 <span class="num">13,867</span> · 사자의 서 <span class="num">7,062</span> · 락다운시티 <span class="num">1,160</span> · 시간의 영속성 <span class="num">229</span></td></tr>
+        <tr><td><b>환경 설정</b></td><td>요일별 타임슬롯 · 예약버퍼 · 예약 가능기간 · 취소마감 · 슬롯당 예약수 · <b>테마별×이벤트별 SMS 템플릿</b> · Custom Fields</td></tr>
+      </tbody>
+    </table>
+    <p class="easy">그 외 Rooms(테마 상세: 난이도 Easy/Normal/Hard·인원·소요시간·평점·갤러리), 팝업 공지(“DLC 연기안내”·“공지사항”), 연락처 폼(CF7)이 있었습니다.</p>
+  </div>
+
+  <h2>기능별 갭 & 적용 방안</h2>
+
+  <div class="feat pri-P1">
+    <h3>1. 입금대기 전용 큐 <span class="tag p1">P1</span><span class="tag part">부분있음</span></h3>
+    <p class="easy">돈이 아직 안 들어온 예약만 따로 모아 “승인할까?”를 처리하는 대기줄.</p>
+    <p class="kv"><b>우리 현재</b> · 상태필터 <code>pending</code>으로 거를 수 있고(‘확정 대기(미입금)’ 통계 + 30초 폴링 🔔새 예약 알림) 30분 뒤 자동취소(<code>lib/expire.ts</code>)까지 있음. 단 “미입금만” 콕 집는 전용 필터는 없음.</p>
+    <p class="kv"><b>적용</b> · 새 탭 대신 <code>reservations/route.ts</code> GET에 <code>deposit=unpaid</code> 추가(<code>.eq("deposit_paid",false)</code>) + 예약탭에 “입금대기 N건” 버튼. <b>공수 小.</b></p>
+  </div>
+
+  <div class="feat pri-P1">
+    <h3>2. 요일별·매장별 타임슬롯 <span class="tag p1">P1</span><span class="tag none">없음</span></h3>
+    <p class="easy">기존은 “월요일은 이 시간들, 토요일은 저 시간들”처럼 요일·매장마다 시간표를 다르게 짤 수 있음.</p>
+    <p class="kv"><b>우리 현재</b> · <code>TIME_SLOTS</code> 1세트가 <b>모든 매장·모든 요일 공통</b>. 그런데 2호점은 실제로 평일 부분운영이라 <b>안 여는 날에도 예약칸이 뜸.</b></p>
+    <p class="kv"><b>적용</b> · <code>app_settings.time_slots</code>를 <code>{매장:{default,요일override}}</code> 구조 JSON으로 확장 + <code>slotsFor(store,date)</code> 헬퍼 신설(공개 예약화면·검증·관리자 3곳 동시 반영). 우선 “매장별 1세트”부터, 요일별은 뒤로. <b>공수 中.</b></p>
+  </div>
+
+  <div class="feat pri-P2">
+    <h3>3~5. 예약버퍼 · 예약가능기간 · 취소마감 <span class="tag p2">P2</span></h3>
+    <table>
+      <thead><tr><th>기능</th><th>우리 현재</th><th>적용 방안</th></tr></thead>
+      <tbody>
+        <tr><td>예약버퍼(임박 차단)</td><td>부분있음 — 오픈규칙(이용 7일전 밤9시)으로 미래는 막히나 “당일 N시간 전” 하한은 없음</td><td><code>reservationDateState</code>에 <code>minLeadMinutes</code> 추가, 지난·임박 슬롯 제외</td></tr>
+        <tr><td>예약가능기간</td><td>부분있음 — “일주일치만” 여는 방식이 방탈출에 오히려 적합</td><td>필요 시 <code>reserve_until</code> 키 하나로 충분</td></tr>
+        <tr><td>취소마감</td><td>없음 — 대신 <b>환불율 규정</b>(<code>refund_rate</code>)으로 처리</td><td>취소 API에서 남은시간→차단 or 환불율 자동계산(규정표를 <code>app_settings</code>에)</td></tr>
+      </tbody>
+    </table>
+    <p class="kv"><b>참고 #6</b> 슬롯당 예약수는 <code>schema.sql</code>의 <code>uq_res_slot</code>로 <b>한 슬롯 1팀 전세</b> = 방탈출에 정확. 변경 불필요.</p>
+  </div>
+
+  <div class="feat pri-P1">
+    <h3>7 · 8 · 9. 문자(SMS) 3종 갭 <span class="tag p1">P1</span><span class="tag p2">P2</span></h3>
+    <p class="easy">기존은 문자를 훨씬 세밀하게: 잔여건수를 화면에 띄우고, 테마별·상황별로 다른 문구를 보냄.</p>
+    <p class="kv"><b>잔여건수(P2·小)</b> · 우리 <code>sms/route.ts</code>엔 잔여 조회 없음 → 알리고 <code>/remain/</code> 호출해 <code>SmsTab</code> 상단 배지.</p>
+    <p class="kv"><b>이벤트 확장(P1·小)</b> · 우리는 <code>confirm/cancel/reminder</code> 3종뿐, 기존은 <b>예약/취소/입금/관리자취소</b> 4종. <b>“입금 확인됐습니다” 문자가 없음</b> → <code>type</code>에 <code>payment</code>·<code>admin_cancel</code> 추가하고 입금 토글 시 자동발송.</p>
+    <p class="kv"><b>테마별 문구(P2·中)</b> · <code>sms_templates</code>에 <code>theme_id</code> 컬럼 추가, <code>getTemplate(type,themeId)</code> 없으면 전역 폴백. 4테마라 실무상 이벤트확장이 먼저.</p>
+  </div>
+
+  <div class="feat pri-P2">
+    <h3>11. 테마 상세 메타 <span class="tag p2">P2</span><span class="tag part">부분있음</span></h3>
+    <p class="easy">테마 소개에 뜨는 난이도·인원·소요시간·별점·사진 여러 장.</p>
+    <table>
+      <thead><tr><th>기존 필드</th><th>우리 대응</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>난이도 Easy/Normal/Hard</td><td><code>difficulty:number</code></td><td><span class="tag have">있음(라벨매핑만)</span></td></tr>
+        <tr><td>소요시간</td><td><code>minutes:number</code></td><td><span class="tag have">있음</span></td></tr>
+        <tr><td>인원(정원)</td><td>—</td><td><span class="tag none">없음</span></td></tr>
+        <tr><td>평점</td><td>리뷰 평균으로 산출 가능</td><td><span class="tag none">없음</span></td></tr>
+        <tr><td>갤러리(여러 장)</td><td><code>poster</code> 1장만</td><td><span class="tag none">없음</span></td></tr>
+      </tbody>
+    </table>
+    <p class="kv"><b>적용</b> · <code>Theme</code> 타입에 <code>players?</code>·<code>gallery?[]</code> 추가(코드 상수), 평점은 <code>reviews</code> 평균. 관리자보다 소개페이지 품질 이슈.</p>
+  </div>
+
+  <div class="feat pri-P2">
+    <h3>12. 팝업 공지사항 <span class="tag p2">P2</span><span class="tag none">없음</span></h3>
+    <p class="easy">홈 들어오면 뜨는 공지 팝업(휴무·이벤트 안내). 기존엔 “DLC 연기안내”·“공지사항”.</p>
+    <p class="kv"><b>적용</b> · <code>app_settings</code>에 <code>notice{enabled,title,body,until}</code> 추가 → 설정탭에 입력 UI → 공개 <code>api/config</code>로 노출 → 홈에 <code>&lt;NoticeModal&gt;</code>(오늘 하루 안 보기 localStorage). 사장님이 코드 수정 없이 공지 가능. <b>공수 中.</b></p>
+  </div>
+
+  <div class="feat pri-P3">
+    <h3>10 · 13 · 14. 나머지 <span class="tag p3">P3</span></h3>
+    <p class="kv"><b>누적 예약수</b> · 우리 <code>buildStats.byTheme</code>로 상대비교는 되나 새 DB라 0부터. 마케팅 문구 필요시 <code>theme_base_count</code> 시작값.</p>
+    <p class="kv"><b>비회원 예약</b> · <span class="tag have">이미 있음</span> — 전화+이름+<b>PIN 4자리</b>가 Booked Guest보다 단순·안전. 추가 불필요.</p>
+    <p class="kv"><b>Custom Fields</b> · 예약폼에 자유 <code>request</code> 필드 하나면 충분(완전 동적 필드빌더는 과함).</p>
+  </div>
+
+  <h2>권장 실행 순서</h2>
+
+  <div class="sprint s1">
+    <h3>🟥 스프린트 1 — P1 · 하루 운영 필수</h3>
+    <ol>
+      <li><b>입금대기 필터</b>(#1): <code>deposit=unpaid</code> + 예약탭 버튼 <span style="color:var(--faint)">[小]</span></li>
+      <li><b>문자 이벤트 확장</b>(#9): <code>payment</code>·<code>admin_cancel</code> + 입금 토글 자동안내 <span style="color:var(--faint)">[小]</span></li>
+      <li><b>매장별 타임슬롯</b>(#2 1단계): 2호점 평일 오예약 차단 <span style="color:var(--faint)">[中]</span></li>
+    </ol>
+  </div>
+  <div class="sprint s2">
+    <h3>🟧 스프린트 2 — P2 · 있으면 좋음</h3>
+    <ol>
+      <li><b>팝업 공지사항</b>(#12) — 사장님 셀프 공지 <span style="color:var(--faint)">[中]</span></li>
+      <li><b>SMS 잔여건수</b>(#7) + <b>예약버퍼 하한</b>(#3) + <b>취소마감/환불율 자동계산</b>(#5) <span style="color:var(--faint)">[小~中]</span></li>
+      <li><b>테마별 문자 문구</b>(#8) + <b>요일별 슬롯</b>(#2 2단계) <span style="color:var(--faint)">[中]</span></li>
+    </ol>
+  </div>
+  <div class="sprint s3">
+    <h3>🟩 스프린트 3 — P3 · 여유될 때</h3>
+    <ol>
+      <li><b>테마 메타 보강</b>(정원·갤러리·평점) · <b>예약폼 요청사항 필드</b> · <b>테마 누적 시작값</b></li>
+    </ol>
+  </div>
+
+  <h2>굳이 이식 안 해도 되는 것</h2>
+  <p class="lead">워드프레스 특유의 인프라라, 우리 스택엔 필요 없거나 이미 다른 방식으로 해결된 것들.</p>
+  <ul class="skip">
+    <li><b>Elementor / Slider Revolution</b> — WP용 페이지빌더·슬라이더. 우리는 React 컴포넌트로 직접 제작.</li>
+    <li><b>WP File Manager</b> — 서버 파일 브라우저. Next.js엔 개념 없음(보안상 안 만드는 게 나음).</li>
+    <li><b>Instagram Feed / Simple Ajax Chat</b> — 임베드 한 줄이면 되고 관리자 기능 아님.</li>
+    <li><b>WPS Hide Login / Redirection / WP Mail SMTP</b> — 우리 <code>admin/login</code>(쿠키 세션)·Vercel 라우팅으로 이미 해결.</li>
+    <li><b>ACF PRO / Custom Post Type(Rooms)</b> — WP 데이터 모델링 도구. 우리는 <code>data.ts</code> 상수 + Supabase 테이블이 그 역할.</li>
+    <li><b>Front-End Agents / Calendar Feeds</b> — Booked 부가기능. 1인 매장엔 과함.</li>
+  </ul>
+
+  <div class="bottom">
+    <b>결론</b> — 핵심 예약운영 3가지(<b>입금대기 필터 · 입금/관리자취소 문자 · 매장별 슬롯</b>)만 P1으로 먼저 채우면
+    Booked 대비 실사용 갭은 대부분 메워집니다. 나머지(요일별 슬롯·테마별 문자·팝업 공지)는 “있으면 좋음” 수준이라
+    스프린트 2~3으로 미뤄도 무방합니다. 워드프레스의 페이지 편집·플러그인 인프라는 <b>옮길 필요 없습니다.</b>
+  </div>
+
+  <div class="foot">판타스트릭 관리자 이식 분석 · 2026-07-14 · 기존 사이트는 읽기 전용 분석만 수행(무변경)</div>
+</div>
+</body>
+</html>

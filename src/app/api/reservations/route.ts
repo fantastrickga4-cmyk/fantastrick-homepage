@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from "@/lib/util";
-import { themeById } from "@/lib/data";
+import { themeById, slotsForStoreDate } from "@/lib/data";
 import { getConfig } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { sweepExpiredReservations } from "@/lib/expire";
@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "현재 예약을 받지 않는 테마입니다." }, { status: 400 });
   }
 
-  // 요청한 시간이 관리자 설정의 허용 시간대에 있는지 검사
-  if (!config.timeSlots.includes(time)) {
+  // 요청한 시간이 (그 매장·그 요일의) 허용 시간대에 있는지 검사
+  const allowedSlots = slotsForStoreDate(config.storeSlots, config.timeSlots, theme.store, date);
+  if (!allowedSlots.includes(time)) {
     return NextResponse.json({ error: "유효하지 않은 시간입니다." }, { status: 400 });
   }
 
