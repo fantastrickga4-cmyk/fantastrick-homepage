@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
-import { DEFAULT_TEMPLATES } from "@/lib/sms";
+import { DEFAULT_TEMPLATES, kakaoConfigured } from "@/lib/sms";
 
 // 템플릿 3종 + 최근 발송내역 + 알리고 연동여부
 export async function GET(req: NextRequest) {
@@ -18,12 +18,19 @@ export async function GET(req: NextRequest) {
   };
   const { data: log } = await db
     .from("sms_log")
-    .select("id, phone, body, type, status, error, created_at")
+    .select("id, phone, body, type, status, error, channel, created_at")
     .order("created_at", { ascending: false })
     .limit(50);
 
   const aligoReady = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
-  return NextResponse.json({ ok: true, templates, log: log || [], aligoReady });
+  // 알림톡 준비: 발신프로필키 + 타입별 템플릿코드 (하나라도 있으면 부분 준비)
+  const kakaoReady = kakaoConfigured();
+  const kakaoTemplates = {
+    confirm: kakaoConfigured("confirm"),
+    cancel: kakaoConfigured("cancel"),
+    reminder: kakaoConfigured("reminder"),
+  };
+  return NextResponse.json({ ok: true, templates, log: log || [], aligoReady, kakaoReady, kakaoTemplates });
 }
 
 // 템플릿 수정

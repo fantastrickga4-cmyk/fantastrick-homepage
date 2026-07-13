@@ -549,11 +549,11 @@ function SettingsTab() {
 }
 
 /* ============ 문자 탭 ============ */
-type SmsLog = { id: string; phone: string; body: string; type: string; status: string; error: string | null; created_at: string };
+type SmsLog = { id: string; phone: string; body: string; type: string; status: string; error: string | null; channel?: string | null; created_at: string };
 function SmsTab() {
   const [tpls, setTpls] = useState<Record<string, string>>({ confirm: "", cancel: "", reminder: "" });
-  const [log, setLog] = useState<SmsLog[]>([]); const [aligo, setAligo] = useState(false); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
-  const load = () => fetch("/api/admin/sms").then((r) => r.json()).then((j) => { setTpls(j.templates); setLog(j.log || []); setAligo(j.aligoReady); setLoaded(true); });
+  const [log, setLog] = useState<SmsLog[]>([]); const [aligo, setAligo] = useState(false); const [kakao, setKakao] = useState(false); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
+  const load = () => fetch("/api/admin/sms").then((r) => r.json()).then((j) => { setTpls(j.templates); setLog(j.log || []); setAligo(j.aligoReady); setKakao(!!j.kakaoReady); setLoaded(true); });
   useEffect(() => { load(); }, []);
   async function saveTpl(type: string) {
     setMsg("");
@@ -564,8 +564,12 @@ function SmsTab() {
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
     <div>
-      <div className={"notice " + (aligo ? "ok" : "warn")} style={{ marginBottom: 16 }}>
-        {aligo ? "✅ 알리고 문자 연동됨 — 확정/취소 시 자동 발송됩니다." : "⚠️ 알리고(문자 서비스) 키가 아직 없어요. 지금은 발송 내역만 기록되고 실제 문자는 나가지 않아요. (가입 후 ALIGO 키 등록 시 자동 발송)"}
+      <div className={"notice " + (kakao ? "ok" : aligo ? "ok" : "warn")} style={{ marginBottom: 16 }}>
+        {kakao
+          ? "✅ 카카오 알림톡 연동됨 — 확정/취소/리마인더가 카톡으로 발송됩니다. (카톡 실패 시 문자로 자동 대체)"
+          : aligo
+          ? "✅ 알리고 문자 연동됨 — 확정/취소 시 자동 발송됩니다. (알림톡 키 등록 시 카톡 우선 발송)"
+          : "⚠️ 알리고/알림톡 키가 아직 없어요. 지금은 발송 내역만 기록되고 실제 발송은 안 나가요. (가입·키 등록 시 자동 발송)"}
       </div>
       {(["confirm", "cancel", "reminder"] as const).map((type) => (
         <div key={type} className="admin-card">
@@ -584,6 +588,9 @@ function SmsTab() {
               <div style={{ display: "flex", gap: 8 }}>
                 <span style={{ color: l.status === "sent" ? "var(--green)" : l.status === "failed" ? "var(--danger)" : "var(--faint)", fontWeight: 700, minWidth: 54 }}>
                   {l.status === "sent" ? "발송" : l.status === "failed" ? "실패" : "미발송"}
+                </span>
+                <span style={{ minWidth: 34, fontSize: 11, fontWeight: 700, color: l.channel === "alimtalk" ? "#3c1e1e" : "var(--faint)", background: l.channel === "alimtalk" ? "#fee500" : "var(--bg2)", borderRadius: 5, padding: "1px 6px", alignSelf: "center" }}>
+                  {l.channel === "alimtalk" ? "카톡" : "문자"}
                 </span>
                 <span style={{ minWidth: 110 }}>{formatPhone(l.phone)}</span>
                 <span style={{ color: "var(--faint)" }}>{l.created_at?.replace("T", " ").slice(5, 16)}</span>

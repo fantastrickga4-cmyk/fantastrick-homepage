@@ -40,7 +40,7 @@ export async function sendSms(phone: string, body: string, type: string): Promis
   const sender = process.env.ALIGO_SENDER;
 
   if (!key || !userId || !sender) {
-    await db?.from("sms_log").insert({ phone, body, type, status: "skipped", error: "ALIGO 키 미설정(미발송)" });
+    await db?.from("sms_log").insert({ phone, body, type, status: "skipped", channel: "sms", error: "ALIGO 키 미설정(미발송)" });
     return { ok: false, skipped: true };
   }
   try {
@@ -48,10 +48,63 @@ export async function sendSms(phone: string, body: string, type: string): Promis
     const res = await fetch("https://apis.aligo.in/send/", { method: "POST", body: form });
     const j = await res.json();
     const ok = String(j.result_code) === "1";
-    await db?.from("sms_log").insert({ phone, body, type, status: ok ? "sent" : "failed", error: ok ? null : String(j.message || "") });
+    await db?.from("sms_log").insert({ phone, body, type, status: ok ? "sent" : "failed", channel: "sms", error: ok ? null : String(j.message || "") });
     return { ok };
   } catch (e) {
-    await db?.from("sms_log").insert({ phone, body, type, status: "failed", error: String(e) });
+    await db?.from("sms_log").insert({ phone, body, type, status: "failed", channel: "sms", error: String(e) });
+    return { ok: false };
+  }
+}
+
+// 알림톡 설정 완료 여부 (senderkey + 해당 타입 템플릿코드 존재)
+const KAKAO_TPL: Record<string, string | undefined> = {
+  confirm: process.env.ALIGO_KAKAO_TPL_CONFIRM,
+  cancel: process.env.ALIGO_KAKAO_TPL_CANCEL,
+  reminder: process.env.ALIGO_KAKAO_TPL_REMINDER,
+};
+export function kakaoConfigured(type?: string): boolean {
+  const base = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER && process.env.ALIGO_KAKAO_SENDERKEY);
+  if (!type) return base;
+  return base && !!KAKAO_TPL[type];
+}
+
+// 알림톡 발송 토큰 (30초 유효). 실패 시 null.
+async function getKakaoToken(apikey: string, userid: string): Promise<string | null> {
+  try {
+    const form = new URLSearchParams({ apikey, userid });
+    const res = await fetch("https://kakaoapi.aligo.in/akv10/token/create/30/s/", { method: "POST", body: form });
+    const j = await res.json();
+    return String(j.code) === "0" && j.token ? String(j.token) : null;
+  } catch {
+    return null;
+  }
+}
+
+// 카카오 알림톡 발송. 실패 시 알리고가 자동으로 SMS 대체발송(failover). 미설정이면 null → 호출측이 SMS 폴백.
+export async function sendAlimtalk(phone: string, body: string, type: string): Promise<{ ok: boolean } | null> {
+  const apikey = process.env.ALIGO_API_KEY;
+  const userid = process.env.ALIGO_USER_ID;
+  const sender = process.env.ALIGO_SENDER;
+  const senderkey = process.env.ALIGO_KAKAO_SENDERKEY;
+  const tpl_code = KAKAO_TPL[type];
+  if (!apikey || !userid || !sender || !senderkey || !tpl_code) return null; // 미설정 → SMS 폴백
+
+  const db = getSupabase();
+  const token = await getKakaoToken(apikey, userid);
+  if (!token) return null; // 토큰 실패 → SMS 폴백
+  try {
+    const form = new URLSearchParams({
+      apikey, userid, token, senderkey, tpl_code, sender,
+      receiver_1: phone, subject_1: "판타스트릭 예약 안내", message_1: body,
+      failover: "Y", fsubject_1: "판타스트릭", fmessage_1: body, // 알림톡 실패 시 SMS 자동대체
+    });
+    const res = await fetch("https://kakaoapi.aligo.in/akv10/alimtalk/send/", { method: "POST", body: form });
+    const j = await res.json();
+    const ok = String(j.code) === "0";
+    await db?.from("sms_log").insert({ phone, body, type, status: ok ? "sent" : "failed", channel: "alimtalk", error: ok ? null : String(j.message || "") });
+    return { ok };
+  } catch (e) {
+    await db?.from("sms_log").insert({ phone, body, type, status: "failed", channel: "alimtalk", error: String(e) });
     return { ok: false };
   }
 }
@@ -66,5 +119,8 @@ export async function sendReservationSms(
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
     refundRate: r.refund_rate ?? undefined,
   });
+  // 1순위 알림톡(실패 시 알리고가 SMS 자동대체). 알림톡 미설정이면 기존 SMS 경로.
+  const kakao = await sendAlimtalk(r.phone, body, type);
+  if (kakao) return kakao;
   return sendSms(r.phone, body, type);
 }
