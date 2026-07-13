@@ -306,12 +306,10 @@ function ReserveInner() {
             autoComplete="off"
             onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
           />
-          <div className="hint">※ 예약 조회·취소할 때 필요해요. 잊지 않게 기억해 주세요.</div>
         </div>
 
         <div className="notice info">
-          예약금 <b>{deposit.toLocaleString()}원</b> ·
-          결제 연결은 준비 중이며, 지금은 예약 신청만 접수됩니다.
+          예약 조회·취소할 때 <b>비밀번호</b>가 필요해요. 잊지 않게 기억해 주세요.
         </div>
 
         {err && <div className="msg-err">⚠️ {err}</div>}
