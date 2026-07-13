@@ -168,8 +168,8 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">INTERACTIVE CONTENTS</div>
-            <h2 className="title">당신을 무대 위에 세우는 이야기</h2>
-            <p className="lead">방탈출 · 머더미스터리 · 이머시브 — 지금 문이 열린 콘텐츠.</p>
+            <h2 className="title">당신이 만들어가는 이야기</h2>
+            <p className="lead">테마 목록</p>
           </div>
           <div className="theme-grid reveal">
             {THEMES.map((t, i) => (
@@ -194,7 +194,7 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">REVIEWS</div>
-            <h2 className="title">직접 겪은 사람들의 이야기</h2>
+            <h2 className="title">다녀간 이들이 남긴 이야기</h2>
           </div>
           <div className="rev-summary reveal">
             <div className="rs-score">
@@ -254,7 +254,7 @@ export default function Home() {
           <div className="biz-head reveal">
             <div>
               <div className="eyebrow gold">BUSINESS · B2B</div>
-              <h2 className="title">직접, 만듭니다</h2>
+              <h2 className="title">짓고, 만들고, 움직이게 합니다</h2>
               <p className="lead">11년 직영으로 검증한 콘텐츠·공간·장치 제작.</p>
             </div>
             <Link href="/business" className="btn gold">제작 역량 보기 →</Link>
@@ -265,7 +265,6 @@ export default function Home() {
             <div className="cap reveal" style={{ "--i": 2 } as CSSProperties}><span className="cno">03</span><div className="en">Tech / Device</div><h4>기술 · 장치</h4><span className="ckw">잠금장치 · 조명·음향 · 센서 기믹</span></div>
           </div>
           <div className="biz-cta reveal">
-            <p className="bt-line">컨설팅 · 외주 제작 · 장치 도입 — <b>직영 3곳 · 테마 4종</b>이 곧 포트폴리오입니다.</p>
             <div className="bt-actions">
               <Link href="/business" className="btn gold">비즈니스 문의 →</Link>
               <a href="mailto:fantastrick@fantastrick.co.kr" className="btn gold-ghost">이메일</a>
@@ -279,7 +278,7 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <div className="eyebrow">STORES · 오시는 길</div>
-            <h2 className="title">강남 한 블록, 세 개의 문</h2>
+            <h2 className="title">강남에서 만나는 세 개의 무대</h2>
             <p className="lead">강남역·신논현역 사이 — 세 매장 모두 걸어서 오갈 수 있습니다.</p>
           </div>
           <div className="stores-layout reveal">
