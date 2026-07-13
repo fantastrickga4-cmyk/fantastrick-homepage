@@ -5,6 +5,7 @@ export type Store = {
   tag: string;
   name: string;
   addr: string;
+  phone: string;
   hours: string;
   themes: string;
   tgc?: boolean;
@@ -32,6 +33,7 @@ export const STORES: Store[] = [
     tag: "1호점",
     name: "판타스트릭 1호점",
     addr: "강남대로79길 39, B1",
+    phone: "0507-1334-0481",
     hours: "평일 11:00–23:30 · 주말 09:00–23:30 · 연중무휴",
     themes: "태초의 신부 — 이브 프로젝트",
   },
@@ -40,6 +42,7 @@ export const STORES: Store[] = [
     tag: "2호점",
     name: "판타스트릭 2호점",
     addr: "사평대로 353, B1",
+    phone: "0507-1363-5597",
     hours: "금·토·일 11:00–23:30 · 월~목 부분운영 / 주말 무휴",
     themes: "사자의 서 — Book of Duat",
   },
@@ -48,6 +51,7 @@ export const STORES: Store[] = [
     tag: "3호점 ★",
     name: "판타스트릭 TGC",
     addr: "강남대로83길 34, B1",
+    phone: "010-4547-0481",
     hours: "평일 12:00–23:30 · 주말 10:00–23:30 · 연중무휴",
     themes: "락다운시티 · 시간의 영속성(머더룸)",
     tgc: true,

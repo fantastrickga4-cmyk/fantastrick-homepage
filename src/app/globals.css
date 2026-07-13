@@ -301,6 +301,8 @@ nav.main a:hover{color:var(--text)}
 /* 주소: 호버 시에만 노출(테마섹션 메타 패턴 재사용) */
 .store .store-addr{margin-top:4px;font-size:11px;color:var(--faint);opacity:0;max-height:0;transform:translateY(4px);transition:opacity .3s,transform .3s,max-height .3s}
 .store:hover .store-addr{opacity:1;max-height:24px;transform:none}
+.store .store-tel{color:var(--brand-bright);font-weight:600;text-decoration:none}
+.store .store-tel:hover{text-decoration:underline}
 .stores-note{margin-top:2px;font-size:11px;color:var(--faint)}
 .stores-layout{display:grid;grid-template-columns:1fr 1.08fr;gap:20px;align-items:stretch}
 @media(max-width:760px){.stores-layout{grid-template-columns:1fr}}
