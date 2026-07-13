@@ -202,8 +202,7 @@ function ReserveInner() {
   return (
     <div className="formwrap">
       <div className="page-top" />
-      <h2 className="title" style={{ marginBottom: 4 }}>테마 예약</h2>
-      <p className="lead" style={{ marginBottom: 22 }}>원하는 테마와 시간을 골라 예약하세요. (회원가입 없이 전화번호로 예약)</p>
+      <h2 className="title" style={{ marginBottom: 22 }}>테마 예약</h2>
 
       <div className="card">
         {/* 테마 선택 */}

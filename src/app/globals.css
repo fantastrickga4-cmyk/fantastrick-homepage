@@ -436,6 +436,11 @@ footer ul li{padding:3px 0}
 .rcal-cell.locked{color:var(--faint);border:1px dashed rgba(20,22,42,.2);
   background:repeating-linear-gradient(-45deg,rgba(20,22,42,.055) 0 6px,rgba(20,22,42,.02) 6px 12px)}  /* 오픈 전 — 뉴트럴 빗금+점선보더+자물쇠 */
 .rcal-cell.locked .rcal-d{opacity:.7}
+/* 오픈 전 날짜를 '선택'한 상태 — 강한 색 대신 은은한 블루 표시(빗금 유지) */
+.rcal-cell.locked.on{color:var(--brand);border:1.5px solid var(--brand-bright);
+  background:repeating-linear-gradient(-45deg,rgba(47,111,224,.16) 0 6px,rgba(47,111,224,.05) 6px 12px);
+  box-shadow:0 0 0 3px rgba(47,111,224,.12)}
+.rcal-cell.locked.on .rcal-d{opacity:1;font-weight:800}
 .rcal-cell .rcal-lk{position:absolute;bottom:2px;right:3px;font-size:9px;line-height:1}
 .rcal-cell.empty{visibility:hidden;cursor:default}
 .rcal-sel{margin-top:10px;font-size:13px;color:var(--muted)}
