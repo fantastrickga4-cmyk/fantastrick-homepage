@@ -19,6 +19,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#f4f6f9",
+  // 이 사이트는 밝은 테마 전용 — 모바일 브라우저(삼성 인터넷 등)의 "다크 강제 반전" 방지
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
