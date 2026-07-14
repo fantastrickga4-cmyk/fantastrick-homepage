@@ -148,13 +148,54 @@ export const TIME_SLOTS = [
 // 요일 라벨 (0=일 … 6=토)
 export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 매장별 예약 시간대 설정.
-//   default: 그 매장의 기본 시간대(모든 요일 공통)
+// 예약 시간대 설정(매장·테마 공용 구조).
+//   default: 기본 시간대(모든 요일 공통)
 //   byDow  : 특정 요일만 다르게. 키(0~6)가 있으면 default 대신 그 값을 사용.
 //            빈 배열([]) = 그 요일은 휴무(예약칸 없음).
-export type StoreSlots = {
+export type SlotSchedule = {
   default: string[];
   byDow: Record<string, string[]>;
+};
+export type StoreSlots = SlotSchedule; // (기존 이름 유지 — 매장별 설정에서 사용)
+
+// 테마별·요일별 예약 시간대 — 기존 fantastrick.co.kr(Booked) 실제 운영 시간표를 그대로 옮긴 값.
+// 테마마다 시작시각·간격이 전부 다르고(사자의 서 70분 간격 / 락다운시티 2시간 간격),
+// 주말은 더 일찍 시작해 칸이 늘어난다. 2026-07-17~23 (7개 요일) 실측.
+//   default = 평일 기준, byDow = 다른 요일만 덮어쓰기 (0=일 … 6=토)
+export const THEME_SLOTS: Record<string, SlotSchedule> = {
+  // 1호점 — 태초의 신부 (월~목 / 금 / 주말 3종)
+  firstfoundbride: {
+    default: ["12:00", "14:00", "15:20", "16:40", "18:00", "19:20", "21:20"], // 월·화·수·목
+    byDow: {
+      "5": ["12:00", "13:20", "14:40", "16:00", "17:20", "18:40", "20:00", "21:20"], // 금
+      "6": ["10:00", "11:20", "12:40", "14:00", "15:20", "16:40", "18:00", "19:20", "20:40", "22:00"], // 토
+      "0": ["10:00", "11:20", "12:40", "14:00", "15:20", "16:40", "18:00", "19:20", "20:40", "22:00"], // 일
+    },
+  },
+  // 2호점 — 사자의 서 (70분 간격)
+  bookofduat: {
+    default: ["12:30", "13:40", "14:50", "16:00", "17:10", "18:20", "19:30", "20:40", "21:50"], // 월~금
+    byDow: {
+      "6": ["12:00", "13:10", "14:20", "15:30", "16:40", "17:50", "19:00", "20:10", "21:20"], // 토
+      "0": ["12:00", "13:10", "14:20", "15:30", "16:40", "17:50", "19:00", "20:10", "21:20"], // 일
+    },
+  },
+  // 3호점(TGC) — 락다운시티 (2시간 간격)
+  ldc: {
+    default: ["13:00", "15:00", "17:00", "19:00", "21:00"], // 월~금
+    byDow: {
+      "6": ["11:00", "13:00", "15:00", "17:00", "19:00", "21:00"], // 토
+      "0": ["11:00", "13:00", "15:00", "17:00", "19:00", "21:00"], // 일
+    },
+  },
+  // 3호점(TGC) — 시간의 영속성 (2시간 간격)
+  time: {
+    default: ["14:00", "16:00", "18:00", "20:00", "22:00"], // 월~금
+    byDow: {
+      "6": ["12:00", "14:00", "16:00", "18:00", "20:00", "22:00"], // 토
+      "0": ["12:00", "14:00", "16:00", "18:00", "20:00", "22:00"], // 일
+    },
+  },
 };
 
 // 특정 매장·날짜에 실제 예약 가능한 시간대를 계산한다.
@@ -178,6 +219,39 @@ export function slotsForStoreDate(
 // 시간 문자열(HH:MM) 정규화 검사
 export function isSlotTime(s: unknown): s is string {
   return typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
+
+// 스케줄(default/byDow)에서 그 날짜의 시간대를 꺼낸다.
+function pickFromSchedule(sch: SlotSchedule, date: string): string[] {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + "T00:00:00Z") : null;
+  if (!d || isNaN(d.getTime())) return sch.default;
+  const dow = String(d.getUTCDay());
+  if (sch.byDow && Object.prototype.hasOwnProperty.call(sch.byDow, dow)) return sch.byDow[dow] || [];
+  return sch.default;
+}
+
+// 특정 테마·날짜에 실제 예약 가능한 시간대를 계산한다. (우선순위: 테마 > 매장 > 전역)
+//   테마마다 시간표가 완전히 다르므로(3호점은 한 매장에 시간표가 다른 테마 2개) 테마가 최우선.
+//   테마 설정이 없으면 기존 매장별 설정 → 전역 fallback 순으로 내려간다(하위호환).
+export function slotsForThemeDate(
+  themeSlots: Record<string, SlotSchedule> | undefined,
+  storeSlots: Record<string, StoreSlots> | undefined,
+  fallback: string[],
+  themeId: string | undefined,
+  storeId: string | undefined,
+  date: string,
+): string[] {
+  const ts = themeId ? themeSlots?.[themeId] : undefined;
+  if (ts) return pickFromSchedule(ts, date);
+  return slotsForStoreDate(storeSlots, fallback, storeId, date);
+}
+
+// 시작시각 + 소요시간(분) → 종료시각 "HH:MM" (기존 관리자처럼 "12:30 – 13:30" 표기용)
+export function slotEndTime(start: string, minutes: number): string {
+  if (!isSlotTime(start) || !minutes) return "";
+  const [h, m] = start.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  return String(Math.floor(total / 60) % 24).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
 }
 
 // 예약금 (1인 기준, 원) — 추후 매장/테마별로 조정 가능

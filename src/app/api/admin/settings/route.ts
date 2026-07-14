@@ -2,17 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { getConfig } from "@/lib/settings";
-import { STORES, isSlotTime, type StoreSlots } from "@/lib/data";
+import { STORES, THEMES, SOON_THEMES, isSlotTime, type SlotSchedule } from "@/lib/data";
 
-// storeSlots 입력을 안전한 형태로 정화 (알 수 없는 매장·잘못된 시간 제거)
-function sanitizeStoreSlots(input: unknown): Record<string, StoreSlots> {
-  const out: Record<string, StoreSlots> = {};
+// 시간대 설정 입력을 안전한 형태로 정화 (알 수 없는 id·잘못된 시간 제거)
+function sanitizeSlots(input: unknown, allowedIds: Set<string>): Record<string, SlotSchedule> {
+  const out: Record<string, SlotSchedule> = {};
   if (!input || typeof input !== "object" || Array.isArray(input)) return out;
-  const storeIds = new Set(STORES.map((s) => s.id));
   const cleanList = (v: unknown): string[] =>
     Array.isArray(v) ? Array.from(new Set(v.filter(isSlotTime))).sort() : [];
-  for (const [storeId, raw] of Object.entries(input as Record<string, unknown>)) {
-    if (!storeIds.has(storeId as never) || !raw || typeof raw !== "object") continue;
+  for (const [id, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (!allowedIds.has(id) || !raw || typeof raw !== "object") continue;
     const r = raw as { default?: unknown; byDow?: unknown };
     const byDow: Record<string, string[]> = {};
     if (r.byDow && typeof r.byDow === "object" && !Array.isArray(r.byDow)) {
@@ -20,10 +19,12 @@ function sanitizeStoreSlots(input: unknown): Record<string, StoreSlots> {
         if (/^[0-6]$/.test(dow)) byDow[dow] = cleanList(list);
       }
     }
-    out[storeId] = { default: cleanList(r.default), byDow };
+    out[id] = { default: cleanList(r.default), byDow };
   }
   return out;
 }
+const STORE_IDS = new Set<string>(STORES.map((s) => s.id));
+const THEME_IDS = new Set<string>([...THEMES, ...SOON_THEMES].map((t) => t.id));
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -48,8 +49,11 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(body.timeSlots)) {
     rows.push({ key: "time_slots", value: body.timeSlots, updated_at: now });
   }
+  if (body.themeSlots != null) {
+    rows.push({ key: "theme_slots", value: sanitizeSlots(body.themeSlots, THEME_IDS), updated_at: now });
+  }
   if (body.storeSlots != null) {
-    rows.push({ key: "store_slots", value: sanitizeStoreSlots(body.storeSlots), updated_at: now });
+    rows.push({ key: "store_slots", value: sanitizeSlots(body.storeSlots, STORE_IDS), updated_at: now });
   }
   if (Array.isArray(body.disabledThemes)) {
     rows.push({ key: "disabled_themes", value: body.disabledThemes, updated_at: now });

@@ -25,9 +25,11 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │  │  ├─ reservation\   ← 예약 조회·취소 (전화번호로)
 │  │  ├─ reviews\       ← 후기 목록·작성
 │  │  ├─ business\      ← 비즈니스(B2B) 페이지
-│  │  └─ api\           ← 서버 처리 (예약 생성/조회/취소, 리뷰 목록/작성)
+│  │  ├─ admin\         ← 관리자 (예약관리[날짜별 보기·목록검색]·캘린더·시간대·리뷰·설정·문자)
+│  │  └─ api\           ← 서버 처리 (예약 생성/조회/취소, 리뷰 목록/작성, admin\*)
 │  ├─ components\       ← Header.tsx, Footer.tsx (공통)
-│  └─ lib\              ← data.ts(매장·테마), supabase.ts(DB연결), util.ts(전화번호 등)
+│  └─ lib\              ← data.ts(매장·테마·THEME_SLOTS 테마별 시간표), settings.ts(관리자 설정),
+│                          supabase.ts(DB연결), util.ts(전화번호 등)
 ├─ assets\images\       ← 원본 이미지 보관 (public/images 의 원본)
 └─ docs\                ← 문서·옛 프로토타입(참고용)
    ├─ 기능_로드맵.md          ← 앞으로 추가할 기능 목록·결정사항

@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, type StoreSlots } from "@/lib/data";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, slotEndTime, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone } from "@/lib/util";
 
 type Reservation = {
@@ -82,8 +82,24 @@ export default function AdminPage() {
   );
 }
 
-/* ============ 예약 관리 탭 ============ */
+/* ============ 예약 관리 탭 ============
+   기존 fantastrick.co.kr(Booked) 관리자와 같은 흐름:
+   달력에서 날짜 클릭 → 테마 탭(건수 배지) → 그 날 시간대별 손님 목록.
+   기존 목록·검색·입금대기 큐는 "목록·검색" 보기로 유지.                        */
 function ReservationsTab() {
+  const [view, setView] = useState<"day" | "list">("day");
+  return (
+    <>
+      <div className="viewtoggle">
+        <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>📅 날짜별 보기</button>
+        <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>📋 목록·검색</button>
+      </div>
+      {view === "day" ? <DayView /> : <ListView />}
+    </>
+  );
+}
+
+function ListView() {
   const [list, setList] = useState<Reservation[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -249,10 +265,212 @@ function ReservationsTab() {
   );
 }
 
-function ManualAdd({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [themeId, setThemeId] = useState(THEMES[0].id); const [date, setDate] = useState(""); const [time, setTime] = useState(TIME_SLOTS[0]);
+/* ---------- 날짜별 보기 (기존 Booked "예약확인" 이식) ---------- */
+type AdminCfg = {
+  timeSlots: string[]; disabledThemes: string[];
+  themeSlots?: Record<string, SlotSchedule>; storeSlots?: Record<string, StoreSlots>;
+};
+function todayKst() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+
+function DayView() {
+  const t0 = todayKst();
+  const [ym, setYm] = useState(() => ({ y: Number(t0.slice(0, 4)), m: Number(t0.slice(5, 7)) - 1 }));
+  const [pick, setPick] = useState(t0);
+  const [rows, setRows] = useState<Reservation[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [cfg, setCfg] = useState<AdminCfg | null>(null);
+  const [activeTheme, setActiveTheme] = useState(THEMES[0].id);
+  const [detail, setDetail] = useState<Reservation | null>(null);
+  const [add, setAdd] = useState<{ themeId: string; date: string; time: string } | null>(null);
+
+  const loadMonth = useCallback(async () => {
+    const mm = String(ym.m + 1).padStart(2, "0");
+    const last = String(new Date(ym.y, ym.m + 1, 0).getDate()).padStart(2, "0");
+    const res = await fetch(`/api/admin/reservations?from=${ym.y}-${mm}-01&to=${ym.y}-${mm}-${last}`);
+    if (res.ok) { const j = await res.json(); setRows(j.reservations || []); }
+  }, [ym]);
+  const loadBlocks = useCallback(() => fetch("/api/admin/slots").then((r) => r.json()).then((j) => setBlocks(j.blocks || [])).catch(() => {}), []);
+  useEffect(() => { loadMonth(); }, [loadMonth]);
+  useEffect(() => { loadBlocks(); fetch("/api/admin/settings").then((r) => r.json()).then(setCfg).catch(() => {}); }, [loadBlocks]);
+  useEffect(() => { const t = setInterval(loadMonth, 30000); return () => clearInterval(t); }, [loadMonth]); // 새 예약 자동 반영
+  const reload = () => { loadMonth(); loadBlocks(); };
+
+  // 취소 건은 칸을 차지하지 않음(그 시간은 다시 비어 있는 것)
+  const live = rows.filter((r) => r.status !== "cancelled");
+  const byDay: Record<string, Reservation[]> = {};
+  for (const r of live) (byDay[r.date] = byDay[r.date] || []).push(r);
+  const dayRows = byDay[pick] || [];
+
+  const theme = THEMES.find((t) => t.id === activeTheme) || THEMES[0];
+  const slots = cfg ? slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme.id, theme.store, pick) : [];
+  const themeRows = dayRows.filter((r) => r.theme_id === theme.id);
+  // 시간표에 없는 시간에 잡힌 예약(옛 시간대·수동 등록)도 빠뜨리지 않고 함께 보여줌
+  const allTimes = Array.from(new Set([...slots, ...themeRows.map((r) => r.time)])).sort();
+  const blockFor = (time: string) =>
+    blocks.find((b) => b.date === pick && (!b.theme_id || b.theme_id === theme.id) && (!b.time || b.time === time));
+
+  async function unblock(id: string) {
+    const res = await fetch(`/api/admin/slots?id=${id}`, { method: "DELETE" });
+    if (res.ok) loadBlocks(); else alert("해제 실패");
+  }
+  async function block(time: string) {
+    const res = await fetch("/api/admin/slots", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: pick, time, themeId: theme.id, reason: "관리자 마감" }),
+    });
+    if (res.ok) loadBlocks(); else alert("마감 실패");
+  }
+
+  const firstDow = new Date(ym.y, ym.m, 1).getDay();
+  const days = new Date(ym.y, ym.m + 1, 0).getDate();
+  const cells: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const dstr = (d: number) => `${ym.y}-${String(ym.m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+        <button className="btn sm" onClick={() => setYm((s) => (s.m === 0 ? { y: s.y - 1, m: 11 } : { y: s.y, m: s.m - 1 }))}>◀</button>
+        <b style={{ fontSize: 17 }}>{ym.y}년 {ym.m + 1}월</b>
+        <button className="btn sm" onClick={() => setYm((s) => (s.m === 11 ? { y: s.y + 1, m: 0 } : { y: s.y, m: s.m + 1 }))}>▶</button>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={() => { setYm({ y: Number(t0.slice(0, 4)), m: Number(t0.slice(5, 7)) - 1 }); setPick(t0); }}>오늘</button>
+        <button className="btn ghost sm" onClick={reload}>새로고침</button>
+      </div>
+
+      <div className="cal-grid day-cal">
+        {DOW_LABELS.map((w) => <div key={w} className="cal-dow">{w}</div>)}
+        {cells.map((d, i) => d === null ? <div key={i} /> : (
+          <div key={i} className={"cal-cell" + (pick === dstr(d) ? " pick" : "") + (dstr(d) === t0 ? " today" : "")}
+            onClick={() => setPick(dstr(d))}>
+            <span className="cal-d">{d}</span>
+            {byDay[dstr(d)] && <span className="cal-n">{byDay[dstr(d)].length}건</span>}
+          </div>
+        ))}
+      </div>
+
+      <div className="theme-tabs">
+        {THEMES.map((t) => {
+          const n = dayRows.filter((r) => r.theme_id === t.id).length;
+          return (
+            <button key={t.id} className={"tt-btn" + (activeTheme === t.id ? " on" : "")} onClick={() => setActiveTheme(t.id)}>
+              {t.name}{n > 0 && <span className="tt-badge">{n}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="admin-card" style={{ marginTop: 0 }}>
+        <div className="day-head">
+          <b>{theme.name}</b> <span style={{ color: "var(--muted)" }}>{formatDate(pick)} 예약</span>
+          <span className="sp" />
+          <span style={{ fontSize: 12.5, color: "var(--faint)" }}>{theme.storeTag} · {theme.minutes}분</span>
+        </div>
+
+        {!cfg ? <p style={{ color: "var(--muted)", fontSize: 13 }}>시간표 불러오는 중…</p>
+          : allTimes.length === 0 ? <div className="notice info">이 날은 예약을 받지 않는 요일입니다. (시간표 없음)</div>
+            : allTimes.map((time, i) => {
+              const r = themeRows.find((x) => x.time === time);
+              const bk = blockFor(time);
+              const offSchedule = !slots.includes(time);
+              // 끝시각 = 시작 + 테마 소요시간. 단 다음 칸과 겹치면 다음 칸 시작까지만 표시.
+              // (사자의 서는 80분짜리를 70분 간격으로 받고 있어 그대로 그리면 겹쳐 보임)
+              const next = allTimes[i + 1];
+              let end = slotEndTime(time, theme.minutes);
+              if (next && end > next) end = next;
+              return (
+                <div key={time} className={"slotrow" + (r ? " taken" : "") + (bk && !r ? " blocked" : "")}>
+                  <span className="s-time">🕘 {time} – {end}</span>
+                  {r ? (
+                    <>
+                      <span className="s-state full">예약 있음</span>
+                      <button className="s-guest" onClick={() => setDetail(r)} title="눌러서 상세·처리">
+                        ✏️ {r.name} {formatPhone(r.phone)} · {r.people}명
+                      </button>
+                      {r.source === "phone" && <span className="src-tag">전화</span>}
+                      <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
+                      <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+                    </>
+                  ) : bk ? (
+                    <>
+                      <span className="s-state closed">🚫 마감됨{bk.reason ? ` · ${bk.reason}` : ""}</span>
+                      <span className="sp" />
+                      <button className="btn sm ghost" onClick={() => unblock(bk.id)}>열기</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="s-state open">예약 없음</span>
+                      {offSchedule && <span className="src-tag">시간표 밖</span>}
+                      <span className="sp" />
+                      <button className="btn sm ghost" onClick={() => block(time)}>마감</button>
+                      <button className="btn sm primary" onClick={() => setAdd({ themeId: theme.id, date: pick, time })}>+ 예약 넣기</button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+      </div>
+
+      {detail && <ResDetail r={detail} onClose={() => setDetail(null)} onDone={() => { setDetail(null); reload(); }} />}
+      {add && <ManualAdd preset={add} onClose={() => setAdd(null)} onDone={() => { setAdd(null); reload(); }} />}
+    </div>
+  );
+}
+
+/* 예약 1건 상세·처리 (날짜별 보기에서 손님 이름 클릭 시) */
+function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [memo, setMemo] = useState(r.memo || "");
+  async function patch(body: Record<string, unknown>) {
+    setBusy(true);
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: r.id, ...body }),
+    });
+    setBusy(false);
+    if (res.ok) onDone(); else { const j = await res.json(); alert(j.error || "처리 실패"); }
+  }
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal">
+        <button className="close-x" onClick={onClose}>✕</button>
+        <h3>{r.theme_name} · {formatDate(r.date)} {r.time}</h3>
+        <div className="res-summary">
+          <div className="r"><span>이름</span><b>{r.name}</b></div>
+          <div className="r"><span>전화</span><b>{formatPhone(r.phone)}</b></div>
+          <div className="r"><span>인원</span><b>{r.people}명</b></div>
+          <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원 {r.deposit_paid ? "(입금완료)" : "(미입금)"}</b></div>
+          <div className="r"><span>상태</span><b>{ST_LABEL[r.status] || r.status}</b></div>
+          <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
+        </div>
+        <div className="field" style={{ marginTop: 12 }}>
+          <label>메모</label><textarea rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="관리자 메모" />
+        </div>
+        <div className="act-row">
+          <button className="btn sm" disabled={busy} onClick={() => patch({ memo })}>메모 저장</button>
+          <button className={"btn sm " + (r.deposit_paid ? "ghost" : "primary")} disabled={busy} onClick={() => patch({ deposit_paid: !r.deposit_paid })}>{r.deposit_paid ? "입금 취소" : "입금 확인"}</button>
+          {r.status !== "confirmed" && r.status !== "cancelled" && <button className="btn sm" style={{ background: "var(--green)", color: "#062", borderColor: "var(--green)" }} disabled={busy} onClick={() => patch({ status: "confirmed" })}>예약 확정</button>}
+          {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" disabled={busy} onClick={() => patch({ status: "noshow" })}>노쇼 처리</button>}
+          {r.status !== "cancelled" && <button className="btn sm danger" disabled={busy} onClick={() => { if (confirm("이 예약을 취소 처리할까요?")) patch({ status: "cancelled" }); }}>취소 처리</button>}
+          {r.status === "cancelled" && <button className="btn sm ghost" disabled={busy} onClick={() => patch({ status: "pending" })}>취소 되돌리기</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: () => void; preset?: { themeId: string; date: string; time: string } }) {
+  const [themeId, setThemeId] = useState(preset?.themeId || THEMES[0].id); const [date, setDate] = useState(preset?.date || ""); const [time, setTime] = useState(preset?.time || TIME_SLOTS[0]);
   const [people, setPeople] = useState(2); const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [memo, setMemo] = useState("");
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const [cfg, setCfg] = useState<AdminCfg | null>(null);
+  useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then(setCfg).catch(() => {}); }, []);
+
+  // 시간 후보 = 그 테마·그 날짜의 시간표 (+ 이미 고른 시간은 목록에 없어도 유지)
+  const timeOptions = useMemo(() => {
+    const th = THEMES.find((t) => t.id === themeId);
+    const list = cfg && th ? slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, th.id, th.store, date) : TIME_SLOTS;
+    return Array.from(new Set([...list, ...(time ? [time] : [])])).sort();
+  }, [cfg, themeId, date, time]);
+
   async function submit() {
     setErr(""); setBusy(true);
     const res = await fetch("/api/admin/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ themeId, date, time, people, name, phone, memo }) });
@@ -267,7 +485,7 @@ function ManualAdd({ onClose, onDone }: { onClose: () => void; onDone: () => voi
         <div className="field"><label>테마</label><select value={themeId} onChange={(e) => setThemeId(e.target.value)}>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>)}</select></div>
         <div className="grid2">
           <div className="field"><label>날짜</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div className="field"><label>시간</label><select value={time} onChange={(e) => setTime(e.target.value)}>{TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+          <div className="field"><label>시간</label><select value={time} onChange={(e) => setTime(e.target.value)}>{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
         </div>
         <div className="grid2">
           <div className="field"><label>인원</label><select value={people} onChange={(e) => setPeople(Number(e.target.value))}>{[1,2,3,4,5,6,7,8].map((n) => <option key={n} value={n}>{n}명</option>)}</select></div>

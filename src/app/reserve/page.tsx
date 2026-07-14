@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { THEMES, TIME_SLOTS, STORES, slotsForStoreDate, type StoreSlots } from "@/lib/data";
+import { THEMES, TIME_SLOTS, STORES, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
-type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots> };
+type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule> };
 
 // 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
 function openDateLabel(dateStr: string): string {
@@ -122,12 +122,12 @@ function ReserveInner() {
   // 선택한 날짜가 아직 예약 오픈 전인지 (오픈 전이면 시간·인원·신청 숨김)
   const notOpenSelected = useMemo(() => (date ? reservationDateState(date) === "not_open" : false), [date]);
 
-  // 선택한 테마(매장)·날짜(요일)에 실제 예약 가능한 시간대
+  // 선택한 테마·날짜(요일)에 실제 예약 가능한 시간대 (테마마다 시작시각·간격이 다름)
   const activeSlots = useMemo(
-    () => slotsForStoreDate(cfg.storeSlots, cfg.timeSlots, theme?.store, date),
-    [cfg.storeSlots, cfg.timeSlots, theme?.store, date],
+    () => slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme?.id, theme?.store, date),
+    [cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme?.id, theme?.store, date],
   );
-  // 그 요일은 아예 예약을 안 받는 매장(휴무) 인지
+  // 그 요일은 아예 예약을 안 받는 테마(휴무) 인지
   const noSlotsDay = useMemo(() => !!(themeId && date && activeSlots.length === 0), [themeId, date, activeSlots]);
 
   useEffect(() => {
