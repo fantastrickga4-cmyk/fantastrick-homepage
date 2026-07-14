@@ -248,11 +248,27 @@ nav.main a:hover{color:var(--text)}
 .worldtags span{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:var(--r-full);padding:5px 13px}
 .worldtags b{color:var(--cyan)}
 
-/* ---------- THEMES (compact grid) ---------- */
-/* 포스터 갤러리 그리드 (데스크톱 4열 / 태블릿 2열 / 모바일 1열) */
-.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-@media(max-width:980px){.theme-grid{grid-template-columns:repeat(2,1fr);gap:16px}}
-@media(max-width:520px){.theme-grid{grid-template-columns:1fr}}
+/* ---------- THEMES (가로 슬라이드 캐러셀 · PC/모바일 동일 구성) ---------- */
+.theme-carousel{position:relative}
+/* 가로 스크롤 레일: 모바일=터치 스와이프, PC=4개 한 줄(넘치면 화살표) */
+.theme-rail{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-padding-left:2px;
+  /* 카드 호버 리프트·그림자가 잘리지 않게 여백 확보 */
+  padding:10px 2px 26px}
+.theme-rail::-webkit-scrollbar{display:none}
+.theme-rail .tcard{flex:0 0 calc((100% - 60px)/4);scroll-snap-align:start}
+@media(max-width:980px){.theme-rail{gap:16px}.theme-rail .tcard{flex-basis:calc((100% - 16px)/2)}}
+@media(max-width:520px){.theme-rail .tcard{flex-basis:82%}}
+/* 좌우 이동 화살표 (모바일은 스와이프라 숨김) */
+.tc-arrow{position:absolute;top:44%;transform:translateY(-50%);z-index:6;width:44px;height:44px;border-radius:50%;
+  display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
+  color:var(--text);font-size:26px;font-weight:400;line-height:1;padding-bottom:3px;cursor:pointer;
+  transition:opacity .25s,background .2s,color .2s,border-color .2s}
+.tc-arrow:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.tc-arrow.prev{left:-10px}
+.tc-arrow.next{right:-10px}
+.tc-arrow:disabled{opacity:0;pointer-events:none}
+@media(max-width:768px){.tc-arrow{display:none}}
 .tcard{position:relative;display:block;border:1px solid var(--line);border-radius:var(--r);overflow:clip;background:var(--surface);
   transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s,border-color .3s}
 .tcard:hover{transform:translateY(-4px);border-color:rgba(47,111,224,.4);box-shadow:0 20px 46px rgba(20,22,42,.18)}

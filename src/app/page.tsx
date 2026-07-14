@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 
 // 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
@@ -40,6 +40,49 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+// 테마 가로 슬라이드(캐러셀) — PC·모바일 동일 구성. 모바일은 터치 스와이프, PC는 화살표.
+function ThemeCarousel({ themes }: { themes: Theme[] }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const update = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 8);
+    setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [update]);
+
+  const move = (dir: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".tcard");
+    const step = card ? card.offsetWidth + 20 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <div className="theme-carousel reveal">
+      <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
+      <div className="theme-rail" ref={railRef}>
+        {themes.map((t, i) => (
+          <ThemeCard key={t.id} t={t} no={i + 1} />
+        ))}
+      </div>
+      <button type="button" className="tc-arrow next" aria-label="다음 테마" disabled={!canNext} onClick={() => move(1)}>›</button>
+    </div>
   );
 }
 
@@ -171,11 +214,7 @@ export default function Home() {
             <h2 className="title">당신이 만들어가는 이야기</h2>
             <p className="lead">테마 목록</p>
           </div>
-          <div className="theme-grid reveal">
-            {THEMES.map((t, i) => (
-              <ThemeCard key={t.id} t={t} no={i + 1} />
-            ))}
-          </div>
+          <ThemeCarousel themes={THEMES} />
           {SOON_THEMES.length > 0 && (
             <div className="soon-strip reveal">
               <span className="soon-label">준비중 콘텐츠</span>
