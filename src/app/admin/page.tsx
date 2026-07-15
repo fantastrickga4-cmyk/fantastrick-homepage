@@ -297,7 +297,7 @@ function ListView() {
 
 /* ---------- 날짜별 보기 (기존 Booked "예약확인" 이식) ---------- */
 type AdminCfg = {
-  timeSlots: string[]; disabledThemes: string[];
+  timeSlots: string[];
   themeSlots?: Record<string, SlotSchedule>; storeSlots?: Record<string, StoreSlots>;
 };
 function todayKst() { return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
@@ -595,35 +595,42 @@ function CalendarTab() {
 type Block = { id: string; store_id: string | null; theme_id: string | null; date: string; time: string | null; reason: string | null };
 function SlotsTab() {
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [date, setDate] = useState(""); const [time, setTime] = useState(""); const [themeId, setThemeId] = useState(""); const [reason, setReason] = useState("");
+  const [date, setDate] = useState(""); const [reason, setReason] = useState("");
   const [err, setErr] = useState("");
   const load = () => fetch("/api/admin/slots").then((r) => r.json()).then((j) => setBlocks(j.blocks || [])).catch(() => {});
   useEffect(() => { load(); }, []);
+  // 여기서는 "하루 전체 휴무"만 만든다.
+  //   · 시간 하나씩 마감하는 건 [예약 › 날짜별]에서 그 칸의 "마감" 버튼으로 (중복이라 여기선 뺌)
+  //   · 예전엔 여기서 시간을 고를 수 있었는데, 그 목록이 옛 전역 시간대라
+  //     실제 테마 시간표(예: 사자의 서 12:30·13:40)와 안 맞아 아무 칸도 못 막는 상태였음
   async function add() {
     setErr(""); if (!date) return setErr("날짜를 선택해 주세요.");
-    const res = await fetch("/api/admin/slots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, time: time || null, themeId: themeId || null, reason }) });
-    if (res.ok) { setDate(""); setTime(""); setThemeId(""); setReason(""); load(); } else { const j = await res.json(); setErr(j.error || "추가 실패"); }
+    const res = await fetch("/api/admin/slots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, time: null, themeId: null, reason }) });
+    if (res.ok) { setDate(""); setReason(""); load(); } else { const j = await res.json(); setErr(j.error || "추가 실패"); }
   }
-  async function del(id: string) { if (!confirm("이 차단을 해제(열기)할까요?")) return; const res = await fetch(`/api/admin/slots?id=${id}`, { method: "DELETE" }); if (res.ok) load(); }
+  async function del(id: string) { if (!confirm("이 휴무·마감을 해제(열기)할까요?")) return; const res = await fetch(`/api/admin/slots?id=${id}`, { method: "DELETE" }); if (res.ok) load(); }
   return (
     <div>
       <div className="admin-card">
-        <b>🚫 예약 마감(시간대 닫기) 추가</b>
-        <p className="hint" style={{ margin: "4px 0 12px" }}>시간을 비우면 그 날짜 <b>전체 휴무</b>, 테마를 비우면 <b>전 테마</b> 마감이에요.</p>
+        <b>🚫 휴무일 추가</b>
+        <p className="hint" style={{ margin: "4px 0 12px" }}>
+          고른 날짜를 <b>하루 종일 · 전 테마</b> 예약을 안 받습니다. (임시휴무·전세 등)
+          <br />시간 하나만 막고 싶으면 <b>[예약 › 날짜별]</b>에서 그 시간의 <b>마감</b> 버튼을 누르세요.
+        </p>
         <div className="admin-tools" style={{ marginBottom: 0 }}>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <select value={time} onChange={(e) => setTime(e.target.value)}><option value="">시간 전체(휴무)</option>{TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}</select>
-          <select value={themeId} onChange={(e) => setThemeId(e.target.value)}><option value="">전 테마</option>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
-          <input type="text" placeholder="사유(선택)" value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="btn primary sm" onClick={add}>마감 추가</button>
+          <input type="text" placeholder="사유(선택) 예: 내부 공사" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <button className="btn sm" onClick={add}>휴무일 추가</button>
         </div>
         {err && <div className="msg-err">⚠️ {err}</div>}
       </div>
+      {/* 날짜별 보기에서 만든 칸 단위 마감도 여기 다 보인다(어디서 막았는지 놓치지 않게) */}
       <div style={{ marginTop: 8 }}>
-        {blocks.length === 0 ? <div className="notice info">닫아둔 시간대가 없습니다.</div> : blocks.map((b) => (
+        <div className="hint" style={{ marginBottom: 8 }}>지금 닫아둔 날짜·시간 (날짜별 보기에서 마감한 것도 함께 보여요)</div>
+        {blocks.length === 0 ? <div className="notice info">닫아둔 날짜·시간이 없습니다.</div> : blocks.map((b) => (
           <div key={b.id} className="rrow"><div className="head" style={{ cursor: "default" }}>
             <span className="when">{formatDate(b.date)}</span>
-            <span className="tname">{b.time || "하루 전체 휴무"}</span>
+            <span className="tname">{b.time ? `${b.time} 마감` : "하루 전체 휴무"}</span>
             <span className="who">{b.theme_id ? (THEMES.find((t) => t.id === b.theme_id)?.name || b.theme_id) : "전 테마"}{b.reason ? ` · ${b.reason}` : ""}</span>
             <span className="rt"><button className="btn sm ghost" onClick={() => del(b.id)}>열기(해제)</button></span>
           </div></div>
@@ -842,26 +849,20 @@ function ReviewAdd({ onDone }: { onDone: () => void }) {
 
 /* ============ 설정 탭 ============ */
 function SettingsTab() {
-  const [slots, setSlots] = useState<string[]>([]); const [disabled, setDisabled] = useState<string[]>([]);
+  const [slots, setSlots] = useState<string[]>([]);
   const [slotInput, setSlotInput] = useState(""); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
-  const [naverUrl, setNaverUrl] = useState(""); const [googleUrl, setGoogleUrl] = useState("");
-  const [extRating, setExtRating] = useState(""); const [extCount, setExtCount] = useState("");
   const [storeSlots, setStoreSlots] = useState<Record<string, StoreSlots>>({});
   const [leadMin, setLeadMin] = useState("10");
   useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
-    setSlots(c.timeSlots); setDisabled(c.disabledThemes || []);
+    setSlots(c.timeSlots);
     setStoreSlots(c.storeSlots && typeof c.storeSlots === "object" ? c.storeSlots : {});
-    setNaverUrl(c.naverUrl || ""); setGoogleUrl(c.googleUrl || "");
-    setExtRating(c.extRating ? String(c.extRating) : ""); setExtCount(c.extCount ? String(c.extCount) : "");
     setLeadMin(String(c.minLeadMinutes ?? 10));
     setLoaded(true);
   }); }, []);
   async function save() {
     setMsg("");
     const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      timeSlots: slots, disabledThemes: disabled, storeSlots,
-      minLeadMinutes: Number(leadMin) || 0,
-      naverUrl, googleUrl, extRating: Number(extRating) || 0, extCount: Number(extCount) || 0,
+      timeSlots: slots, storeSlots, minLeadMinutes: Number(leadMin) || 0,
     }) });
     if (res.ok) setMsg("저장되었습니다 ✅"); else { const j = await res.json(); setMsg(j.error || "저장 실패"); }
   }
@@ -893,36 +894,9 @@ function SettingsTab() {
         </div>
         <div className="hint">예약금은 테마별로 코드에서 관리됩니다. (변경은 개발자에게 요청)</div>
       </div>
-      <div className="field">
-        <label>예약 받을 테마 (체크 해제 시 예약 화면에서 숨김)</label>
-        {THEMES.map((t) => (
-          <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, padding: "4px 0" }}>
-            <input type="checkbox" checked={!disabled.includes(t.id)} onChange={(e) => { if (e.target.checked) setDisabled(disabled.filter((x) => x !== t.id)); else setDisabled([...disabled, t.id]); }} style={{ width: "auto" }} />
-            {t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span>
-          </label>
-        ))}
-      </div>
       </div>
 
       <div className="admin-card">
-      <h3 className="card-h">외부 노출 (네이버·구글)</h3>
-      <div className="field">
-        <label>외부 리뷰 링크 (홈·후기 페이지에 버튼으로 노출)</label>
-        <input type="url" value={naverUrl} onChange={(e) => setNaverUrl(e.target.value)} placeholder="네이버 플레이스 리뷰 URL (https://…)" style={{ marginBottom: 8 }} />
-        <input type="url" value={googleUrl} onChange={(e) => setGoogleUrl(e.target.value)} placeholder="구글 리뷰 URL (https://…)" />
-        <div className="hint">URL을 비우면 해당 버튼은 노출되지 않아요.</div>
-      </div>
-      <div className="field">
-        <label>외부 표시 평점·리뷰수 (선택 · 뱃지로 노출)</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input type="number" step="0.1" min="0" max="5" value={extRating} onChange={(e) => setExtRating(e.target.value)} placeholder="평점 (예 4.9)" style={{ flex: 1 }} />
-          <input type="number" min="0" value={extCount} onChange={(e) => setExtCount(e.target.value)} placeholder="리뷰수 (예 320)" style={{ flex: 1 }} />
-        </div>
-        <div className="hint">0이거나 비우면 뱃지를 숨겨요.</div>
-      </div>
-      </div>
-
-      <div className="admin-card wide">
       <h3 className="card-h">예약 시간표</h3>
       <div className="field">
         <label>기본 예약 시간대 <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>(아래 매장별 설정이 없는 매장에 적용)</span></label>

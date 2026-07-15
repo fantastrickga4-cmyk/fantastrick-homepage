@@ -84,9 +84,6 @@ export async function PUT(req: NextRequest) {
   if (body.storeSlots != null) {
     rows.push({ key: "store_slots", value: sanitizeSlots(body.storeSlots, STORE_IDS), updated_at: now });
   }
-  if (Array.isArray(body.disabledThemes)) {
-    rows.push({ key: "disabled_themes", value: body.disabledThemes, updated_at: now });
-  }
   if (body.notice != null) {
     const n = sanitizeNotice(body.notice);
     if (!n) return NextResponse.json({ error: "공지 내용을 확인해 주세요." }, { status: 400 });
@@ -94,28 +91,6 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "공지를 켜려면 제목·내용·이미지 중 하나는 넣어주세요." }, { status: 400 });
     }
     rows.push({ key: "notice", value: n, updated_at: now });
-  }
-  // 외부 리뷰 링크 (빈 문자열은 저장 → 미노출 처리)
-  const isHttpUrl = (u: string) => /^https?:\/\/.+/i.test(u);
-  if (body.naverUrl != null) {
-    const u = String(body.naverUrl).trim();
-    if (u && !isHttpUrl(u)) return NextResponse.json({ error: "네이버 URL 형식을 확인해 주세요. (http로 시작)" }, { status: 400 });
-    rows.push({ key: "naver_url", value: u, updated_at: now });
-  }
-  if (body.googleUrl != null) {
-    const u = String(body.googleUrl).trim();
-    if (u && !isHttpUrl(u)) return NextResponse.json({ error: "구글 URL 형식을 확인해 주세요. (http로 시작)" }, { status: 400 });
-    rows.push({ key: "google_url", value: u, updated_at: now });
-  }
-  if (body.extRating != null) {
-    const n = Number(body.extRating);
-    if (!(n >= 0 && n <= 5)) return NextResponse.json({ error: "외부 평점은 0~5 사이여야 합니다." }, { status: 400 });
-    rows.push({ key: "ext_rating", value: n, updated_at: now });
-  }
-  if (body.extCount != null) {
-    const n = Number(body.extCount);
-    if (!(n >= 0)) return NextResponse.json({ error: "외부 리뷰 수를 확인해 주세요." }, { status: 400 });
-    rows.push({ key: "ext_count", value: n, updated_at: now });
   }
   if (!rows.length) return NextResponse.json({ error: "변경할 설정이 없습니다." }, { status: 400 });
 

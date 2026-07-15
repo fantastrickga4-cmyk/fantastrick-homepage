@@ -36,7 +36,6 @@ export default function ReviewsPage() {
   const [filter, setFilter] = useState("all");
   const [reviews, setReviews] = useState<Review[] | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [ext, setExt] = useState<{ naverUrl: string; googleUrl: string } | null>(null);
 
   // 작성 폼 상태
   const [themeId, setThemeId] = useState("");
@@ -62,7 +61,6 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     load("all");
-    fetch("/api/config").then((r) => r.json()).then((c) => setExt({ naverUrl: c.naverUrl || "", googleUrl: c.googleUrl || "" })).catch(() => {});
   }, []);
 
   async function submit() {
@@ -104,14 +102,6 @@ export default function ReviewsPage() {
         </button>
       </div>
       <p className="lead" style={{ margin: "6px 0 14px" }}>실제 플레이하신 분들의 생생한 후기예요.</p>
-
-      {/* 외부 리뷰 링크 */}
-      {(ext?.naverUrl || ext?.googleUrl) && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-          {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="btn ghost sm">네이버 플레이스 리뷰 →</a>}
-          {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="btn ghost sm">구글 리뷰 →</a>}
-        </div>
-      )}
 
       {/* 작성 폼 */}
       {showForm && (

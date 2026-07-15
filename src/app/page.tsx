@@ -100,12 +100,10 @@ function SoonCard({ t }: { t: Theme }) {
 export default function Home() {
   const heroBgRef = useRef<HTMLDivElement>(null);
 
-  // 실제 승인 후기 + 외부 리뷰 링크 (마운트 시 로드)
+  // 실제 승인 후기 (마운트 시 로드)
   const [reviews, setReviews] = useState<HomeReview[] | null>(null);
-  const [ext, setExt] = useState<{ naverUrl: string; googleUrl: string; extRating: number; extCount: number } | null>(null);
   useEffect(() => {
     fetch("/api/reviews").then((r) => r.json()).then((j) => setReviews(j.reviews || [])).catch(() => setReviews([]));
-    fetch("/api/config").then((r) => r.json()).then((c) => setExt({ naverUrl: c.naverUrl || "", googleUrl: c.googleUrl || "", extRating: c.extRating || 0, extCount: c.extCount || 0 })).catch(() => {});
   }, []);
   const revAvg = reviews && reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 3);
@@ -237,21 +235,13 @@ export default function Home() {
           </div>
           <div className="rev-summary reveal">
             <div className="rs-score">
-              <span className="score">{revAvg ?? (ext?.extRating ? ext.extRating.toFixed(1) : "—")}</span>
+              <span className="score">{revAvg ?? "—"}</span>
               <span className="of">/ 5.0</span>
               <div className="s-stars" aria-hidden="true">★★★★★</div>
             </div>
             <div className="rs-meta">
               <div className="s-src">
-                {revAvg
-                  ? `플레이어 후기 · ${reviews!.length}건`
-                  : ext?.extRating
-                    ? `외부 리뷰 평점${ext.extCount ? ` · ${ext.extCount}건` : ""}`
-                    : "첫 후기를 기다리고 있어요"}
-              </div>
-              <div className="rs-links">
-                {ext?.googleUrl && <a href={ext.googleUrl} target="_blank" rel="noopener" className="tlink">구글에서 더 보기 →</a>}
-                {ext?.naverUrl && <a href={ext.naverUrl} target="_blank" rel="noopener" className="tlink">네이버 →</a>}
+                {revAvg ? `플레이어 후기 · ${reviews!.length}건` : "첫 후기를 기다리고 있어요"}
               </div>
             </div>
           </div>
@@ -276,11 +266,7 @@ export default function Home() {
             <div className="notice info reveal">후기를 불러오는 중…</div>
           ) : (
             <div className="rev-empty reveal">
-              {ext?.extRating ? (
-                <><div className="re-big">{ext.extRating.toFixed(1)}</div><p>외부 리뷰에 남겨진 실제 방문자 평점이에요.</p></>
-              ) : (
-                <p>첫 후기의 주인공이 되어주세요.</p>
-              )}
+              <p>첫 후기의 주인공이 되어주세요.</p>
               <Link href="/reviews" className="btn primary sm">플레이하고 후기 남기기 →</Link>
             </div>
           )}

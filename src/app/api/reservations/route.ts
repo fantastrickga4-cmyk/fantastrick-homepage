@@ -52,9 +52,6 @@ export async function POST(req: NextRequest) {
   if (!/^\d{4}$/.test(pin)) return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
 
   const config = await getConfig();
-  if (config.disabledThemes.includes(theme.id)) {
-    return NextResponse.json({ error: "현재 예약을 받지 않는 테마입니다." }, { status: 400 });
-  }
 
   // 요청한 시간이 (그 테마·그 요일의) 허용 시간대에 있는지 검사
   const allowedSlots = slotsForThemeDate(config.themeSlots, config.storeSlots, config.timeSlots, theme.id, theme.store, date);

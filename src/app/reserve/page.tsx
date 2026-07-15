@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { THEMES, TIME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
-type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number };
+type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number };
 
 // 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
 function openDateLabel(dateStr: string): string {
@@ -110,11 +110,10 @@ function ReserveInner() {
   const [showDeposit, setShowDeposit] = useState(false); // 접수 후 예약금 안내 팝업
   const [depositAck, setDepositAck] = useState(false);    // "확인했습니다" 체크 여부
 
-  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, disabledThemes: [] });
+  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS });
   const [blocked, setBlocked] = useState<string[]>([]);
   const [dayClosed, setDayClosed] = useState(false);
 
-  const availableThemes = useMemo(() => THEMES.filter((t) => !cfg.disabledThemes.includes(t.id)), [cfg.disabledThemes]);
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
   const deposit = theme?.deposit ?? 0;
@@ -254,7 +253,7 @@ function ReserveInner() {
         <div className="field">
           <label>테마 선택</label>
           <div className="optrow">
-            {availableThemes.map((t) => (
+            {THEMES.map((t) => (
               <button
                 key={t.id}
                 type="button"
