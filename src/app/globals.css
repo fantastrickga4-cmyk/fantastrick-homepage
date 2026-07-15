@@ -216,7 +216,10 @@ nav.main a:hover{color:var(--text)}
 @keyframes htSg{from{opacity:0;filter:blur(4px);transform:translateY(8px)}to{opacity:1;filter:blur(0);transform:none}}
 @keyframes htWinL{0%{opacity:0}18%{opacity:1;color:var(--brand-bright)}70%{color:var(--brand-bright)}100%{opacity:1;color:var(--text)}}
 @keyframes htWinR{0%{opacity:0}18%{opacity:1;color:var(--blood)}70%{color:var(--blood)}100%{opacity:1;color:var(--text)}}
-@keyframes htDy{0%{max-width:1.1ch;opacity:1}100%{max-width:0;opacity:0}}
+/* ⚠️ ch 단위 쓰지 말 것 — ch = 폰트의 "0" 글자 폭인데 로고 폰트엔 숫자가 없다.
+   그러면 브라우저가 0.5em 으로 때워서(=58px) Y(폭 .743em=86px)의 오른쪽이 잘렸다.
+   로고 폰트 기준: 글자 한 칸 advance = 743/1000em = .743em → 여유 둬서 .8em. */
+@keyframes htDy{0%{max-width:.8em;opacity:1}100%{max-width:0;opacity:0}}
 @keyframes htPl{0%{opacity:0;max-width:0;margin:0}13%{opacity:1;max-width:1.4em;margin:0 .16em}53%{opacity:1;max-width:1.4em;margin:0 .16em}100%{opacity:0;max-width:0;margin:0}}
 @keyframes htGlint{0%{opacity:1;background-position:88% 0}90%{opacity:1;background-position:-32% 0}100%{opacity:0;background-position:-38% 0}}
 @keyframes htRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
