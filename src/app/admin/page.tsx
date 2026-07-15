@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { isRefundPending, refundAmount } from "@/lib/money";
-import { EXPIRE_MINUTES } from "@/lib/expire";
+import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
 import { formatDate, formatPhone } from "@/lib/util";
 
 type Reservation = {
@@ -938,8 +938,23 @@ function PayQueue({ onDone }: { onDone: () => void }) {
   useEffect(() => { const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
-  const remain = (createdAt: string) =>
-    Math.max(0, Math.ceil((new Date(createdAt).getTime() + EXPIRE_MINUTES * 60000 - Date.now()) / 60000));
+  // 남은 시간 — 자정 이후 접수 건은 그날 오전 10시 30분까지 봐주므로(expire.ts) 그 기준으로 센다.
+  // 안 그러면 새벽 예약이 "0분 남음"으로 보이는데 실제로는 안 취소돼 화면이 거짓말을 한다.
+  function remainInfo(createdAt: string): { min: number; grace: boolean } {
+    const c = new Date(createdAt).getTime();
+    const normal = c + EXPIRE_MINUTES * 60000;
+    // 접수 시각이 KST 자정~오전10시 사이인가?
+    const kst = new Date(c + 9 * 3600 * 1000);
+    const isMidnightBooking = kst.getUTCHours() < GRACE_UNTIL_HOUR;
+    let deadline = normal;
+    if (isMidnightBooking) {
+      const g = new Date(c + 9 * 3600 * 1000);
+      g.setUTCHours(GRACE_UNTIL_HOUR, EXPIRE_MINUTES, 0, 0); // 그날 10:30 (KST)
+      const graceMs = g.getTime() - 9 * 3600 * 1000;
+      deadline = Math.max(normal, graceMs);
+    }
+    return { min: Math.max(0, Math.ceil((deadline - Date.now()) / 60000)), grace: isMidnightBooking && deadline > normal };
+  }
 
   async function confirmPay(r: Reservation) {
     const p = (payer[r.id] || "").trim();
@@ -969,11 +984,14 @@ function PayQueue({ onDone }: { onDone: () => void }) {
       {list.length === 0 ? (
         <div className="notice ok">✅ 입금 대기 없음 — 다 처리하셨어요.</div>
       ) : list.map((r) => {
-        const m = remain(r.created_at);
+        const { min: m, grace } = remainInfo(r.created_at);
         return (
           <div key={r.id} className="rrow">
             <div className="head" style={{ cursor: "default" }}>
-              <span className={"when" + (m <= 5 ? " urgent" : "")}>⏳ {m}분 남음</span>
+              <span className={"when" + (m <= 5 ? " urgent" : "")}>
+                ⏳ {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
+                {grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}
+              </span>
               {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
               <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
               <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>

@@ -21,8 +21,10 @@ function Locks({ n }: { n: number }) {
 
 // 활성 테마 카드 — 세로 포스터 갤러리(기본 포스터+이름+CASE, 호버 시 매장·시간·난이도·대표장르)
 function ThemeCard({ t, no }: { t: Theme; no: number }) {
+  // 카드 → 테마 상세(가격·시놉시스·주의사항). 예전엔 예약폼으로 바로 보내서
+  // 손님이 가격도 스토리도 모른 채 예약부터 하게 됐음
   return (
-    <Link className="tcard" data-cat={t.cat} href={`/reserve?theme=${t.id}`}>
+    <Link className="tcard" data-cat={t.cat} href={`/rooms/${t.id}`}>
       <div
         className="thumb"
         style={{ backgroundImage: `url(${t.poster})` }}

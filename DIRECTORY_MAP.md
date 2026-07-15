@@ -21,6 +21,8 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │  │  ├─ layout.tsx     ← 공통 틀(헤더·푸터·폰트). 제목용 디스플레이 폰트=next/font(Gothic A1) + 전역 필름 그레인(.grain)
 │  │  ├─ globals.css    ← 전체 디자인(시네마틱 CSS). 브랜드 3색 토큰·타입스케일·radius 3단계·시네마틱 모션·포커스 링
 │  │  ├─ page.tsx       ← 메인 홈페이지 (히어로·테마 캐러셀·매장·리뷰 발췌·B2B 티저). next/image·히어로 패럴랙스
+│  │  ├─ rooms\[id]\    ← 테마 상세 (이용금액·시놉시스·주의사항·인원·오시는 길·환불규정). 4개 테마 미리 만들어둠
+│  │  ├─ faq\           ← 자주 묻는 질문 (가격·결제 / 예약·취소 / 이용 안내 / 오시는 길)
 │  │  ├─ reserve\       ← 예약 화면
 │  │  ├─ reservation\   ← 예약 조회·취소 (전화번호로)
 │  │  ├─ reviews\       ← 후기 목록·작성
@@ -29,6 +31,8 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │  │  └─ api\           ← 서버 처리 (예약 생성/조회/취소, 리뷰 목록/작성, admin\*)
 │  ├─ components\       ← Header.tsx, Footer.tsx, NoticeModal.tsx(팝업 공지)
 │  └─ lib\              ← data.ts(매장·테마·THEME_SLOTS 테마별 시간표), settings.ts(관리자 설정·공지),
+│                          theme-content.ts(테마별 가격·시놉시스·주의사항 + 계좌·환불규정·사업자정보 — 기존 사이트 원문),
+│                          expire.ts(미입금 30분 자동취소 + 자정 이후 예약은 오전 10시까지 유예),
 │                          sms-templates.ts(기존 문자 문구 4종×4테마 원문),
 │                          supabase.ts(DB연결), util.ts(전화번호 등)
 ├─ assets\images\       ← 원본 이미지 보관 (public/images 의 원본)

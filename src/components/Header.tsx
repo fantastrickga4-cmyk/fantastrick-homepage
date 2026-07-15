@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 const MENU = [
   { href: "/#themes", label: "콘텐츠" },
   { href: "/#reviews", label: "리뷰" },
+  { href: "/faq", label: "자주 묻는 질문" },
   { href: "/#business", label: "비즈니스" },
   { href: "/#stores", label: "오시는길" },
 ];
