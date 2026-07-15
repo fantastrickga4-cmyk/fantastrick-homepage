@@ -966,18 +966,51 @@ function StoreSlotsEditor({ storeSlots, setStoreSlots, fallback }: { storeSlots:
 
 /* ============ 문자 탭 ============ */
 type SmsLog = { id: string; phone: string; body: string; type: string; status: string; error: string | null; channel?: string | null; created_at: string };
+type TplTheme = { id: string; name: string; body: string; saved: boolean };
+type TplGroup = { type: string; label: string; perTheme: boolean; common: { body: string; saved: boolean } | null; themes: TplTheme[] };
+
 function SmsTab() {
-  const [tpls, setTpls] = useState<Record<string, string>>({ confirm: "", cancel: "", admin_cancel: "", reminder: "" });
-  const [log, setLog] = useState<SmsLog[]>([]); const [aligo, setAligo] = useState(false); const [kakao, setKakao] = useState(false); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
-  const load = () => fetch("/api/admin/sms").then((r) => r.json()).then((j) => { setTpls(j.templates); setLog(j.log || []); setAligo(j.aligoReady); setKakao(!!j.kakaoReady); setLoaded(true); });
-  useEffect(() => { load(); }, []);
-  async function saveTpl(type: string) {
-    setMsg("");
-    const res = await fetch("/api/admin/sms", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, body: tpls[type] }) });
-    setMsg(res.ok ? `${LABEL[type]} 저장됨 ✅` : "저장 실패");
+  const [groups, setGroups] = useState<TplGroup[]>([]);
+  const [log, setLog] = useState<SmsLog[]>([]); const [aligo, setAligo] = useState(false); const [kakao, setKakao] = useState(false);
+  const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false); const [err, setErr] = useState("");
+  // 종류별로 지금 편집중인 테마 ("" = 모든 테마 공통)
+  const [pickTheme, setPickTheme] = useState<Record<string, string>>({});
+
+  const load = useCallback(() => {
+    fetch("/api/admin/sms").then((r) => r.json()).then((j) => {
+      if (j.error) { setErr(j.error); setLoaded(true); return; }
+      setGroups(j.templates || []); setLog(j.log || []); setAligo(j.aligoReady); setKakao(!!j.kakaoReady); setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  // 화면에서 문구 고칠 때
+  function edit(type: string, themeId: string, body: string) {
+    setGroups((gs) => gs.map((g) => {
+      if (g.type !== type) return g;
+      if (!themeId) return { ...g, common: { ...(g.common ?? { saved: false }), body } };
+      return { ...g, themes: g.themes.map((t) => (t.id === themeId ? { ...t, body } : t)) };
+    }));
   }
-  const LABEL: Record<string, string> = { confirm: "예약확정 문자 (입금 없이 확정 시)", cancel: "취소 문자 (손님이 직접 취소)", admin_cancel: "관리자 취소 안내 문자", reminder: "방문 리마인더" };
+  async function saveTpl(type: string, themeId: string, label: string) {
+    setMsg("");
+    const g = groups.find((x) => x.type === type)!;
+    const body = themeId ? g.themes.find((t) => t.id === themeId)!.body : g.common?.body ?? "";
+    const res = await fetch("/api/admin/sms", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, themeId, body }),
+    });
+    if (res.ok) { setMsg(`${label} 저장됨 ✅`); load(); }
+    else { const j = await res.json(); setMsg("⚠️ " + (j.error || "저장 실패")); }
+  }
+  async function resetTpl(type: string, themeId: string, label: string) {
+    if (!confirm(`${label} 문구를 기존 사이트 문구로 되돌릴까요?`)) return;
+    const res = await fetch(`/api/admin/sms?type=${type}&themeId=${themeId}`, { method: "DELETE" });
+    if (res.ok) { setMsg(`${label} 기존 문구로 되돌림 ↩️`); load(); } else setMsg("⚠️ 되돌리기 실패");
+  }
+
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+  if (err) return <div className="msg-err">⚠️ {err}</div>;
+
   return (
     <div>
       <div className={"notice " + (kakao ? "ok" : aligo ? "ok" : "warn")} style={{ marginBottom: 16 }}>
@@ -988,18 +1021,50 @@ function SmsTab() {
           : "⚠️ 알리고/알림톡 키가 아직 없어요. 지금은 발송 내역만 기록되고 실제 발송은 안 나가요. (가입·키 등록 시 자동 발송)"}
       </div>
       <div className="notice info" style={{ marginBottom: 14 }}>
-        💰 <b>입금확정 문자</b>와 <b>예약대기(계좌안내) 문자</b>는 테마마다 문구가 달라서(사자의 서는 인스타·길안내가 더 붙어요)
-        여기서 편집하지 않고 기존 사이트 문구를 그대로 사용합니다.
+        📝 <b>테마별</b> 딱지가 붙은 문자는 <b>테마마다 문구가 따로</b>예요(기존 사이트와 동일).
+        예약대기는 테마마다 예약금이 다르고(3만·2.5만·12만·6.3만), 입금확정은 사자의 서만 인스타·길안내가 더 붙어요.
+        그래서 <b>테마를 고른 뒤 그 테마 문구만</b> 고칩니다. 한 번에 전부 바꾸는 기능은 일부러 없앴어요(예약금이 잘못 안내될 수 있어서).
+        <br />아직 저장한 적 없는 문구는 <b>기존 사이트 문구</b>가 그대로 나갑니다.
       </div>
-      {(["confirm", "cancel", "admin_cancel", "reminder"] as const).map((type) => (
-        <div key={type} className="admin-card">
-          <b>{LABEL[type]}</b>
-          <p className="hint" style={{ margin: "3px 0 8px" }}>치환: {"{이름} {테마} {날짜} {시간} {인원} {환불율}"}</p>
-          <textarea rows={3} value={tpls[type]} onChange={(e) => setTpls({ ...tpls, [type]: e.target.value })} style={{ width: "100%", background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 9, color: "var(--text)", padding: 10, fontFamily: "inherit", fontSize: 13.5 }} />
-          <button className="btn sm primary" style={{ marginTop: 8 }} onClick={() => saveTpl(type)}>저장</button>
-        </div>
-      ))}
-      {msg && <div className="notice ok">{msg}</div>}
+
+      {groups.map((g) => {
+        // 테마별 종류는 공통 탭이 없으므로 항상 테마 하나가 선택돼 있다
+        const cur = g.perTheme ? (pickTheme[g.type] || g.themes[0]?.id || "") : "";
+        const curTheme = g.themes.find((t) => t.id === cur);
+        const body = cur ? curTheme?.body ?? "" : g.common?.body ?? "";
+        const saved = cur ? !!curTheme?.saved : !!g.common?.saved;
+        const label = g.label + (cur ? ` · ${curTheme?.name}` : "");
+        return (
+          <div key={g.type} className="admin-card">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <b>{g.label}</b>
+              {g.perTheme && <span className="src-tag">테마별</span>}
+              <span className="sp" />
+              <span className={"tpl-src " + (saved ? "edited" : "")}>{saved ? "✎ 직접 수정함" : "기존 사이트 문구"}</span>
+            </div>
+
+            {g.perTheme && (
+              <div className="theme-tabs" style={{ margin: "12px 0 10px" }}>
+                {g.themes.map((t) => (
+                  <button key={t.id} className={"tt-btn" + (cur === t.id ? " on" : "")} onClick={() => setPickTheme({ ...pickTheme, [g.type]: t.id })}>
+                    {t.name}{t.saved && <span className="tt-badge">✎</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="hint" style={{ margin: "3px 0 8px" }}>치환: {"{이름} {테마} {날짜} {시간} {인원} {환불율}"}</p>
+            <textarea rows={g.perTheme ? 10 : 3} value={body} onChange={(e) => edit(g.type, cur, e.target.value)}
+              style={{ width: "100%", background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 9, color: "var(--text)", padding: 10, fontFamily: "inherit", fontSize: 13.5, lineHeight: 1.6 }} />
+            <div className="act-row">
+              <button className="btn sm primary" onClick={() => saveTpl(g.type, cur, label)}>저장</button>
+              {saved && <button className="btn sm ghost" onClick={() => resetTpl(g.type, cur, label)}>↩️ 기존 문구로 되돌리기</button>}
+              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--faint)", alignSelf: "center" }}>{body.length}자</span>
+            </div>
+          </div>
+        );
+      })}
+      {msg && <div className={msg.startsWith("⚠️") ? "msg-err" : "notice ok"}>{msg}</div>}
       <div className="admin-card">
         <b>📨 최근 발송 내역 (50건)</b>
         <div style={{ marginTop: 8 }}>

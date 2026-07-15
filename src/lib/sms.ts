@@ -24,14 +24,29 @@ export function renderTemplate(body: string, v: Vars): string {
     .replaceAll("{환불율}", v.refundRate != null ? String(v.refundRate) : "");
 }
 
-// 문구 우선순위: 관리자가 저장한 DB 문구 > 테마별 기존 문구 > 종류별 기본값
+// 테마마다 문구가 달라야 하는 종류 (기존 사이트와 동일)
+//   reservation — 테마마다 예약금이 다름 (3만/2.5만/12만/6.3만)
+//   payment     — 사자의 서만 인스타·길안내가 더 붙음
+// 이 두 종류는 "공통 문구" 개념을 두지 않는다. 공통 문구를 허용하면 그게 테마별 문구를 덮어써서
+// 사자의 서 손님에게 태초의 신부 예약금(3만)이 안내되는 사고가 난다.
+export const PER_THEME_TYPES = new Set(["reservation", "payment"]);
+
+// 문구 우선순위
+//   테마별 종류 : 관리자가 저장한 그 테마 문구 > 기존 사이트의 그 테마 문구 > 기본값
+//   공통 종류   : 관리자가 저장한 공통 문구 > 기본값(=기존 사이트 문구, 4테마 동일)
 export async function getTemplate(type: string, themeId?: string): Promise<string> {
   const db = getSupabase();
+  const perTheme = PER_THEME_TYPES.has(type) && !!themeId;
   if (db) {
-    const { data } = await db.from("sms_templates").select("body").eq("type", type).single();
+    const { data } = await db
+      .from("sms_templates")
+      .select("body")
+      .eq("type", type)
+      .eq("theme_id", perTheme ? themeId! : "")
+      .maybeSingle();
     if (data?.body) return data.body as string;
   }
-  if (themeId) {
+  if (perTheme) {
     const t = THEME_TEMPLATES[`${type}:${themeId}`];
     if (t) return t;
   }

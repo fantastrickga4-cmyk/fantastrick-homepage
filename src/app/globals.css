@@ -660,6 +660,10 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
   .tt-btn{padding:7px 10px;font-size:12px}
 }
 
+/* 문자 문구 출처 표시 (기존 문구 / 직접 수정함) */
+.tpl-src{font-size:11.5px;font-weight:700;color:var(--faint);border:1px solid var(--line);border-radius:var(--r-full);padding:2px 9px}
+.tpl-src.edited{color:var(--brand);border-color:rgba(47,111,224,.35);background:rgba(47,111,224,.07)}
+
 /* ---------- 팝업 공지 (기존 modal-window 이식: 폭 500px · 흰 배경 · 오버레이 70%) ---------- */
 .nt-overlay{background:rgba(0,0,0,.7)}
 .nt-modal{max-width:500px;background:#fff;text-align:center}
