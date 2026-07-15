@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import NoticeModal from "@/components/NoticeModal";
 
 export const metadata: Metadata = {
   title: "판타스트릭 FANTASTRICK — 강남 이머시브 방탈출 & 머더룸",
@@ -44,6 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         {children}
         <Footer />
+        {/* 팝업 공지 — 기존 사이트처럼 모든 페이지에서 뜸(관리자에서 켤 때만) */}
+        <NoticeModal />
         {/* 전역 필름 그레인 오버레이(1장) — 다크 크래프트 질감 */}
         <div className="grain" aria-hidden="true" />
       </body>

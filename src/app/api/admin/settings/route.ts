@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
-import { getConfig } from "@/lib/settings";
+import { getConfig, type Notice } from "@/lib/settings";
 import { STORES, THEMES, SOON_THEMES, isSlotTime, type SlotSchedule } from "@/lib/data";
 
 // 시간대 설정 입력을 안전한 형태로 정화 (알 수 없는 id·잘못된 시간 제거)
@@ -25,6 +25,30 @@ function sanitizeSlots(input: unknown, allowedIds: Set<string>): Record<string, 
 }
 const STORE_IDS = new Set<string>(STORES.map((s) => s.id));
 const THEME_IDS = new Set<string>([...THEMES, ...SOON_THEMES].map((t) => t.id));
+
+// 팝업 공지 입력 정화. body 는 화면에 "글자 그대로" 렌더하므로 HTML 태그를 넣어도 실행되지 않지만,
+// 이미지·링크 주소는 http(s) 만 허용해 javascript: 같은 주소가 들어가지 않게 막는다.
+function sanitizeNotice(input: unknown): Notice | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const n = input as Partial<Notice>;
+  const url = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    if (!s) return "";
+    return /^https?:\/\/.+/i.test(s) || s.startsWith("/") ? s : "";
+  };
+  const until = String(n.until ?? "").trim();
+  const days = Number(n.hideDays);
+  return {
+    enabled: !!n.enabled,
+    title: String(n.title ?? "").trim().slice(0, 120),
+    body: String(n.body ?? "").slice(0, 2000),
+    imageUrl: url(n.imageUrl),
+    linkUrl: url(n.linkUrl),
+    until: /^\d{4}-\d{2}-\d{2}$/.test(until) ? until : "",
+    hideDays: Number.isFinite(days) && days >= 0 && days <= 30 ? Math.floor(days) : 1,
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -57,6 +81,14 @@ export async function PUT(req: NextRequest) {
   }
   if (Array.isArray(body.disabledThemes)) {
     rows.push({ key: "disabled_themes", value: body.disabledThemes, updated_at: now });
+  }
+  if (body.notice != null) {
+    const n = sanitizeNotice(body.notice);
+    if (!n) return NextResponse.json({ error: "공지 내용을 확인해 주세요." }, { status: 400 });
+    if (n.enabled && !n.title.trim() && !n.body.trim() && !n.imageUrl) {
+      return NextResponse.json({ error: "공지를 켜려면 제목·내용·이미지 중 하나는 넣어주세요." }, { status: 400 });
+    }
+    rows.push({ key: "notice", value: n, updated_at: now });
   }
   // 외부 리뷰 링크 (빈 문자열은 저장 → 미노출 처리)
   const isHttpUrl = (u: string) => /^https?:\/\/.+/i.test(u);

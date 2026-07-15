@@ -19,7 +19,7 @@ type Stats = {
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
 const TABS = [
   { k: "res", label: "예약 관리" }, { k: "cal", label: "캘린더" }, { k: "slot", label: "시간대" },
-  { k: "rev", label: "리뷰" }, { k: "set", label: "설정" }, { k: "sms", label: "문자" },
+  { k: "rev", label: "리뷰" }, { k: "notice", label: "팝업 공지" }, { k: "set", label: "설정" }, { k: "sms", label: "문자" },
 ];
 
 export default function AdminPage() {
@@ -76,6 +76,7 @@ export default function AdminPage() {
       {tab === "cal" && <CalendarTab />}
       {tab === "slot" && <SlotsTab />}
       {tab === "rev" && <ReviewsAdminTab />}
+      {tab === "notice" && <NoticeTab />}
       {tab === "set" && <SettingsTab />}
       {tab === "sms" && <SmsTab />}
     </div>
@@ -595,6 +596,111 @@ function SlotsTab() {
           </div></div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ============ 팝업 공지 탭 (기존 modal-window 이식) ============ */
+type NoticeCfg = {
+  enabled: boolean; title: string; body: string; imageUrl: string; linkUrl: string;
+  until: string; hideDays: number; updatedAt: string;
+};
+const EMPTY_NOTICE: NoticeCfg = { enabled: false, title: "", body: "", imageUrl: "", linkUrl: "", until: "", hideDays: 1, updatedAt: "" };
+
+function NoticeTab() {
+  const [n, setN] = useState<NoticeCfg>(EMPTY_NOTICE);
+  const [loaded, setLoaded] = useState(false);
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings").then((r) => r.json())
+      .then((c) => { if (c?.notice) setN({ ...EMPTY_NOTICE, ...c.notice }); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  async function save() {
+    setMsg(""); setBusy(true);
+    const res = await fetch("/api/admin/settings", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notice: n }),
+    });
+    setBusy(false);
+    if (res.ok) { setMsg("저장했습니다 ✅ 손님 화면에 바로 반영돼요."); }
+    else { const j = await res.json(); setMsg("⚠️ " + (j.error || "저장 실패")); }
+  }
+
+  const set = (k: keyof NoticeCfg, v: unknown) => setN((s) => ({ ...s, [k]: v }));
+  if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+
+  return (
+    <div>
+      <div className="notice info" style={{ marginBottom: 14 }}>
+        📢 홈페이지에 들어오면 뜨는 <b>공지 팝업</b>이에요. 켜면 <b>모든 페이지</b>에서 뜨고,
+        손님이 <b>&quot;{n.hideDays === 1 ? "오늘 하루" : `${n.hideDays}일 동안`} 보지 않기&quot;</b>를 누르면 그동안 안 떠요.
+        공지 내용을 고치면 안 보기를 눌렀던 손님에게도 <b>다시 뜹니다.</b>
+      </div>
+
+      <div className="admin-card">
+        <label className="nt-switch">
+          <input type="checkbox" checked={n.enabled} onChange={(e) => set("enabled", e.target.checked)} />
+          <b>{n.enabled ? "✅ 공지 켜짐 (손님에게 보임)" : "⬜ 공지 꺼짐 (아무에게도 안 보임)"}</b>
+        </label>
+
+        <div className="field" style={{ marginTop: 14 }}>
+          <label>제목</label>
+          <input type="text" value={n.title} onChange={(e) => set("title", e.target.value)} placeholder="예) 12월 휴무 안내" maxLength={120} />
+        </div>
+        <div className="field">
+          <label>내용 (줄바꿈 그대로 보여요)</label>
+          <textarea rows={5} value={n.body} onChange={(e) => set("body", e.target.value)} placeholder="예) 12월 25일은 쉽니다." maxLength={2000} />
+        </div>
+        <div className="field">
+          <label>이미지 주소 (선택) — 기존 사이트 팝업은 이미지 한 장이었어요</label>
+          <input type="text" value={n.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} placeholder="https://... 또는 /images/notice.png" />
+          <p className="hint">이미지 파일을 <code>public/images/</code> 에 넣었다면 <code>/images/파일명.png</code> 처럼 적어요.</p>
+        </div>
+        <div className="grid2">
+          <div className="field">
+            <label>누르면 이동할 주소 (선택)</label>
+            <input type="text" value={n.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} placeholder="https://instagram.com/..." />
+          </div>
+          <div className="field">
+            <label>이 날짜까지만 표시 (선택)</label>
+            <input type="date" value={n.until} onChange={(e) => set("until", e.target.value)} />
+          </div>
+        </div>
+        <div className="field" style={{ maxWidth: 260 }}>
+          <label>&quot;보지 않기&quot; 기간</label>
+          <select value={n.hideDays} onChange={(e) => set("hideDays", Number(e.target.value))}>
+            <option value={1}>오늘 하루 (기존과 동일)</option>
+            <option value={3}>3일</option>
+            <option value={7}>7일</option>
+            <option value={0}>안 보기 버튼 없음(매번 표시)</option>
+          </select>
+        </div>
+
+        {msg && <div className={msg.startsWith("⚠️") ? "msg-err" : "notice ok"} style={{ marginTop: 4 }}>{msg}</div>}
+        <div className="act-row">
+          <button className="btn primary" onClick={save} disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
+          <button className="btn sm ghost" onClick={() => setPreview(true)}>👁 미리보기</button>
+        </div>
+      </div>
+
+      {preview && (
+        <div className="modal-overlay nt-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPreview(false); }}>
+          <div className="modal nt-modal">
+            <button className="close-x" onClick={() => setPreview(false)}>✕</button>
+            {n.imageUrl && <div className="nt-img">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={n.imageUrl} alt={n.title || "공지"} /></div>}
+            {n.title && <h3 className="nt-title">{n.title}</h3>}
+            {n.body && <p className="nt-body">{n.body}</p>}
+            {!n.title && !n.body && !n.imageUrl && <p style={{ color: "var(--muted)" }}>내용이 비어 있어요.</p>}
+            <div className="nt-foot">
+              {n.hideDays > 0 && <button className="nt-hide">{n.hideDays === 1 ? "오늘 하루 보지 않기" : `${n.hideDays}일 동안 보지 않기`}</button>}
+              <button className="btn sm" onClick={() => setPreview(false)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

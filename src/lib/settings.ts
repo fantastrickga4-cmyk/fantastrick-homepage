@@ -1,7 +1,25 @@
 import { getSupabase } from "./supabase";
 import { DEPOSIT_PER_PERSON, TIME_SLOTS, THEME_SLOTS, type StoreSlots, type SlotSchedule } from "./data";
 
-// 앱 설정 (예약금·시간대·노출테마) — DB 값이 있으면 그걸, 없으면 코드 기본값
+// 팝업 공지 (기존 사이트 modal-window 이식)
+//   기존 동작: 페이지 열자마자 표시 · 모든 페이지 · 쿠키 1일("하루 안 보기")
+//   · 닫기 버튼(우측상단) + 바깥클릭 + ESC · 폭 500px · 오버레이 검정 70%
+export type Notice = {
+  enabled: boolean;
+  title: string;
+  body: string;      // 줄바꿈 그대로 표시 (HTML 아님 — 안전)
+  imageUrl: string;  // 선택 — 기존 팝업은 이미지 한 장이었음
+  linkUrl: string;   // 선택 — 이미지/버튼 클릭 시 이동
+  until: string;     // 선택 "YYYY-MM-DD" — 이 날짜까지만 표시 (빈값=계속)
+  hideDays: number;  // "N일 동안 안 보기" (기존 쿠키 1일과 동일하게 기본 1)
+  updatedAt: string; // 내용이 바뀌면 "안 보기"를 초기화해 다시 보이게 하는 용도
+};
+
+export const DEFAULT_NOTICE: Notice = {
+  enabled: false, title: "", body: "", imageUrl: "", linkUrl: "", until: "", hideDays: 1, updatedAt: "",
+};
+
+// 앱 설정 (예약금·시간대·노출테마·팝업공지) — DB 값이 있으면 그걸, 없으면 코드 기본값
 export type AppConfig = {
   depositPerPerson: number;
   timeSlots: string[];      // 전역 기본 시간대 (매장·테마 설정 없을 때 fallback)
@@ -12,6 +30,7 @@ export type AppConfig = {
   googleUrl: string;        // 구글 리뷰 URL (없으면 빈값)
   extRating: number;        // 외부 표시 평점 (0이면 미노출)
   extCount: number;         // 외부 리뷰 수 (0이면 미노출)
+  notice: Notice;           // 팝업 공지
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -24,6 +43,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   googleUrl: "",
   extRating: 0,
   extCount: 0,
+  notice: DEFAULT_NOTICE,
 };
 
 export async function getConfig(): Promise<AppConfig> {
@@ -38,6 +58,11 @@ export async function getConfig(): Promise<AppConfig> {
   const disabled = map.get("disabled_themes");
   const rating = Number(map.get("ext_rating"));
   const count = Number(map.get("ext_count"));
+  const rawNotice = map.get("notice");
+  const notice: Notice =
+    rawNotice && typeof rawNotice === "object" && !Array.isArray(rawNotice)
+      ? { ...DEFAULT_NOTICE, ...(rawNotice as Partial<Notice>) }
+      : DEFAULT_NOTICE;
   return {
     depositPerPerson: Number.isFinite(dep) && dep > 0 ? dep : DEFAULT_CONFIG.depositPerPerson,
     timeSlots: Array.isArray(slots) && slots.length ? (slots as string[]) : DEFAULT_CONFIG.timeSlots,
@@ -49,5 +74,6 @@ export async function getConfig(): Promise<AppConfig> {
     googleUrl: typeof map.get("google_url") === "string" ? (map.get("google_url") as string) : "",
     extRating: Number.isFinite(rating) && rating > 0 ? rating : 0,
     extCount: Number.isFinite(count) && count > 0 ? count : 0,
+    notice,
   };
 }
