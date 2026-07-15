@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { isRefundPending, refundAmount } from "@/lib/money";
+import { EXPIRE_MINUTES } from "@/lib/expire";
 import { formatDate, formatPhone } from "@/lib/util";
 
 type Reservation = {
@@ -14,13 +16,14 @@ type Reservation = {
 type Stats = {
   total: number; byStatus: Record<string, number>; pendingUnpaid: number; todayCount: number; depositPaidSum: number;
   weekCount: number; monthConfirmedDeposit: number;
+  pendingUnpaidSum: number; refundPending: number; refundPendingSum: number; // 입금·환불 탭용
   themes: { name: string; count: number }[]; activeTotal: number;
 };
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
-// 탭은 3개만 — 매일 하는 일(예약)은 최상단, 가끔 하는 일은 묶어서 뒤로.
-// 2단계는 기존 .viewtoggle 을 재사용한다(새 컴포넌트 안 만듦).
+// 매일 하는 일(예약·돈)은 앞에, 가끔 하는 일은 뒤로. 2단계는 기존 .viewtoggle 재사용.
 const TABS = [
-  { k: "res", label: "예약" }, { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
+  { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
+  { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
 export default function AdminPage() {
@@ -33,6 +36,20 @@ export default function AdminPage() {
     if (res.status === 401) setPhase("login"); else setPhase("in");
   }
   useEffect(() => { check(); }, []);
+
+  // 입금·환불 탭 뱃지 — 다른 탭을 보고 있어도 "돈으로 처리할 일"이 몇 건인지 보이게.
+  // status=__count__ 는 매칭 0건이라 목록은 비지만 stats 는 전체 기준이라 정확하다(__probe__ 와 같은 수법).
+  const [todo, setTodo] = useState(0);
+  useEffect(() => {
+    if (phase !== "in") return;
+    const f = () => fetch("/api/admin/reservations?status=__count__")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j?.stats) setTodo((j.stats.pendingUnpaid || 0) + (j.stats.refundPending || 0)); })
+      .catch(() => {});
+    f();
+    const t = setInterval(f, 30000);
+    return () => clearInterval(t);
+  }, [phase]);
 
   async function doLogin() {
     setLoginErr("");
@@ -70,10 +87,14 @@ export default function AdminPage() {
       </div>
       <div className="subtab" style={{ marginBottom: 18 }}>
         {TABS.map((t) => (
-          <a key={t.k} className={tab === t.k ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTab(t.k)}>{t.label}</a>
+          <a key={t.k} className={tab === t.k ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTab(t.k)}>
+            {t.label}
+            {t.k === "money" && todo > 0 && <span className="vt-badge">{todo}</span>}
+          </a>
         ))}
       </div>
       {tab === "res" && <ReservationsTab />}
+      {tab === "money" && <MoneyTab />}
       {tab === "cont" && <ContentTab />}
       {tab === "set" && <SettingsHub />}
     </div>
@@ -134,7 +155,6 @@ function ListView() {
   const [showAdd, setShowAdd] = useState(false);
   const [fStatus, setFStatus] = useState("all"); const [fStore, setFStore] = useState("all");
   const [fTheme, setFTheme] = useState("all"); const [fFrom, setFFrom] = useState(""); const [fTo, setFTo] = useState(""); const [q, setQ] = useState("");
-  const [fDeposit, setFDeposit] = useState("all"); // all | unpaid (입금대기만)
   const prevPending = useRef<number | null>(null); const [newAlert, setNewAlert] = useState(0);
 
   const load = useCallback(async (silent = false) => {
@@ -142,7 +162,6 @@ function ListView() {
     if (fStatus !== "all") p.set("status", fStatus);
     if (fStore !== "all") p.set("store", fStore);
     if (fTheme !== "all") p.set("theme", fTheme);
-    if (fDeposit === "unpaid") p.set("deposit", "unpaid");
     if (fFrom) p.set("from", fFrom); if (fTo) p.set("to", fTo); if (q.trim()) p.set("q", q.trim());
     const res = await fetch(`/api/admin/reservations?${p.toString()}`);
     if (!res.ok) return;
@@ -151,9 +170,9 @@ function ListView() {
     const pendingNow = j.stats?.byStatus?.pending ?? 0;
     if (silent && prevPending.current !== null && pendingNow > prevPending.current) setNewAlert((n) => n + (pendingNow - prevPending.current!));
     prevPending.current = pendingNow;
-  }, [fStatus, fStore, fTheme, fDeposit, fFrom, fTo, q]);
+  }, [fStatus, fStore, fTheme, fFrom, fTo, q]);
 
-  useEffect(() => { load(); }, [fStatus, fStore, fTheme, fDeposit, fFrom, fTo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [fStatus, fStore, fTheme, fFrom, fTo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => load(true), 30000); return () => clearInterval(t); }, [load]);
 
   async function patch(id: string, body: Record<string, unknown>) {
@@ -194,12 +213,8 @@ function ListView() {
   return (
     <>
       <div className="admin-top" style={{ marginBottom: 14 }}>
+        {/* 💰 입금대기 필터는 [입금·환불] 탭으로 옮김 — 돈 처리 입구는 한 곳 */}
         {newAlert > 0 && <button className="btn primary sm" onClick={() => { setNewAlert(0); setFStatus("pending"); }}>🔔 새 예약 {newAlert}건</button>}
-        {stats && stats.pendingUnpaid > 0 && (
-          <button className={"btn sm " + (fDeposit === "unpaid" ? "primary" : "")} style={fDeposit === "unpaid" ? undefined : { background: "var(--amber)", color: "#5a3d00", borderColor: "var(--amber)" }} onClick={() => { setNewAlert(0); if (fDeposit === "unpaid") { setFDeposit("all"); setFStatus("all"); } else { setFStatus("pending"); setFDeposit("unpaid"); } }}>
-            💰 입금대기 {stats.pendingUnpaid}건{fDeposit === "unpaid" ? " ✕" : ""}
-          </button>
-        )}
         <div className="sp" />
         <button className="btn ghost sm" onClick={() => load()}>새로고침</button>
         <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
@@ -207,18 +222,14 @@ function ListView() {
       </div>
       {stats && (
         <>
-          {/* 색은 "내가 처리해야 하는 것"(앰버)에만. 나머지 숫자는 색 없음 */}
-          <div className="stat-row dash4">
+          {/* 건수 통계만. 돈 숫자(월 확정 예약금·입금확인 합계)는 [입금·환불] 탭으로 이사.
+              색은 "내가 처리해야 하는 것"(앰버)에만 */}
+          <div className="stat-row">
             <div className="stat"><b>{stats.todayCount}</b><span>오늘 예약</span></div>
             <div className="stat amber"><b>{stats.byStatus.pending || 0}</b><span>확정 대기(미입금)</span></div>
             <div className="stat"><b>{stats.weekCount}</b><span>이번 주 예약(월~일)</span></div>
-            <div className="stat"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
-          </div>
-          {/* 보조 통계 — 위 줄과 중복되던 "오늘 예약"·"확정 대기" 제거 */}
-          <div className="stat-row sub3">
             <div className="stat"><b>{stats.byStatus.confirmed || 0}</b><span>확정</span></div>
             <div className="stat"><b>{stats.byStatus.cancelled || 0}</b><span>취소</span></div>
-            <div className="stat"><b>{(stats.depositPaidSum || 0).toLocaleString()}</b><span>입금확인 합계(원)</span></div>
           </div>
           {stats.themes.length > 0 && (
             <div className="admin-card">
@@ -266,15 +277,16 @@ function ListView() {
               <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
               {r.confirmed_at && <div className="r"><span>확정</span><b>{r.confirmed_at.replace("T", " ").slice(0, 16)}</b></div>}
             </div>
-            {r.status === "cancelled" && (
+            {/* 환불 처리는 [입금·환불 › 환불 처리] 탭이 유일한 입구 — 여기선 상태만 알려준다
+                (입구가 두 곳이면 "여기서 했나 저기서 했나" 혼동) */}
+            {isRefundPending(r) && (
               <div className="refbox">
-                <div style={{ fontWeight: 800, marginBottom: 6 }}>💸 환불 정보 (환불율 {r.refund_rate ?? "-"}%)</div>
-                <div className="r"><span>은행</span><b>{r.refund_bank || "-"}</b></div>
-                <div className="r"><span>계좌</span><b>{r.refund_account || "-"}</b></div>
-                <div className="r"><span>예금주</span><b>{r.refund_holder || "-"}</b></div>
-                <div className="r"><span>환불 금액(예상)</span><b>{Math.round((r.deposit * (r.refund_rate ?? 0)) / 100).toLocaleString()}원</b></div>
-                <div className="act-row"><button className={"btn sm " + (r.refunded ? "ghost" : "primary")} onClick={() => patch(r.id, { refunded: !r.refunded })}>{r.refunded ? "✓ 환불완료됨 (취소)" : "환불 완료 처리"}</button></div>
+                💸 <b>환불 대기 {refundAmount(r).toLocaleString()}원</b> (환불율 {r.refund_rate}%) —
+                <b> [입금·환불 › 환불 처리]</b> 탭에서 계좌 복사하고 보내주세요.
               </div>
+            )}
+            {r.status === "cancelled" && r.refunded && (
+              <div className="refbox"><span style={{ color: "var(--muted)" }}>✓ 환불 완료된 예약이에요 ({refundAmount(r).toLocaleString()}원)</span></div>
             )}
             <div className="field" style={{ marginTop: 12, marginBottom: 8 }}>
               <label>메모</label><textarea rows={2} defaultValue={r.memo || ""} id={`memo-${r.id}`} placeholder="관리자 메모" />
@@ -637,6 +649,373 @@ function SlotsTab() {
         ))}
       </div>
     </div>
+  );
+}
+
+/* ============ 입금·환불 탭 ============
+   무통장입금 전용 화면. 카페24 "입금 전 관리" 패턴 — 해야 할 일은 큐(처리하면 사라짐),
+   끝난 일은 뒤의 "입출금 내역"으로. 상단 집계는 포트원 결제내역 패턴(받은 돈/돌려준 돈/실수령).
+   ⚠️ 결제는 전부 카카오뱅크 수동 이체. 여기 버튼은 "사장님이 손으로 한 일을 기록"하는 것. */
+function MoneyTab() {
+  const [v, setV] = useState<"pay" | "refund" | "ledger">("pay");
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [tick, setTick] = useState(0); // 자식이 처리하면 올려서 집계 재조회
+
+  const loadStats = useCallback(() => {
+    fetch("/api/admin/reservations?status=__count__").then((r) => r.json())
+      .then((j) => setStats(j.stats || null)).catch(() => {});
+  }, []);
+  useEffect(() => { loadStats(); }, [loadStats, tick]);
+  useEffect(() => { const t = setInterval(loadStats, 30000); return () => clearInterval(t); }, [loadStats]);
+
+  const nPay = stats?.pendingUnpaid || 0;
+  const nRef = stats?.refundPending || 0;
+  const done = () => setTick((n) => n + 1);
+
+  return (
+    <>
+      <div className="notice info" style={{ marginBottom: 14 }}>
+        💳 예약금은 <b>전부 무통장입금</b>이에요 (카카오뱅크 3333-09-7175706 승현수).
+        여기 버튼은 <b>사장님이 은행앱에서 직접 하신 일을 기록</b>하는 거예요 — 돈이 자동으로 오가지 않습니다.
+      </div>
+
+      {stats && (
+        <div className="stat-row dash4">
+          {/* 색은 "내가 처리해야 함"(앰버)에만. 0건이면 앰버를 빼야 거짓 경보가 안 됨 */}
+          <div className={"stat" + (nPay ? " amber" : "")}>
+            <b>{nPay}</b><span>입금 대기 · {(stats.pendingUnpaidSum || 0).toLocaleString()}원</span>
+          </div>
+          <div className={"stat" + (nRef ? " amber" : "")}>
+            <b>{nRef}</b><span>환불 대기 · {(stats.refundPendingSum || 0).toLocaleString()}원</span>
+          </div>
+          <div className="stat"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
+          <div className="stat"><b>{(stats.depositPaidSum || 0).toLocaleString()}</b><span>입금확인 누적(원)</span></div>
+        </div>
+      )}
+
+      <div className="viewtoggle">
+        <button className={v === "pay" ? "on" : ""} onClick={() => setV("pay")}>
+          💰 입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
+        </button>
+        <button className={v === "refund" ? "on" : ""} onClick={() => setV("refund")}>
+          💸 환불 처리{nRef > 0 && <span className="vt-badge">{nRef}</span>}
+        </button>
+        <button className={v === "ledger" ? "on" : ""} onClick={() => setV("ledger")}>📒 입출금 내역</button>
+      </div>
+
+      {v === "pay" ? <PayQueue onDone={done} /> : v === "refund" ? <RefundQueue onDone={done} /> : <Ledger />}
+    </>
+  );
+}
+
+/* 💰 입금 확인 — 30분 지나면 자동취소(expire.ts)라 사실상 "지금 이 순간" 화면.
+   그래서 ①남은 시간 카운트다운 ②30초 폴링 ③이름+금액을 나란히(은행앱 대사) 가 전부. */
+function PayQueue({ onDone }: { onDone: () => void }) {
+  const [list, setList] = useState<Reservation[]>([]);
+  const [expired, setExpired] = useState<Reservation[]>([]);
+  const [openExp, setOpenExp] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [, setNow] = useState(Date.now); // 카운트다운 1초마다 리렌더
+
+  const load = useCallback(async () => {
+    const [a, b] = await Promise.all([
+      fetch("/api/admin/reservations?status=pending&deposit=unpaid"),
+      fetch("/api/admin/reservations?status=cancelled"),
+    ]);
+    if (a.ok) setList(((await a.json()).reservations || []) as Reservation[]);
+    if (b.ok) {
+      const rows = ((await b.json()).reservations || []) as Reservation[];
+      // 시간초과 자동취소는 expire.ts 가 남기는 메모로 판별 (전용 칼럼이 없어 이 방법뿐)
+      const today = todayKst();
+      setExpired(rows.filter((r) => (r.memo || "").includes("자동 취소") && r.cancelled_at?.slice(0, 10) === today));
+    }
+    setLoaded(true);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  const remain = (createdAt: string) =>
+    Math.max(0, Math.ceil((new Date(createdAt).getTime() + EXPIRE_MINUTES * 60000 - Date.now()) / 60000));
+
+  async function confirmPay(r: Reservation) {
+    if (!confirm(`${r.name}님 ${r.deposit.toLocaleString()}원 입금을 확인하셨나요?\n\n확정 처리되고 손님에게 입금확정 문자가 나갑니다.`)) return;
+    setBusy(r.id);
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: r.id, deposit_paid: true }),
+    });
+    setBusy(null);
+    if (res.ok) { load(); onDone(); } else alert((await res.json()).error || "처리 실패");
+  }
+
+  if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+
+  return (
+    <>
+      <div className="admin-top" style={{ marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: "var(--muted)" }}>
+          카카오뱅크 앱에서 <b>입금자 이름·금액</b>을 보고 아래와 맞춰 보세요. 30초마다 자동 새로고침돼요.
+        </span>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={load}>새로고침</button>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="notice ok">✅ 입금 대기 없음 — 다 처리하셨어요.</div>
+      ) : list.map((r) => {
+        const m = remain(r.created_at);
+        return (
+          <div key={r.id} className="rrow">
+            <div className="head" style={{ cursor: "default" }}>
+              <span className={"when" + (m <= 5 ? " urgent" : "")}>⏳ {m}분 남음</span>
+              {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
+              <span className="who"><b>{r.name}</b> · {formatPhone(r.phone)}</span>
+              <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>
+              <span className="amt">{r.deposit.toLocaleString()}원</span>
+              <span className="rt">
+                {r.source === "phone" && <span className="src-tag">전화</span>}
+                <button className="btn sm primary" disabled={busy === r.id} onClick={() => confirmPay(r)}>
+                  {busy === r.id ? "처리 중…" : "입금 확인"}
+                </button>
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* 늦게 입금한 손님을 살리는 화면 — 자동취소 건도 봐야 매출이 안 샌다 */}
+      {expired.length > 0 && (
+        <div className={"rrow" + (openExp ? " open" : "")} style={{ marginTop: 16 }}>
+          <div className="head" onClick={() => setOpenExp(!openExp)}>
+            <span className="tname">⏱ 오늘 시간초과로 자동취소된 예약 {expired.length}건 {openExp ? "▲" : "▼"}</span>
+            <span className="rt"><span className="badge-st st-cancelled">지난 일</span></span>
+          </div>
+          <div className="detail">
+            <p className="hint" style={{ marginTop: 0 }}>
+              손님이 늦게 입금했을 수도 있어요. 입금이 들어와 있으면 <b>[예약 › 목록·검색]</b>에서 찾아 <b>[취소 되돌리기]</b> 후 입금 확인하세요.
+            </p>
+            {expired.map((r) => (
+              <div key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 0", borderTop: "1px solid var(--line)", fontSize: 13 }}>
+                <span style={{ color: "var(--faint)", minWidth: 42 }}>{r.cancelled_at?.slice(11, 16)}</span>
+                <b style={{ minWidth: 60 }}>{r.name}</b>
+                <span style={{ color: "var(--muted)" }}>{formatPhone(r.phone)}</span>
+                <span style={{ color: "var(--cyan)" }}>{r.theme_name}</span>
+                <span className="amt" style={{ marginLeft: "auto" }}>{r.deposit.toLocaleString()}원</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* "3일 지남" — 환불을 며칠 묵혔는지가 클레임 위험도 */
+function daysAgoLabel(iso: string | null) {
+  if (!iso) return "-";
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  return d <= 0 ? "오늘 취소" : `${d}일 지남`;
+}
+
+/* 💸 환불 처리 — 행을 항상 펼쳐 둔다(.rrow.open). 계좌를 봐야 일이 시작되므로 클릭 1회를 없앰.
+   사장님 동선: [계좌 복사] → 은행앱 이체 → [✓ N원 환불 완료]  */
+function RefundQueue({ onDone }: { onDone: () => void }) {
+  const [rows, setRows] = useState<Reservation[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch("/api/admin/reservations?status=cancelled");
+    if (res.ok) setRows(((await res.json()).reservations || []) as Reservation[]);
+    setLoaded(true);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  // 서버 통계와 같은 기준을 써야 뱃지 수와 목록 수가 어긋나지 않는다
+  const todo = rows.filter(isRefundPending);
+  const done = rows.filter((r) => r.refunded).slice(0, 20);
+
+  async function copyAcct(r: Reservation) {
+    const digits = (r.refund_account || "").replace(/[^0-9]/g, ""); // 은행앱 붙여넣기용
+    try { await navigator.clipboard.writeText(digits); setCopied(r.id); setTimeout(() => setCopied(null), 2000); }
+    catch { prompt("계좌번호를 복사하세요", digits); } // http·구형 브라우저 폴백
+  }
+  async function markRefunded(r: Reservation) {
+    if (!confirm(`${r.refund_bank} ${r.refund_account}\n${r.refund_holder}님께 ${refundAmount(r).toLocaleString()}원\n\n보내셨나요? 환불 완료로 기록합니다.`)) return;
+    setBusy(r.id);
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: r.id, refunded: true }),
+    });
+    setBusy(null);
+    if (res.ok) { load(); onDone(); } else alert((await res.json()).error || "처리 실패");
+  }
+
+  if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+
+  return (
+    <>
+      <div className="admin-top" style={{ marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: "var(--muted)" }}>
+          <b>계좌 복사 → 은행앱에서 이체 → 완료 누르기</b> 순서예요. 완료를 눌러도 돈이 자동으로 나가진 않아요.
+        </span>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={load}>새로고침</button>
+      </div>
+
+      {todo.length === 0 ? (
+        <div className="notice ok">✅ 보내드릴 환불 없음 — 다 처리하셨어요.</div>
+      ) : todo.map((r) => (
+        <div key={r.id} className="rrow open">
+          <div className="head" style={{ cursor: "default" }}>
+            <span className="when">{daysAgoLabel(r.cancelled_at)}</span>
+            <span className="who"><b>{r.refund_holder || r.name}</b> · {formatPhone(r.phone)}</span>
+            <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time}</span>
+            <span className="amt">{refundAmount(r).toLocaleString()}원</span>
+            <span className="rt"><span className="badge-st st-pending">환불 {r.refund_rate}%</span></span>
+          </div>
+          <div className="detail">
+            {/* 은행·계좌·예금주를 한 줄에 — 눈이 위아래로 안 움직이게 */}
+            <div className="acct">
+              <span className="bank">{r.refund_bank || "은행 없음"}</span>
+              <b>{r.refund_account || "-"}</b>
+              <span style={{ color: "var(--muted)" }}>예금주 {r.refund_holder || "-"}</span>
+              <span className="sp" />
+              <button className="btn sm ghost" onClick={() => copyAcct(r)}>
+                {copied === r.id ? "복사됨 ✓" : "📋 계좌 복사"}
+              </button>
+            </div>
+            <p className="hint" style={{ margin: "2px 0 0" }}>
+              예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
+              {" · "}취소 {r.cancelled_at?.replace("T", " ").slice(0, 16)}
+              {r.refund_holder && r.refund_holder !== r.name && <> · ⚠️ 예금주가 예약자({r.name})와 달라요</>}
+            </p>
+            <div className="act-row">
+              {/* 금액을 버튼 라벨에 박아 오송금 방지 */}
+              <button className="btn sm primary" disabled={busy === r.id} onClick={() => markRefunded(r)}>
+                {busy === r.id ? "처리 중…" : `✓ ${refundAmount(r).toLocaleString()}원 환불 완료`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {done.length > 0 && (
+        <>
+          <div className="card-h" style={{ marginTop: 22 }}>최근 환불 완료 {done.length}건</div>
+          {done.map((r) => (
+            <div key={r.id} className="rrow">
+              <div className="head" style={{ cursor: "default" }}>
+                <span className="when" style={{ color: "var(--faint)" }}>{formatDate(r.date)}</span>
+                <span className="who">{r.refund_holder || r.name}</span>
+                <span className="tname">{r.theme_name}</span>
+                <span className="amt">{refundAmount(r).toLocaleString()}원</span>
+                <span className="rt">
+                  <span className="badge-st st-confirmed">환불완료</span>
+                  <button className="btn sm ghost" onClick={async () => {
+                    if (!confirm("환불 완료를 취소할까요? (잘못 눌렀을 때만)")) return;
+                    await fetch("/api/admin/reservations", {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: r.id, refunded: false }),
+                    });
+                    load(); onDone();
+                  }}>되돌리기</button>
+                </span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </>
+  );
+}
+
+/* 📒 입출금 내역 — 포트원 결제내역의 상단 집계(받은 돈/돌려준 돈/실수령) 패턴.
+   ⚠️ 한계: 입금·환불의 "처리 시각" 칼럼이 DB에 없어 거래순 장부는 불가 → 기준은 예약일(date). */
+function Ledger() {
+  const t0 = todayKst();
+  const [from, setFrom] = useState(t0.slice(0, 8) + "01");
+  const [to, setTo] = useState(t0);
+  const [kind, setKind] = useState<"all" | "in" | "out">("all");
+  const [rows, setRows] = useState<Reservation[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoaded(false);
+    const res = await fetch(`/api/admin/reservations?from=${from}&to=${to}`);
+    if (res.ok) setRows(((await res.json()).reservations || []) as Reservation[]);
+    setLoaded(true);
+  }, [from, to]);
+  useEffect(() => { load(); }, [load]);
+
+  const refAmt = (r: Reservation) => (r.refunded ? refundAmount(r) : 0);
+  const money = rows.filter((r) => r.deposit_paid); // 돈이 실제로 오간 것만이 장부
+  const view = money.filter((r) => (kind === "all" ? true : kind === "in" ? !r.refunded : r.refunded));
+  const inSum = money.reduce((s, r) => s + r.deposit, 0);
+  const outSum = money.reduce((s, r) => s + refAmt(r), 0);
+
+  function exportCsv() {
+    if (view.length === 0) { alert("내보낼 내역이 없습니다."); return; }
+    const cell = (v: unknown) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    // 계좌·전화는 넣지 않음(개인정보)
+    const header = ["예약일", "시간", "테마", "이름", "받은 예약금", "환불액", "실수령", "상태"];
+    const body = view.map((r) => [r.date, r.time, r.theme_name, r.name, r.deposit, refAmt(r), r.deposit - refAmt(r), r.refunded ? "환불함" : "입금완료"]);
+    const csv = [header, ...body].map((row) => row.map(cell).join(",")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `입출금_${from}_${to}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <>
+      <div className="admin-tools">
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <span style={{ color: "var(--faint)" }}>~</span>
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <select value={kind} onChange={(e) => setKind(e.target.value as "all" | "in" | "out")}>
+          <option value="all">전체</option><option value="in">입금만</option><option value="out">환불만</option>
+        </select>
+        <button className="btn sm" onClick={load}>조회</button>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
+      </div>
+
+      <div className="stat-row sub3">
+        <div className="stat"><b>{inSum.toLocaleString()}</b><span>받은 예약금(원)</span></div>
+        <div className="stat"><b>{outSum.toLocaleString()}</b><span>돌려준 금액(원)</span></div>
+        <div className="stat"><b>{(inSum - outSum).toLocaleString()}</b><span>실수령(원)</span></div>
+      </div>
+
+      <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
+        <b>예약 날짜 기준</b>이에요 (입금·환불한 날 기준이 아니라). 입금 확인된 예약만 나옵니다.
+      </p>
+
+      {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
+        : view.length === 0 ? <div className="notice info">이 기간엔 오간 돈이 없습니다.</div>
+          : view.map((r) => (
+            <div key={r.id} className="rrow">
+              <div className="head" style={{ cursor: "default" }}>
+                <span className="when">{formatDate(r.date)} {r.time}</span>
+                <span className="who">{r.name}</span>
+                <span className="tname">{r.theme_name}</span>
+                <span className="amt">+{r.deposit.toLocaleString()}</span>
+                <span className="amt" style={{ color: refAmt(r) ? "var(--muted)" : "var(--faint)" }}>
+                  {refAmt(r) ? `−${refAmt(r).toLocaleString()}` : "−"}
+                </span>
+                <span className="amt"><b>{(r.deposit - refAmt(r)).toLocaleString()}원</b></span>
+                <span className="rt">
+                  {r.refunded ? <span className="badge-st st-cancelled">환불함</span> : <span className="badge-st st-confirmed">입금완료</span>}
+                </span>
+              </div>
+            </div>
+          ))}
+    </>
   );
 }
 

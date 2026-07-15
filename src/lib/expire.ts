@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // 접속 시점에 'cancelled' 로 정리한다. 실패해도 호출부 본 로직은 진행되도록 try/catch 로 감쌀 것.
 // ⚠️ 이 숫자를 바꾸면 예약대기 안내 문자의 "예약 후 30분 이내에 입금확인이…" 문구도
 //    같이 바꿔야 한다 (lib/sms-templates.ts 의 reservation 4개). 안 그러면 안내와 실제가 어긋남.
-const EXPIRE_MINUTES = 30;
+export const EXPIRE_MINUTES = 30; // 화면 카운트다운도 이 값을 쓴다(하드코딩하면 나중에 화면만 거짓말함)
 
 export async function sweepExpiredReservations(db: SupabaseClient): Promise<void> {
   const cutoff = new Date(Date.now() - EXPIRE_MINUTES * 60 * 1000).toISOString();

@@ -3,6 +3,7 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
 import { themeById } from "@/lib/data";
+import { isRefundPending, refundAmount } from "@/lib/money";
 import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations } from "@/lib/expire";
 
@@ -44,13 +45,18 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500 });
 
   // 통계 (전체 기준 — 별도 경량 집계)
-  const { data: allRows } = await db.from("reservations").select("status, theme_id, theme_name, deposit, deposit_paid, date");
+  const { data: allRows } = await db
+    .from("reservations")
+    .select("status, theme_id, theme_name, deposit, deposit_paid, date, refunded, refund_rate, refund_account");
   const stats = buildStats(allRows || []);
 
   return NextResponse.json({ ok: true, reservations: data, stats });
 }
 
-type Row = { status: string; theme_id: string; theme_name: string; deposit: number; deposit_paid: boolean; date: string };
+type Row = {
+  status: string; theme_id: string; theme_name: string; deposit: number; deposit_paid: boolean; date: string;
+  refunded: boolean; refund_rate: number | null; refund_account: string | null;
+};
 function buildStats(rows: Row[]) {
   // 모든 시각을 KST 기준으로 판정 (서버가 UTC라도 정확)
   const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
@@ -71,9 +77,12 @@ function buildStats(rows: Row[]) {
   let weekCount = 0;
   let monthConfirmedDeposit = 0;
   let pendingUnpaid = 0; // 입금대기 = 대기 상태 & 미입금
+  let pendingUnpaidSum = 0;                    // 입금대기 금액 합
+  let refundPending = 0, refundPendingSum = 0; // 환불대기 건수·금액 합
   for (const r of rows) {
     byStatus[r.status] = (byStatus[r.status] || 0) + 1;
-    if (r.status === "pending" && !r.deposit_paid) pendingUnpaid++;
+    if (r.status === "pending" && !r.deposit_paid) { pendingUnpaid++; pendingUnpaidSum += r.deposit || 0; }
+    if (isRefundPending(r)) { refundPending++; refundPendingSum += refundAmount(r); }
     if (r.status !== "cancelled") {
       byTheme[r.theme_id] = byTheme[r.theme_id] || { name: r.theme_name, count: 0 };
       byTheme[r.theme_id].count++;
@@ -85,7 +94,7 @@ function buildStats(rows: Row[]) {
   }
   const themes = Object.values(byTheme).sort((a, b) => b.count - a.count);
   const activeTotal = themes.reduce((s, t) => s + t.count, 0);
-  return { total: rows.length, byStatus, pendingUnpaid, todayCount, depositPaidSum, weekCount, monthConfirmedDeposit, themes, activeTotal };
+  return { total: rows.length, byStatus, pendingUnpaid, pendingUnpaidSum, refundPending, refundPendingSum, todayCount, depositPaidSum, weekCount, monthConfirmedDeposit, themes, activeTotal };
 }
 
 // 예약 수정 (상태/입금/메모/환불완료)

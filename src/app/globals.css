@@ -625,9 +625,38 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .rrow.open .detail{display:block}
 .rrow .src-tag{font-size:10px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
 .act-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-.refbox{border:1px solid rgba(227,93,107,.3);background:rgba(227,93,107,.06);border-radius:var(--r-sm);padding:12px 14px;margin-top:10px;font-size:13px}
+/* 환불 안내 — 빨강이었는데 색 규칙 위반(환불은 "되돌릴 수 없음"이 아니라 "내가 처리해야 함") → 앰버 */
+.refbox{border:1px solid rgba(181,137,31,.3);background:rgba(181,137,31,.06);border-radius:var(--r-sm);padding:12px 14px;margin-top:10px;font-size:13px}
 .refbox .r{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 .refbox .r span{color:var(--muted)}
+
+/* ---------- 입금·환불 탭 ---------- */
+/* 돈 화면 정렬: 좌(언제)·중(누구/무엇)·[금액]·우(상태→액션).
+   금액은 .rt 바로 왼쪽 고정 슬롯 — 우측정렬 + tnum 이라 자릿수가 눈으로 맞는다 */
+.rrow .amt{font-size:15px;font-weight:800;font-feature-settings:"tnum";
+  min-width:88px;text-align:right;flex:0 0 auto;color:var(--text)}
+/* 이름 = 은행앱 입금자명과 맞추는 키라 회색(.who)에서 끌어올림 */
+.rrow .who b{color:var(--text);font-weight:800}
+/* 5분 남음 = 지금 처리해야 함 → 앰버 (색만이 아니라 "⏳ N분 남음" 글자를 함께 씀) */
+.rrow .when.urgent{color:var(--amber)}
+
+/* 환불 계좌 한 줄 — 은행/계좌/예금주/복사를 가로로. 눈이 위아래로 안 움직이게 */
+.acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);padding:9px 12px;font-size:13.5px}
+.acct .bank{color:var(--muted);font-weight:700;flex:0 0 auto}
+.acct b{font-size:15.5px;font-weight:800;font-feature-settings:"tnum";letter-spacing:.02em}
+
+/* 할 일 개수 뱃지 — 앰버(=내가 처리해야 함). .tt-badge 는 빨강이라 여기 못 씀(레드=되돌릴 수 없음 전용) */
+.vt-badge{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;margin-left:6px;
+  border-radius:var(--r-full);font-size:11px;font-weight:800;font-feature-settings:"tnum";
+  background:rgba(181,137,31,.18);color:#8a6512;border:1px solid rgba(181,137,31,.35)}
+.viewtoggle button.on .vt-badge{background:rgba(255,255,255,.92);color:var(--brand);border-color:transparent}
+.subtab a.on .vt-badge{background:rgba(47,111,224,.14);color:var(--brand);border-color:rgba(47,111,224,.3)}
+
+@media(max-width:640px){
+  .rrow .amt{min-width:auto;text-align:left}
+  .rrow .rt{width:100%;justify-content:flex-end}
+}
 .theme-pop{display:flex;flex-direction:column;gap:6px}
 .theme-pop .tp{display:flex;align-items:center;gap:8px;font-size:12.5px}
 .theme-pop .bar{flex:1;height:8px;background:rgba(20,22,42,.08);border-radius:var(--r-full);overflow:hidden}
