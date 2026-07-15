@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { THEMES, TIME_SLOTS, STORES, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { THEMES, TIME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
-type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule> };
+type Cfg = { timeSlots: string[]; disabledThemes: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number };
 
 // 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
 function openDateLabel(dateStr: string): string {
@@ -129,6 +129,15 @@ function ReserveInner() {
   );
   // 그 요일은 아예 예약을 안 받는 테마(휴무) 인지
   const noSlotsDay = useMemo(() => !!(themeId && date && activeSlots.length === 0), [themeId, date, activeSlots]);
+
+  // 예약 임박 차단 — 시간이 흐르면 임박한 칸이 실제로 잠기도록 30초마다 현재시각 갱신
+  const leadMin = cfg.minLeadMinutes ?? 10;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNowMs(Date.now()), 30000); return () => clearInterval(t); }, []);
+  // 골라둔 시간이 그 사이 임박해지면 선택을 풀어준다 (모르고 신청하는 것 방지)
+  useEffect(() => {
+    if (time && date && isTooSoon(date, time, leadMin, nowMs)) setTime("");
+  }, [nowMs, time, date, leadMin]);
 
   useEffect(() => {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
@@ -298,24 +307,30 @@ function ReserveInner() {
             <div className="optrow">
               {activeSlots.map((tm) => {
                 const isBlocked = blocked.includes(tm);
+                // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
+                const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
+                const off = isBlocked || soon;
                 return (
                   <button
                     key={tm}
                     type="button"
-                    className={"opt" + (time === tm ? " on" : "") + (isBlocked ? " soon" : "")}
+                    className={"opt" + (time === tm ? " on" : "") + (off ? " soon" : "")}
                     aria-pressed={time === tm}
-                    disabled={isBlocked}
+                    disabled={off}
                     style={{ minWidth: 64, flex: "0 0 auto" }}
-                    onClick={() => { if (!isBlocked) setTime(tm); }}
-                    title={isBlocked ? "마감" : ""}
+                    onClick={() => { if (!off) setTime(tm); }}
+                    title={isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
                   >
-                    {tm}{isBlocked ? " 🚫" : ""}
+                    {tm}{isBlocked ? " 🚫" : soon ? " ⏱" : ""}
                   </button>
                 );
               })}
             </div>
           )}
-          <div className="hint">※ 🚫 표시는 마감(예약 불가)된 시간입니다.</div>
+          <div className="hint">
+            ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
+            {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
+          </div>
         </div>
 
         {/* 예약자 정보 */}

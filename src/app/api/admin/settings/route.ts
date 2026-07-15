@@ -73,6 +73,11 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(body.timeSlots)) {
     rows.push({ key: "time_slots", value: body.timeSlots, updated_at: now });
   }
+  if (body.minLeadMinutes != null) {
+    const n = Number(body.minLeadMinutes);
+    if (!Number.isFinite(n) || n < 0 || n > 1440) return NextResponse.json({ error: "임박 차단은 0~1440분 사이여야 합니다." }, { status: 400 });
+    rows.push({ key: "min_lead_minutes", value: Math.floor(n), updated_at: now });
+  }
   if (body.themeSlots != null) {
     rows.push({ key: "theme_slots", value: sanitizeSlots(body.themeSlots, THEME_IDS), updated_at: now });
   }

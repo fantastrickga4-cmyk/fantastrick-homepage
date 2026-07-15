@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from "@/lib/util";
-import { themeById, slotsForThemeDate } from "@/lib/data";
+import { themeById, slotsForThemeDate, isTooSoon } from "@/lib/data";
 import { getConfig } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { sweepExpiredReservations } from "@/lib/expire";
@@ -60,6 +60,15 @@ export async function POST(req: NextRequest) {
   const allowedSlots = slotsForThemeDate(config.themeSlots, config.storeSlots, config.timeSlots, theme.id, theme.store, date);
   if (!allowedSlots.includes(time)) {
     return NextResponse.json({ error: "유효하지 않은 시간입니다." }, { status: 400 });
+  }
+
+  // 예약 임박 차단 — 시작 직전(기본 10분 전)이나 이미 지난 시간은 손님이 예약할 수 없음
+  // (전화로 받는 예약은 관리자 화면에서 등록하므로 이 제한을 받지 않는다)
+  if (isTooSoon(date, time, config.minLeadMinutes)) {
+    const msg = config.minLeadMinutes > 0
+      ? `시작 ${config.minLeadMinutes}분 전부터는 예약할 수 없습니다. 매장으로 전화 주세요.`
+      : "이미 지난 시간입니다.";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
   // 예약 스팸 상한: 같은 전화번호로 대기(pending) 예약이 6건 이상이면 차단

@@ -221,6 +221,17 @@ export function isSlotTime(s: unknown): s is string {
   return typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
 }
 
+// 예약 임박 차단 — 그 칸이 "너무 임박했거나 이미 지났는지" 판정 (한국시간 기준).
+//   leadMinutes 만큼 남지 않았으면 true (손님 예약 불가). 0 이면 지난 시간만 막는다.
+//   서버(UTC)에서도 브라우저(KST)에서도 같은 답이 나오도록 KST 로 통일해 계산한다.
+export function isTooSoon(date: string, time: string, leadMinutes: number, nowMs: number = Date.now()): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isSlotTime(time)) return false;
+  // 그 슬롯의 시작시각을 KST 로 해석 → UTC 기준 밀리초
+  const startMs = Date.parse(`${date}T${time}:00+09:00`);
+  if (Number.isNaN(startMs)) return false;
+  return startMs - nowMs < leadMinutes * 60 * 1000;
+}
+
 // 스케줄(default/byDow)에서 그 날짜의 시간대를 꺼낸다.
 function pickFromSchedule(sch: SlotSchedule, date: string): string[] {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + "T00:00:00Z") : null;

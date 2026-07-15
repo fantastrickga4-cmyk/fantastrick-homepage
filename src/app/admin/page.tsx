@@ -809,17 +809,20 @@ function SettingsTab() {
   const [naverUrl, setNaverUrl] = useState(""); const [googleUrl, setGoogleUrl] = useState("");
   const [extRating, setExtRating] = useState(""); const [extCount, setExtCount] = useState("");
   const [storeSlots, setStoreSlots] = useState<Record<string, StoreSlots>>({});
+  const [leadMin, setLeadMin] = useState("10");
   useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
     setSlots(c.timeSlots); setDisabled(c.disabledThemes || []);
     setStoreSlots(c.storeSlots && typeof c.storeSlots === "object" ? c.storeSlots : {});
     setNaverUrl(c.naverUrl || ""); setGoogleUrl(c.googleUrl || "");
     setExtRating(c.extRating ? String(c.extRating) : ""); setExtCount(c.extCount ? String(c.extCount) : "");
+    setLeadMin(String(c.minLeadMinutes ?? 10));
     setLoaded(true);
   }); }, []);
   async function save() {
     setMsg("");
     const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       timeSlots: slots, disabledThemes: disabled, storeSlots,
+      minLeadMinutes: Number(leadMin) || 0,
       naverUrl, googleUrl, extRating: Number(extRating) || 0, extCount: Number(extCount) || 0,
     }) });
     if (res.ok) setMsg("저장되었습니다 ✅"); else { const j = await res.json(); setMsg(j.error || "저장 실패"); }
@@ -827,6 +830,17 @@ function SettingsTab() {
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
     <div className="admin-card" style={{ maxWidth: 560 }}>
+      <div className="field">
+        <label>⏱ 예약 임박 차단</label>
+        <select value={leadMin} onChange={(e) => setLeadMin(e.target.value)}>
+          <option value="0">제한 없음 (지난 시간만 막음)</option>
+          <option value="10">시작 10분 전부터 예약 불가</option>
+          <option value="30">시작 30분 전부터 예약 불가</option>
+          <option value="60">시작 1시간 전부터 예약 불가</option>
+          <option value="120">시작 2시간 전부터 예약 불가</option>
+        </select>
+        <p className="hint">시작이 코앞인 방을 손님이 덜컥 예약하는 걸 막아요. <b>전화로 받는 예약(관리자 등록)은 이 제한을 받지 않습니다.</b></p>
+      </div>
       <div className="field">
         <label>테마별 예약금 (읽기 전용)</label>
         <div style={{ border: "1px solid var(--line)", borderRadius: 9, overflow: "hidden" }}>
