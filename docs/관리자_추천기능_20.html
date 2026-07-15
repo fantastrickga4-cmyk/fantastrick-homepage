@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>판타스트릭 관리자 — 추천 기능 20가지</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --line:#2a2f3d;
+    --text:#e8eaf0; --muted:#9aa2b4; --faint:#6b7386;
+    --brand:#3b7bf0; --brand2:#043cb2; --violet:#8f6ae0; --green:#37c98b; --amber:#f3b552; --red:#e06565;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0d0f15,#12141c);color:var(--text);
+    font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 22px 90px}
+  a{color:var(--brand)}
+  header.hero{border:1px solid var(--line);border-radius:20px;padding:34px 30px;
+    background:radial-gradient(120% 140% at 0% 0%,rgba(59,123,240,.16),transparent 55%),var(--panel)}
+  .eyebrow{color:var(--violet);font-weight:800;letter-spacing:.18em;font-size:12px;text-transform:uppercase}
+  h1{font-size:30px;margin:10px 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;max-width:74ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--muted)}
+  .pill b{color:var(--text)}
+
+  .verdict{margin-top:18px;background:rgba(224,101,101,.09);border:1px solid rgba(224,101,101,.4);
+    border-radius:14px;padding:18px 20px}
+  .verdict .vt{color:#f2a0a0;font-weight:800;font-size:13px;letter-spacing:.1em;margin-bottom:6px}
+  .verdict p{margin:6px 0;font-size:14.5px;color:#f6d0d0}
+  .verdict b{color:#fff}
+
+  h2{font-size:21px;margin:48px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line);letter-spacing:-.01em}
+  h2 .n{color:var(--brand);font-variant-numeric:tabular-nums}
+  .h2sub{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+  p{margin:8px 0}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+
+  .grp{border-left:3px solid var(--line);padding:2px 0 2px 18px;margin:26px 0}
+  .grp.g-now{border-color:var(--red)} .grp.g-cheap{border-color:var(--amber)}
+  .grp.g-fast{border-color:var(--brand)} .grp.g-grow{border-color:var(--green)} .grp.g-later{border-color:var(--faint)}
+  .grp h3{font-size:17px;margin:0 0 4px}
+  .grp .gwhy{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:10px 0}
+  .item .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .num{display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;background:var(--panel2);
+    border:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
+  .item h4{margin:0;font-size:15.5px}
+  .sp{flex:1}
+  .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .t-s{background:rgba(55,201,139,.14);color:#7fe0b6;border:1px solid rgba(55,201,139,.32)}
+  .t-m{background:rgba(243,181,82,.15);color:#f3ca8f;border:1px solid rgba(243,181,82,.38)}
+  .t-l{background:rgba(224,101,101,.16);color:#f2a0a0;border:1px solid rgba(224,101,101,.4)}
+  .t-sql{background:rgba(143,106,224,.16);color:#c3a6f2;border:1px solid rgba(143,106,224,.4)}
+  .t-hand{background:rgba(59,123,240,.14);color:#9fd0ff;border:1px solid rgba(59,123,240,.4)}
+  .item .desc{font-size:14px;margin:4px 0 8px}
+  .item .why{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+  .item .why b{color:var(--text)}
+  .item .ref{font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+  .item .ref b{color:var(--muted)}
+
+  .box{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:16px 0}
+  .box.warn{background:rgba(243,181,82,.08);border-color:rgba(243,181,82,.35)}
+  .box.ok{background:rgba(55,201,139,.07);border-color:rgba(55,201,139,.3)}
+  .box h3{margin:0 0 8px;font-size:16px}
+  ul.clean{list-style:none;padding:0;margin:8px 0}
+  ul.clean li{padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  ul.clean li:first-child{border-top:none}
+  ul.clean li b{color:var(--text)}
+  code{background:#0c0e14;border:1px solid var(--line);border-radius:6px;padding:1.5px 6px;font-size:12.5px;
+    color:#9fd0ff;font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+  .nsm{font-size:18px;font-weight:800;color:var(--green);margin:6px 0}
+  .foot{margin-top:46px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.9}
+  .srcs{font-size:12px;color:var(--faint);line-height:2}
+  .srcs a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+  .srcs a:hover{color:var(--brand)}
+  @media(max-width:640px){h1{font-size:23px}.wrap{padding:30px 15px 60px}th,td{padding:8px}.item{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">관리자 다음 단계 · 레퍼런스 조사 종합</div>
+  <h1>관리자 페이지에 더하면 좋을 것 — 추천 20가지</h1>
+  <p class="sub">
+    해외 방탈출·액티비티 예약 솔루션(Resova · Bookeo · Xola · Checkfront · FareHarbor · Buzzshot)과
+    국내 서비스(캐치테이블 · 네이버예약)를 조사하고, 지금 판타스트릭 관리자 코드·데이터를 그대로 읽어
+    <b>우리 상황(1인 운영 · 무통장입금 · 손님 0명)</b>에 맞는 것만 골랐습니다.
+  </p>
+  <div class="meta-row">
+    <span class="pill">조사일 <b>2026-07-15</b></span>
+    <span class="pill">참고 서비스 <b>8곳</b></span>
+    <span class="pill">관점 <b>운영 UX + 프로덕트 PM</b></span>
+    <span class="pill">이미 있는 기능 <b>중복 추천 제외</b></span>
+  </div>
+
+  <div class="verdict">
+    <div class="vt">⚠️ 먼저 읽어주세요 — 조사 결과 나온 결론</div>
+    <p><b>지금 관리자에 기능을 더 만드는 건 대부분 의미가 없습니다.</b></p>
+    <p>
+      기존 사이트(fantastrick.co.kr)로는 예약이 <b>누적 22,318건</b> 들어오고 있습니다.
+      새 사이트에 손님이 0명인 건 <b>아무도 안 와서가 아니라, 스위치를 안 켜서</b>입니다.
+      그리고 그 스위치를 막는 건 코드가 아니라 <b>알리고(문자) 가입 하나</b>입니다 —
+      무통장 매장에서 문자가 안 나가면 계좌 안내가 안 가고, 그러면 <b>예약 자체가 성립하지 않습니다.</b>
+    </p>
+    <p>
+      그래서 아래 20가지 중 <b>1~6번은 "기능"이 아니라 "전환(스위치 켜기) 준비"</b>입니다.
+      나머지는 손님을 받아본 뒤에 만드는 게 맞습니다.
+    </p>
+  </div>
+</header>
+
+<h2>병목이 어디인가 <span class="n">— 셋 중 하나</span></h2>
+<table>
+  <thead><tr><th>후보</th><th>실제 상태</th><th>판정</th></tr></thead>
+  <tbody>
+    <tr><td><b>유입</b> (손님이 없다)</td><td>기존 사이트로 예약이 계속 들어오는 중 (누적 22,318건)</td><td>❌ 병목 아님</td></tr>
+    <tr><td><b>기능</b> (관리자가 부족하다)</td><td>워드프레스 Booked보다 이미 많음 — 입금 큐·환불 큐·자동취소·테마별 시간표·문자 문구까지 완비</td><td>❌ 병목 아님</td></tr>
+    <tr><td><b>전환</b> (새 사이트로 넘기기)</td><td>새 사이트는 켜지지 않았고, 문자가 안 나가서 켤 수도 없음</td><td>✅ <b style="color:#f2a0a0">여기가 병목</b></td></tr>
+  </tbody>
+</table>
+<div class="box warn">
+  <h3>💡 이 프로젝트는 다른 사이드앱과 다릅니다</h3>
+  <p style="font-size:14px;margin:4px 0">
+    보통 무료 사이드앱의 병목은 "첫 사용자 데려오기"입니다. 그런데 판타스트릭은 <b>손님이 이미 있습니다.
+    옆 건물(기존 사이트)에 줄 서 있을 뿐입니다.</b> 그래서 "유입에 시간 쓰세요"도 정답이 아닙니다.
+    정답은 <b>전환</b>이고, 전환의 유일한 자물쇠가 알리고입니다.
+  </p>
+</div>
+
+<h2>추천 20가지</h2>
+<p class="h2sub">
+  공수 <span class="tag t-s">小</span> <span class="tag t-m">中</span> <span class="tag t-l">大</span> ·
+  <span class="tag t-sql">SQL 필요</span> (사장님이 Supabase에 한 번 실행) ·
+  <span class="tag t-hand">사장님 손</span> (제가 대신 못 함)
+</p>
+
+<!-- ── A. 전환 게이트 ── -->
+<div class="grp g-now">
+  <h3>🔴 A. 전환 게이트 — 이게 안 되면 나머지 전부가 0점</h3>
+  <p class="gwhy">목표: <b>새 사이트로 실제 손님 1명을 받는다.</b> 아래 6개는 "있으면 좋은 기능"이 아니라 스위치를 켜기 위한 최소 조건입니다.</p>
+
+  <div class="item">
+    <div class="top"><span class="num">1</span><h4>알리고 가입하고 키 3개 넣기</h4><span class="sp"></span>
+      <span class="tag t-hand">사장님 손</span><span class="tag t-s">30분</span></div>
+    <p class="desc">문자 발송 대행사(알리고)에 가입하고 API 키 3개를 넣으면 문자가 켜집니다.</p>
+    <p class="why"><b>이 문서에서 가장 중요한 항목입니다.</b> 문자 코드(<code>lib/sms.ts</code>)는 <b>이미 다 짜여 있습니다</b> —
+      SMS·카카오 알림톡·실패 시 문자 자동대체까지. 딱 <code>ALIGO_API_KEY</code>·<code>ALIGO_USER_ID</code>·<code>ALIGO_SENDER</code>
+      세 줄이 없어서 로그만 쌓고 있습니다. 문자가 안 나가면 <b>손님이 계좌를 못 받아 예약이 성립하지 않습니다.</b>
+      이걸 안 하고 관리자에 기능을 붙이는 건 100% 헛일입니다.</p>
+    <p class="ref"><b>제가 대신 못 하는 유일한 일</b> · 계정만 생기면 나머지는 제가 이틀이면 다 붙입니다</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">2</span><h4>문자 신호등 + 남은 건수</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">관리자 맨 위에 "문자 켜짐/꺼짐 · 남은 2,759건" 표시. 부족하면 경고.</p>
+    <p class="why">문자가 안 나가는 걸 <b>모르고 며칠 지나면</b> 그 사이 손님 전원이 계좌 안내를 못 받습니다.
+      잔여 0건이면 예약이 통째로 마비되는데 지금은 화면 어디에도 안 보입니다.</p>
+    <p class="ref"><b>선행</b> 알리고 가입 · <b>참고</b> 기존 사이트 관리자도 상단에 "SMS 남은 건수 2,759건"을 항상 띄워뒀습니다</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">3</span><h4>나에게 테스트 발송</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">문자 4종 × 4테마를 사장님 폰으로 실제로 쏴보는 버튼.</p>
+    <p class="why">테마마다 예약금이 다릅니다(3만·2.5만·12만·6.3만). <b>오타 하나면 손님이 틀린 금액을 입금합니다.</b>
+      지금은 실전에 나가기 전에 확인할 방법이 없습니다.</p>
+    <p class="ref"><b>선행</b> 2번</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">4</span><h4>예약 접수 스위치 (비상정지)</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">새 사이트 예약 받기 On/Off + 안내 문구. 끄면 "지금은 전화로 문의해주세요".</p>
+    <p class="why">전환 당일 문제가 터지면 <b>되돌릴 길이 지금 없습니다.</b> 이중부킹·중복접수 사고가 나도 손 쓸 수단이 없어요.
+      안전벨트 먼저 매고 스위치를 켜야 합니다.</p>
+    <p class="ref"><b>스키마 변경 없음</b> — 기존 설정(app_settings) 재사용</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">5</span><h4>기존 사이트 예약 가져오기</h4><span class="sp"></span><span class="tag t-m">中</span></div>
+    <p class="desc">기존 사이트에 이미 잡힌 미래 예약(최대 7일치)을 새 사이트에 붙여넣어 그 칸을 막기.</p>
+    <p class="why">전환 순간, 기존 사이트에 이미 예약이 잡힌 시간 위로 새 손님이 겹쳐 들어옵니다.
+      <b>현장에서 두 팀이 같은 방 앞에 서는 사고</b>입니다. 방탈출은 시간당 1팀이라 되돌릴 수 없습니다.</p>
+    <p class="ref"><b>선행</b> 전환일 확정 · 기존 예약이 소진될 때까지 <b>7일 병행</b> 권장</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">6</span><h4>새 사이트 예약 비중 카운터</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">"이번 주 새 사이트 예약 N건 = 전체의 X%"</p>
+    <p class="why">전환이 되고 있는지 아닌지를 <b>아무도 세고 있지 않습니다.</b> 이 숫자가 0%면 관리자를 아무리 잘 만들어도 전부 0점입니다.</p>
+    <p class="ref">아래 <b>North Star 지표</b>의 계측기</p>
+  </div>
+</div>
+
+<!-- ── B. 지금이 제일 싼 것 ── -->
+<div class="grp g-cheap">
+  <h3>🟠 B. 지금 안 하면 영원히 공백 — 데이터가 없는 지금이 최저 비용</h3>
+  <p class="gwhy">전부 "나중에 넣으면 과거 손님 데이터는 영원히 비어 있는" 것들입니다. 예약이 7건뿐인 지금이 가장 쌉니다.</p>
+
+  <div class="item">
+    <div class="top"><span class="num">7</span><h4>테스트 데이터 정리 도구</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">테스트로 만든 예약·리뷰를 골라 <b>완전 삭제</b>(취소가 아니라 삭제).</p>
+    <p class="why">지금 예약 7건이 전부 테스트인데 <b>삭제 기능이 없습니다.</b> 이대로 열면 통계·장부·가동률이 처음부터 오염되고,
+      진짜 1호 손님이 "1번째"로 안 잡힙니다. (그중 1건은 이름이 깨져 저장된 것도 있습니다)</p>
+    <p class="ref"><b>오픈 직전 딱 한 번</b> 필요</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">8</span><h4>"어떻게 알고 오셨어요?" 수집</h4><span class="sp"></span><span class="tag t-s">小</span><span class="tag t-sql">SQL 1줄</span></div>
+    <p class="desc">예약 폼에 선택지 하나(인스타/네이버/지인추천/커뮤니티/기타) → 관리자에서 경로별 건수.</p>
+    <p class="why">앞으로 최대 과제가 손님 데려오기인데 <b>어느 채널이 실제 예약으로 이어지는지 기록할 칸이 아예 없습니다.</b>
+      (<code>source</code> 칼럼은 online/phone = 접수 방식이지 유입 채널이 아닙니다.)
+      <b>나중에 넣으면 그 전 손님은 영원히 공백입니다.</b></p>
+    <p class="ref"><b>참고</b> Xola는 예약 출처·채널별 리포트를 핵심 기능으로 둡니다</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">9</span><h4>돈이 움직인 날짜 기록</h4><span class="sp"></span><span class="tag t-m">中</span><span class="tag t-sql">SQL 2줄</span></div>
+    <p class="desc">입금 확인 누른 시각·환불 완료 누른 시각을 저장(<code>paid_at</code>·<code>refunded_at</code>).</p>
+    <p class="why">이 칼럼이 없어서 <b>입출금 내역이 "예약일 기준"</b>입니다. 7월에 받은 예약금이라도 예약이 8월이면 8월로 잡힙니다.
+      세금·통장 대조 때 숫자가 안 맞습니다. <b>데이터 7건인 지금 바꾸는 게 제일 쌉니다.</b></p>
+    <p class="ref"><b>참고</b> Xola Earnings Report는 "일일 마감 대사"를 위해 수납 시점 기준으로 봅니다 · 제가 입금·환불 탭 만들 때 남긴 한계</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">10</span><h4>취소 사유 수집</h4><span class="sp"></span><span class="tag t-s">小</span><span class="tag t-sql">SQL 1줄</span></div>
+    <p class="desc">손님 취소 화면에 사유 선택(일정변경/인원부족/단순변심/기타).</p>
+    <p class="why">환불율로 <b>돈은 처리되는데 왜 취소했는지는 안 남습니다.</b> 취소가 몰릴 때 시간표 문제인지 가격 문제인지 판단할 근거가 없습니다.</p>
+    <p class="ref"><b>참고</b> Xola 커스텀 리포트는 설문 응답까지 필터로 잡습니다</p>
+  </div>
+</div>
+
+<!-- ── C. 매일이 빨라지는 것 ── -->
+<div class="grp g-fast">
+  <h3>🔵 C. 매일이 빨라지는 것</h3>
+  <p class="gwhy">손님을 받기 시작하면 매일 체감되는 것들. 공수 대비 효과가 큰 순서입니다.</p>
+
+  <div class="item">
+    <div class="top"><span class="num">11</span><h4>전화 바로 걸기 / 문자 바로 열기</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">예약 목록의 전화번호를 누르면 폰에서 바로 전화·문자앱이 열림.</p>
+    <p class="why">지금 전화번호는 <b>그냥 글자</b>입니다. 폰으로 보다가 손님에게 전화하려면 번호를 눈으로 읽고 다시 손으로 찍어야 하고,
+      오타 나면 <b>엉뚱한 사람에게 전화</b>합니다. 코드 한 줄 수준인데 매일이 바뀝니다.</p>
+    <p class="ref"><b>참고</b> FareHarbor Manifest는 손님 연락 수단을 현장에서 바로 쓰도록 노출</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">12</span><h4>보낼 문자 복사함 (알리고 전까지의 다리)</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">"지금 이 손님에게 보낼 문자"를 완성된 문장으로 보여주고 복사 버튼 + 보냄 체크.</p>
+    <p class="why">알리고 가입 전까지 <b>손님이 확정 문자를 못 받는 상태</b>인데 사장님이 그걸 화면에서 알 방법이 없습니다.
+      문구는 이미 다 있으니(4종×4테마) 완성된 문장만 꺼내주면 폰 문자앱으로 붙여넣어 보낼 수 있습니다.</p>
+    <p class="ref"><b>참고</b> Checkfront Daily Manifest는 "오늘 처리할 손님"을 한 줄씩 세워두고 거기서 바로 처리</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">13</span><h4>예약 옮기기 (날짜·시간 변경)</h4><span class="sp"></span><span class="tag t-m">中</span></div>
+    <p class="desc">취소·재등록 없이 날짜/시간/인원만 변경. 옮길 칸이 비었는지 자동 검사.</p>
+    <p class="why"><b>실무에서 가장 흔한 요청이 "한 시간만 미뤄주세요"</b>인데, 지금은 취소 후 재등록뿐입니다.
+      그러면 환불율이 계산되고 환불 큐에 뜨고 입금 상태가 초기화됩니다 —
+      <b>손님은 그대로 오는데 장부가 "취소 1건 + 신규 1건"으로 더러워집니다.</b></p>
+    <p class="ref"><b>참고</b> Resova는 온라인·워크인·단체를 한 화면에서 변경·취소·환불까지</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">14</span><h4>오늘 브리핑 (전 테마 한 화면)</h4><span class="sp"></span><span class="tag t-m">中</span></div>
+    <p class="desc">오늘 몇 팀 / 미입금 몇 건 / 환불 대기 몇 건 / 다음 손님은 몇 시 누구 — 한 화면. 폰 우선.</p>
+    <p class="why">지금 날짜별 보기는 <b>테마 탭을 하나씩 눌러야</b> 그 테마 손님이 보입니다. 3개점·4테마라 오늘 상황을 알려면 4번 눌러야 하고,
+      폰에서는 더 답답합니다. <b>하루 5팀 넘으면 효과가 급격히 커집니다.</b></p>
+    <p class="ref"><b>참고</b> Checkfront가 "Daily Manifest + 새 대시보드"를 따로 낸 이유가 정확히 이것 · FareHarbor Manifest = "하루 예약의 실시간 스냅샷"</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">15</span><h4>입금자명 칸</h4><span class="sp"></span><span class="tag t-s">小</span><span class="tag t-sql">SQL 1줄</span></div>
+    <p class="desc">입금 확인 큐에 "통장에 찍힌 이름" 입력칸. 예약자명과 다르면 표시.</p>
+    <p class="why">무통장은 <b>통장에 찍힌 이름으로만 대조</b>합니다. 친구·회사 이름으로 넣는 경우 지금은 메모에 손으로 적는 수밖에 없고,
+      환불할 때 누구 돈인지 다시 헷갈립니다.</p>
+    <p class="ref">나중에 <code>bank-auto</code>(카뱅 알림 자동승인) 프로젝트와 붙는 접점</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">16</span><h4>통짜 백업 버튼</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">버튼 하나로 예약·리뷰·설정 전체를 파일로 내려받기.</p>
+    <p class="why">Supabase 무료 플랜은 <b>시점 복구가 없습니다.</b> 실수로 지우면 끝입니다.
+      지금 CSV는 예약·장부 두 곳뿐이라 <b>리뷰·시간표·문자 문구는 백업 수단이 아예 없습니다</b> — 문자 문구 4종×4테마를 다시 쓰는 건 반나절 일입니다.</p>
+    <p class="ref"><b>참고</b> FareHarbor는 리포트·매니페스트 다운로드를 기본 제공</p>
+  </div>
+</div>
+
+<!-- ── D. 유입에 직접 닿는 것 ── -->
+<div class="grp g-grow">
+  <h3>🟢 D. 유입에 직접 닿는 것 — 관리자 기능 중 유일하게</h3>
+  <p class="gwhy">병목이 유입일 때, 관리자에서 할 수 있는 일은 사실상 이 두 개뿐입니다.</p>
+
+  <div class="item">
+    <div class="top"><span class="num">17</span><h4>빈자리 홍보 문구 자동 생성</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">"오늘/이번 주 안 팔린 칸"을 모아 인스타·카톡에 그대로 붙일 문장 + 예약 링크를 만들어 복사 버튼.</p>
+    <p class="why">남는 칸은 하루가 지나면 <b>0원짜리 재고</b>입니다. 지금은 사장님이 매일 손으로
+      "오늘 8시 자리 있어요"를 타이핑합니다. <b>손님이 없는 지금이 오히려 제일 필요한 기능.</b></p>
+    <p class="ref"><b>참고</b> Resova는 프로모션 도구를 예약 시스템 안에 둬 남는 재고를 파는 흐름 지원 · 가동률은 방탈출 핵심 KPI</p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">18</span><h4>후기 요청 원클릭</h4><span class="sp"></span><span class="tag t-s">小</span></div>
+    <p class="desc">어제 다녀간 손님 목록 + "후기 부탁 문구 + 후기 링크" 복사 버튼. (알리고 켜지면 자동 발송으로 승격)</p>
+    <p class="why">신규 사이트라 <b>후기 0건이 예약 전환의 가장 큰 벽</b>입니다. 리뷰 승인/거부는 있는데
+      <b>후기를 요청하는 쪽 도구가 없습니다.</b></p>
+    <p class="ref"><b>참고</b> Buzzshot은 플레이 후 리뷰 요청을 소프트웨어로 자동화</p>
+  </div>
+</div>
+
+<!-- ── E. 손님 쌓인 뒤 ── -->
+<div class="grp g-later">
+  <h3>⚪ E. 손님이 쌓인 뒤 (지금 만들면 빈 화면)</h3>
+  <p class="gwhy">기능은 지금도 만들 수 있지만, <b>데이터가 없으면 숫자가 거짓말을 합니다.</b></p>
+
+  <div class="item">
+    <div class="top"><span class="num">19</span><h4>손님 카드 + 노쇼 경고 배지</h4><span class="sp"></span><span class="tag t-m">中</span></div>
+    <p class="desc">전화번호 기준 과거 예약·방문·취소·노쇼 이력, "N번째 방문" 배지, "이 번호 노쇼 2회" 경고.</p>
+    <p class="why">전화번호 인덱스는 <b>이미 있는데 화면에서 안 씁니다.</b> 재방문 손님인지 모르고 응대하면 "또 오셨네요" 한마디를 못 합니다.
+      테마가 4개뿐이라 <b>"이 손님이 아직 안 한 테마"</b>가 보이면 바로 매출입니다. 노쇼는 그 시간 칸을 통째로 날립니다(시간당 1팀).</p>
+    <p class="ref"><b>참고</b> 캐치테이블은 방문 이력 기반 단골 관리 · FareHarbor는 체크인/노쇼 상태를 Manifest에 표시
+      <br><b>필요한 데이터는 이미 다 쌓이고 있어 급하지 않음</b></p>
+  </div>
+
+  <div class="item">
+    <div class="top"><span class="num">20</span><h4>가동률 리포트 (테마·요일·시간대별 채움률)</h4><span class="sp"></span><span class="tag t-m">中</span></div>
+    <p class="desc">"연 칸 수 대비 팔린 칸 수"를 테마·요일·시간대로.</p>
+    <p class="why">지금 통계는 건수 위주라 <b>"연 칸 중 몇 %가 팔렸나"</b>가 없습니다. 이걸 알아야 안 팔리는 시간대를 시간표에서 빼거나
+      그 시간에 홍보를 겁니다. <b>다만 몇 달치는 쌓여야 숫자가 의미를 가집니다.</b></p>
+    <p class="ref"><b>참고</b> 가동률(Total Games Played ÷ Maximum Available Slots)은 방탈출 업계 표준 KPI</p>
+  </div>
+</div>
+
+<h2>당장 하면 좋은 Top 5</h2>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>무엇</th><th style="width:90px">공수</th><th>왜 지금인가</th></tr></thead>
+  <tbody>
+    <tr><td><b>1</b></td><td><b>알리고 가입 + 키 3개</b></td><td><span class="tag t-hand">사장님 손</span></td><td>이게 없으면 아래 전부 무의미. <b>오늘, 30분</b></td></tr>
+    <tr><td><b>2</b></td><td>테스트 데이터 정리 (7번)</td><td><span class="tag t-s">小</span></td><td>오픈 전에 안 지우면 통계가 처음부터 오염</td></tr>
+    <tr><td><b>3</b></td><td>문자 신호등 + 테스트 발송 (2·3번)</td><td><span class="tag t-s">小</span></td><td>테마별 예약금 오안내 방지 — 실전 전 유일한 검증 수단</td></tr>
+    <tr><td><b>4</b></td><td>SQL 한 번에: 유입경로 + 돈 날짜 + 입금자명 (8·9·15번)</td><td><span class="tag t-sql">SQL 4줄</span></td><td><b>지금이 최저 비용.</b> 나중에 넣으면 과거는 영원히 공백. 한 번에 실행 권장</td></tr>
+    <tr><td><b>5</b></td><td>예약 접수 스위치 + 기존 예약 가져오기 (4·5번)</td><td><span class="tag t-m">中</span></td><td>전환 당일 이중부킹 사고 방지 — 안전벨트</td></tr>
+  </tbody>
+</table>
+<div class="box ok">
+  <h3>👉 그다음은 "전환 리허설"</h3>
+  <p style="font-size:14px;margin:4px 0">
+    사장님 본인 폰으로 <b>실제 예약 1건을 끝까지</b> 밟아보세요 — 예약 → 문자 받기 → 입금 → 확정 → 취소 → 환불까지.
+    첫 실손님에게 버그를 보여주는 것보다 백 배 낫습니다.
+  </p>
+</div>
+
+<h2>North Star 지표 <span class="n">— 2단</span></h2>
+<div class="box">
+  <h3>지금 (전환 전)</h3>
+  <p class="nsm">주간 새 사이트 예약 비중 (%)</p>
+  <p style="font-size:13.5px;color:var(--muted);margin:2px 0">
+    새 사이트 예약 ÷ (새 사이트 + 기존 사이트) · <b style="color:var(--text)">현재 0% → 목표 4주 내 100%</b><br>
+    관리자를 아무리 잘 만들어도 이 숫자가 0%면 전부 0점입니다.
+  </p>
+</div>
+<div class="box">
+  <h3>전환 후</h3>
+  <p class="nsm">입금 → 확정까지 걸린 시간 (중앙값)</p>
+  <p style="font-size:13.5px;color:var(--muted);margin:2px 0">
+    <code>median(confirmed_at − created_at)</code> · 목표 <b style="color:var(--text)">30분 이내</b> (자동취소가 30분이므로)<br>
+    짧다 = 사장님이 빨리 처리했다 = 손님이 빨리 안심했다 = 예약이 안 날아갔다.
+    <b style="color:var(--text)">필요한 칼럼이 이미 다 있어 추가 비용 0원.</b>
+  </p>
+  <ul class="clean" style="margin-top:10px">
+    <li><b>보조 1 · 미처리 적체 최대치</b> — 하루 중 (미입금 + 환불대기) 최고값. 5건 넘으면 관리자가 사장님을 못 따라간다는 뜻</li>
+    <li><b>보조 2 · 문자 발송 성공률</b> — 95% 미만이면 즉시 조사</li>
+    <li><b>보조 3 · 노쇼율</b> — 예약금 정책이 작동하는지</li>
+  </ul>
+  <p style="font-size:13px;color:var(--faint);margin-top:8px">※ 지표를 더 늘리지 마세요. 1인 매장에 4개면 충분합니다.</p>
+</div>
+
+<h2>🚫 하지 말 것 <span class="n">— 대형 솔루션엔 있지만 우리에겐 독</span></h2>
+<ul class="clean">
+  <li><b>직원 계정·권한 관리·근무 스케줄</b> — Bookeo류의 staff management. 1인이면 로그인 화면만 하나 늘어납니다.</li>
+  <li><b>키오스크 체크인 / 전자 서약서</b> — Buzzshot 핵심 기능이지만, 이건 <b>게임 마스터가 여럿이고 손님이 줄 서는 매장</b>의 문제입니다. 사장님이 직접 맞이하는 구조에서 태블릿 서명은 마찰만 늘립니다. (눈앞의 손님을 앱에 또 찍는 일)</li>
+  <li><b>팀 사진 자동 합성</b> — 폰으로 찍어 카톡으로 주면 됩니다. 소프트웨어로 만들 일이 아닙니다.</li>
+  <li><b>리더보드 TV</b> — 업계 안에서도 부작용 논쟁이 있습니다(빠른 팀만 계속 박제, 주기적 초기화 유지보수).</li>
+  <li><b>커스텀 리포트 빌더 / 차트 벽</b> — Resova조차 "리포트 탭이 둘이라 혼란스럽다"는 평을 받습니다. 4테마·3개점이면 <b>고정된 표 몇 장</b>이면 충분합니다.</li>
+  <li><b>소품·장비 재고 추적</b> — 테마 4개면 사장님 머릿속이 더 빠릅니다.</li>
+  <li><b>감사 로그(누가 뭘 눌렀나)</b> — 누르는 사람이 한 명입니다.</li>
+  <li><b>OTA·채널 매니저 연동</b> — 수수료와 정산 대사가 1인 운영 캐파를 넘습니다.</li>
+  <li><b>일괄 입금확인 체크박스</b> — 카페24엔 있지만 우리는 입금확인이 <b>자동 확정 + 문자 발송</b>이라 오체크 1번 = 손님에게 잘못된 확정문자.</li>
+  <li><b>기프트권·할인코드</b> — Resova조차 기프트권을 상위 요금제로 미룹니다. 토스페이먼츠 가입 후에.</li>
+  <li><b>대기자 명단(웨이팅)</b> — <b>매진이 나야</b> 존재 이유가 생깁니다. 알리고도 선행.</li>
+</ul>
+
+<h2>정리</h2>
+<div class="box warn">
+  <p style="font-size:15px;margin:4px 0">
+    <b>20가지를 뽑았지만, 솔직한 답은 "지금은 관리자에 기능을 더 만들 때가 아니다"입니다.</b>
+  </p>
+  <p style="font-size:14px;color:var(--muted);margin:8px 0">
+    관리자는 이미 옛 워드프레스보다 낫습니다. 손님이 0명인 건 관리자가 부족해서가 아닙니다.
+    <b style="color:var(--text)">알리고 가입 → 전환 준비(1~6번) → 실손님 1명 → 그때 불편했던 것만 만들기.</b>
+    지금 상상해서 만들면 대부분 틀립니다.
+  </p>
+  <p style="font-size:14px;color:var(--muted);margin:8px 0">
+    다만 <b style="color:var(--text)">7~10번(테스트 정리 · 유입경로 · 돈 날짜 · 취소사유)</b>은 예외입니다.
+    이건 <b style="color:var(--text)">지금 안 하면 나중엔 과거 데이터가 영원히 비어</b> 있습니다. SQL 몇 줄이니 한 번에 하시죠.
+  </p>
+</div>
+
+<h2>참고한 곳</h2>
+<p class="srcs">
+  <b style="color:var(--muted)">방탈출·액티비티 예약 솔루션</b><br>
+  <a href="https://get.resova.com/features/feature/all-features/" target="_blank">Resova 전체 기능</a> ·
+  <a href="https://help.resova.com/hc/en-us/articles/360004133253-Creating-and-managing-discount-codes" target="_blank">Resova 할인코드</a> ·
+  <a href="https://help.resova.com/hc/en-us/articles/360004090613-Selling-gift-vouchers" target="_blank">Resova 기프트 바우처</a> ·
+  <a href="https://get.resova.com/features/feature/marketing-promotion-tools/" target="_blank">Resova 프로모션 도구</a><br>
+  <a href="https://support.xola.com/earnings-report" target="_blank">Xola Earnings Report</a> ·
+  <a href="https://support.xola.com/custom-reports" target="_blank">Xola Custom Reports</a><br>
+  <a href="https://support.checkfront.com/hc/en-us/articles/19868102802204-Introduction-to-the-Daily-Manifest" target="_blank">Checkfront Daily Manifest</a> ·
+  <a href="https://support.checkfront.com/hc/en-us/articles/19868388483484-Checking-in-and-out-Guests-or-bookings-from-the-Daily-Manifest" target="_blank">Checkfront 체크인/노쇼</a> ·
+  <a href="https://www.checkfront.com/blog/daily-manifest/" target="_blank">Checkfront 대시보드 개편</a><br>
+  <a href="https://fareharbor.com/blog/smarter-scheduling-better-service-optimize-your-manifest-in-minutes/" target="_blank">FareHarbor Manifest</a> ·
+  <a href="https://help.fareharbor.com/hc/en-us/articles/40897898334619-How-do-I-download-a-manifest-or-report" target="_blank">FareHarbor 리포트 다운로드</a><br>
+  <a href="https://buzzshot.com/" target="_blank">Buzzshot</a> ·
+  <a href="https://buzzshot.com/escape-room-waiver-software/" target="_blank">Buzzshot 웨이버</a> ·
+  <a href="https://buzzshot.com/tour/" target="_blank">Buzzshot tour</a> ·
+  <a href="https://motopress.com/blog/escape-room-software/" target="_blank">MotoPress 방탈출 소프트웨어 비교</a><br>
+  <b style="color:var(--muted)">국내</b><br>
+  <a href="https://www.unicornfactory.co.kr/article/2024121609591059346" target="_blank">캐치테이블 예약금 0원 결제</a> ·
+  <a href="https://news.nate.com/view/20221221n27224" target="_blank">캐치테이블 웨이팅 출시</a> ·
+  <a href="https://ok100.nado100.com/entry/%EC%BA%90%EC%B9%98%ED%85%8C%EC%9D%B4%EB%B8%94-%EA%B4%80%EB%A6%AC%EC%9E%90-%EC%82%AC%EC%9A%A9%EB%B2%95-%EC%B4%88%EB%B3%B4%EB%8F%84-%EC%89%BD%EA%B2%8C-%EC%8B%9C%EC%9E%91%ED%95%98%EB%8A%94-%EB%A7%A4%EC%9E%A5-%EC%98%88%EC%95%BD-%EA%B4%80%EB%A6%AC-%EA%B0%80%EC%9D%B4%EB%93%9C" target="_blank">캐치테이블 관리자 가이드</a> ·
+  <a href="https://namu.wiki/w/%EB%B0%A9%ED%83%88%EC%B6%9C%20%EC%B9%B4%ED%8E%98" target="_blank">방탈출 카페 (나무위키)</a><br>
+  <b style="color:var(--muted)">지표·업계</b><br>
+  <a href="https://financialmodelslab.com/blogs/kpi-metrics/escape-room-kpi-metrics" target="_blank">Escape Room KPI Metrics</a> ·
+  <a href="https://crossroadsescapegames.com/escape-tips/we-need-to-talk-about-leaderboards/" target="_blank">Cross Roads: 리더보드 논쟁</a> ·
+  <a href="https://roomescapeartist.com/2024/02/28/escape-room-leaderboards-2024/" target="_blank">Room Escape Artist: 리더보드 2024</a><br>
+  <b style="color:var(--muted)">무통장·정산 참고(앞선 조사)</b><br>
+  <a href="https://support.cafe24.com/hc/ko/articles/7738638062105" target="_blank">카페24 입금 전 관리</a> ·
+  <a href="https://developers.portone.io/opi/ko/console/guide/payments?v=v1" target="_blank">포트원 결제내역</a>
+</p>
+
+<p class="foot">
+  판타스트릭 관리자 — 추천 기능 20가지 · 2026-07-15<br>
+  운영 UX 전문가 + 프로덕트 PM 두 관점을 종합 · 기존 사이트는 읽기 전용 분석만 수행(무변경)<br>
+  이미 있는 기능은 중복 추천에서 제외했습니다
+</p>
+
+</div>
+</body>
+</html>
