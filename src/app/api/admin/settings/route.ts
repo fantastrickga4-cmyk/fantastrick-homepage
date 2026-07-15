@@ -73,6 +73,20 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(body.timeSlots)) {
     rows.push({ key: "time_slots", value: body.timeSlots, updated_at: now });
   }
+  // 테마별 예약금 — 손님이 실제로 입금할 금액이라 검증을 엄격히
+  if (body.themeDeposits != null) {
+    const raw = body.themeDeposits;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return NextResponse.json({ error: "예약금 형식을 확인해 주세요." }, { status: 400 });
+    const out: Record<string, number> = {};
+    for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (!THEME_IDS.has(id)) continue; // 알 수 없는 테마는 버림
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0) return NextResponse.json({ error: "예약금은 0원 이상 숫자로 입력해 주세요." }, { status: 400 });
+      if (n > 1_000_000) return NextResponse.json({ error: "예약금이 너무 큽니다. (100만원 이하)" }, { status: 400 });
+      out[id] = Math.floor(n);
+    }
+    rows.push({ key: "theme_deposits", value: out, updated_at: now });
+  }
   if (body.minLeadMinutes != null) {
     const n = Number(body.minLeadMinutes);
     if (!Number.isFinite(n) || n < 0 || n > 1440) return NextResponse.json({ error: "임박 차단은 0~1440분 사이여야 합니다." }, { status: 400 });

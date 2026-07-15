@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from "@/lib/util";
 import { themeById, slotsForThemeDate, isTooSoon } from "@/lib/data";
-import { getConfig } from "@/lib/settings";
+import { getConfig, depositOf } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { sweepExpiredReservations } from "@/lib/expire";
 
@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "마감된 시간입니다. 다른 시간을 선택해 주세요." }, { status: 409 });
   }
 
-  const deposit = theme.deposit;
+  // 예약금은 관리자가 바꿨으면 그 값 (문자 계좌 안내에도 이 금액이 나감)
+  const deposit = depositOf(config, theme.id, theme.deposit);
 
   const { data, error } = await db
     .from("reservations")
@@ -121,6 +122,10 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: "예약 저장 중 오류가 발생했습니다." }, { status: 500 });
   }
+
+  // 변경 이력의 시작점
+  await db.from("reservation_logs").insert({ reservation_id: data.id, action: "접수", detail: "손님이 홈페이지에서 예약" })
+    .then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
   return NextResponse.json({ ok: true, id: data.id, deposit });
 }

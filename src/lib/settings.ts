@@ -29,6 +29,7 @@ export type AppConfig = {
   storeSlots: Record<string, StoreSlots>; // 매장별 요일별 시간대 (테마 설정 없을 때)
   notice: Notice;           // 팝업 공지
   minLeadMinutes: number;   // 예약 임박 차단 — 시작 N분 전부터는 손님이 예약 못 함 (0=제한없음)
+  themeDeposits: Record<string, number>; // 테마별 예약금 — 비어있으면 data.ts 의 값을 씀
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -38,7 +39,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   storeSlots: {},
   notice: DEFAULT_NOTICE,
   minLeadMinutes: 10, // 사장님 지정(2026-07-15): 시작 10분 전부터는 예약 불가
+  themeDeposits: {},  // 비어있으면 data.ts 의 테마별 예약금을 그대로 사용
 };
+
+// 테마의 지금 예약금 — 관리자가 바꿨으면 그 값, 아니면 코드 기본값.
+// ⚠️ 예약금은 문자 문구(계좌 안내)에도 나가므로, 바꾸면 그 문구도 같이 확인해야 함.
+export function depositOf(config: Pick<AppConfig, "themeDeposits">, themeId: string, fallback: number): number {
+  const v = config.themeDeposits?.[themeId];
+  return Number.isFinite(v) && (v as number) >= 0 ? (v as number) : fallback;
+}
 
 export async function getConfig(): Promise<AppConfig> {
   const db = getSupabase();
@@ -50,6 +59,7 @@ export async function getConfig(): Promise<AppConfig> {
   const thSlots = map.get("theme_slots");
   const stSlots = map.get("store_slots");
   const lead = Number(map.get("min_lead_minutes"));
+  const rawDep = map.get("theme_deposits");
   const rawNotice = map.get("notice");
   const notice: Notice =
     rawNotice && typeof rawNotice === "object" && !Array.isArray(rawNotice)
@@ -64,5 +74,6 @@ export async function getConfig(): Promise<AppConfig> {
     notice,
     // 0 도 유효한 값(제한없음)이라 isFinite 로만 판정
     minLeadMinutes: Number.isFinite(lead) && lead >= 0 ? lead : DEFAULT_CONFIG.minLeadMinutes,
+    themeDeposits: rawDep && typeof rawDep === "object" && !Array.isArray(rawDep) ? (rawDep as Record<string, number>) : {},
   };
 }

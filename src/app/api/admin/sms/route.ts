@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
-import { DEFAULT_TEMPLATES, kakaoConfigured } from "@/lib/sms";
+import { DEFAULT_TEMPLATES, kakaoConfigured, sendSms } from "@/lib/sms";
 import { THEME_TEMPLATES } from "@/lib/sms-templates";
 import { THEMES } from "@/lib/data";
+import { normalizePhone } from "@/lib/util";
 
 // 문자 종류. perTheme=true 면 테마마다 문구가 다를 수 있어 테마별로 편집한다.
 //   (기존 사이트: 예약대기=테마마다 예약금이 다름 / 입금확정=사자의 서만 인스타·길안내 추가)
@@ -55,16 +56,44 @@ export async function GET(req: NextRequest) {
       : [],
   }));
 
-  const { data: log } = await db
-    .from("sms_log")
-    .select("id, phone, body, type, status, error, channel, created_at")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  // 발송 내역 — 이름·전화로 검색 가능("저 문자 못 받았어요" 전화 응대용), 실패만 보기
+  const q = (req.nextUrl.searchParams.get("q") || "").trim();
+  const only = req.nextUrl.searchParams.get("only"); // "failed" → 실패·미발송만
+  let logQ = db.from("sms_log").select("id, phone, body, type, status, error, channel, created_at")
+    .order("created_at", { ascending: false }).limit(100);
+  if (q) {
+    const qPhone = normalizePhone(q);
+    // 전화번호로 찾거나, 본문에 이름이 들어있으면(문구에 {이름}이 치환돼 있음) 찾는다
+    logQ = qPhone.length >= 3 ? logQ.or(`phone.ilike.%${qPhone}%,body.ilike.%${q}%`) : logQ.ilike("body", `%${q}%`);
+  }
+  if (only === "failed") logQ = logQ.neq("status", "sent");
+  const { data: log } = await logQ;
 
   const aligoReady = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
   const kakaoReady = kakaoConfigured();
   const kakaoTemplates = { confirm: kakaoConfigured("confirm"), cancel: kakaoConfigured("cancel"), reminder: kakaoConfigured("reminder") };
   return NextResponse.json({ ok: true, templates, log: log || [], aligoReady, kakaoReady, kakaoTemplates });
+}
+
+// 실패한 문자 다시 보내기 — 그때 나갔어야 할 문구 그대로 재발송
+//   문구를 다시 만들지 않고 로그에 남은 body 를 그대로 쓴다(그 사이 문구를 고쳤어도 원래 안내대로 나가게)
+export async function POST(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  const db = getSupabase();
+  if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }); }
+
+  const id = String(body.id || "");
+  if (!id) return NextResponse.json({ error: "발송 id가 필요합니다." }, { status: 400 });
+  const { data: row } = await db.from("sms_log").select("phone, body, type, status").eq("id", id).single();
+  if (!row) return NextResponse.json({ error: "발송 내역을 찾을 수 없습니다." }, { status: 404 });
+  if (row.status === "sent") return NextResponse.json({ error: "이미 발송된 문자예요. 다시 보낼 필요가 없습니다." }, { status: 400 });
+
+  const res = await sendSms(row.phone as string, row.body as string, row.type as string);
+  if (res.skipped) return NextResponse.json({ error: "문자 발송 키(알리고)가 아직 없어서 실제로 나가지 않았어요. 기록만 남았습니다." }, { status: 400 });
+  if (!res.ok) return NextResponse.json({ error: "재발송에 실패했어요. 잠시 후 다시 시도해 주세요." }, { status: 502 });
+  return NextResponse.json({ ok: true });
 }
 
 // 템플릿 수정 — themeId 를 주면 그 테마 전용, 없으면 모든 테마 공통

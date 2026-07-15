@@ -4,11 +4,15 @@ import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
 import { themeById } from "@/lib/data";
 import { isRefundPending, refundAmount } from "@/lib/money";
+import { getConfig, depositOf } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations } from "@/lib/expire";
 
 const COLS =
-  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at";
+  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at";
+
+// 변경 이력에 쓸 한국어 상태명
+const ST_KO: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
 
 // 예약 목록 조회 (필터·검색) + 통계
 export async function GET(req: NextRequest) {
@@ -33,8 +37,17 @@ export async function GET(req: NextRequest) {
   if (store && store !== "all") query = query.eq("store_id", store);
   if (theme && theme !== "all") query = query.eq("theme_id", theme);
   if (deposit === "unpaid") query = query.eq("deposit_paid", false);
-  if (from) query = query.gte("date", from);
-  if (to) query = query.lte("date", to);
+
+  // basis=money → "돈이 오간 날" 기준 조회 (입출금 내역용).
+  //   기본은 예약일(date) 기준이지만, 장부는 7월에 받은 돈이 8월 예약이라고 8월로 잡히면 안 된다.
+  //   한 예약이 7월 입금 + 8월 환불이면 두 달에 나뉘어 잡히는 게 맞다(그래서 or 조건).
+  if (sp.get("basis") === "money" && from && to) {
+    const s = `${from}T00:00:00+09:00`, e = `${to}T23:59:59+09:00`;
+    query = query.or(`and(paid_at.gte.${s},paid_at.lte.${e}),and(refunded_at.gte.${s},refunded_at.lte.${e})`);
+  } else {
+    if (from) query = query.gte("date", from);
+    if (to) query = query.lte("date", to);
+  }
   if (q) {
     const qPhone = normalizePhone(q);
     if (qPhone.length >= 3) query = query.or(`name.ilike.%${q}%,phone.ilike.%${qPhone}%`);
@@ -109,36 +122,56 @@ export async function PATCH(req: NextRequest) {
   const id = String(body.id || "");
   if (!id) return NextResponse.json({ error: "예약 id가 필요합니다." }, { status: 400 });
 
-  // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내기 위해 필요
+  // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내고, 변경 이력에 "뭐가 뭐로" 남기기 위해 필요
   const { data: before } = await db
     .from("reservations")
-    .select("status, deposit_paid, name, phone, theme_id, theme_name, date, time, people, refund_rate")
+    .select("status, deposit_paid, refunded, name, phone, theme_id, theme_name, date, time, people, refund_rate, deposit, memo")
     .eq("id", id)
     .single();
   if (!before) return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
 
+  const now = new Date().toISOString();
   const patch: Record<string, unknown> = {};
   if (typeof body.status === "string" && ["pending", "confirmed", "cancelled", "noshow"].includes(body.status)) {
     patch.status = body.status;
-    if (body.status === "confirmed") patch.confirmed_at = new Date().toISOString();
-    if (body.status === "cancelled") patch.cancelled_at = new Date().toISOString();
+    if (body.status === "confirmed") patch.confirmed_at = now;
+    if (body.status === "cancelled") patch.cancelled_at = now;
   }
   if (typeof body.deposit_paid === "boolean") patch.deposit_paid = body.deposit_paid;
   if (typeof body.refunded === "boolean") patch.refunded = body.refunded;
   if (typeof body.memo === "string") patch.memo = body.memo;
+  if (typeof body.deposit_payer === "string") patch.deposit_payer = body.deposit_payer.trim() || null;
 
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
 
   // 입금확인 = 예약확정 (기존 fantastrick.co.kr 과 같은 방식).
   // 입금을 확인하면 대기 상태를 확정으로 함께 올리고, 안내는 입금확정 문자 1통만 보낸다.
   const nowPaid = patch.deposit_paid === true && !before.deposit_paid;
+  const nowUnpaid = patch.deposit_paid === false && before.deposit_paid;
+  const nowRefunded = patch.refunded === true && !before.refunded;
   if (nowPaid && before.status === "pending" && patch.status == null) {
     patch.status = "confirmed";
-    patch.confirmed_at = new Date().toISOString();
+    patch.confirmed_at = now;
   }
+  // 돈이 실제로 움직인 시각 기록 — 이게 있어야 입출금 내역이 "예약일"이 아니라 "돈 들어온 날" 기준이 됨
+  if (nowPaid) patch.paid_at = now;
+  if (nowUnpaid) patch.paid_at = null;      // 입금확인을 잘못 눌러 되돌리는 경우
+  if (nowRefunded) patch.refunded_at = now;
+  if (patch.refunded === false && before.refunded) patch.refunded_at = null;
 
   const { error } = await db.from("reservations").update(patch).eq("id", id);
   if (error) return NextResponse.json({ error: "수정 중 오류가 발생했습니다." }, { status: 500 });
+
+  // 변경 이력 — "언제 뭐가 바뀌었나". 1인 운영이라 "누가"는 안 남긴다.
+  const logs: { reservation_id: string; action: string; detail: string | null }[] = [];
+  if (nowPaid) logs.push({ reservation_id: id, action: "입금확인", detail: `${(before.deposit || 0).toLocaleString()}원${body.deposit_payer ? ` · 입금자 ${body.deposit_payer}` : ""}` });
+  if (nowUnpaid) logs.push({ reservation_id: id, action: "입금확인 취소", detail: null });
+  if (nowRefunded) logs.push({ reservation_id: id, action: "환불완료", detail: `${refundAmount({ deposit: before.deposit, refund_rate: before.refund_rate }).toLocaleString()}원` });
+  if (patch.status && patch.status !== before.status) {
+    logs.push({ reservation_id: id, action: String(patch.status === "confirmed" ? "확정" : patch.status === "cancelled" ? "취소" : patch.status === "noshow" ? "노쇼" : "대기로 되돌림"), detail: `${ST_KO[before.status] || before.status} → ${ST_KO[String(patch.status)] || patch.status}` });
+  }
+  if (typeof body.memo === "string" && body.memo !== (before.memo || "")) logs.push({ reservation_id: id, action: "메모", detail: body.memo.slice(0, 60) || "(지움)" });
+  if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
   // 안내 문자 (알리고 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
   const r = { ...before, refund_rate: before.refund_rate };
@@ -179,14 +212,20 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "이름을 입력해 주세요." }, { status: 400 });
   if (!isValidPhone(phone)) return NextResponse.json({ error: "전화번호를 확인해 주세요." }, { status: 400 });
 
-  const deposit = theme.deposit;
-  const { error } = await db.from("reservations").insert({
+  // 예약금은 관리자가 바꿨으면 그 값 (손님 예약과 같은 기준을 써야 금액이 어긋나지 않음)
+  const cfg = await getConfig();
+  const deposit = depositOf(cfg, theme.id, theme.deposit);
+  const { data: made, error } = await db.from("reservations").insert({
     store_id: theme.store, theme_id: theme.id, theme_name: theme.name,
     date, time, people, name, phone, deposit, status: "pending", source: "phone", memo,
-  });
+  }).select("id").single();
   if (error) {
     if (error.code === "23505") return NextResponse.json({ error: "이미 예약된 시간입니다." }, { status: 409 });
     return NextResponse.json({ error: "등록 중 오류가 발생했습니다." }, { status: 500 });
+  }
+  if (made) {
+    await db.from("reservation_logs").insert({ reservation_id: made.id, action: "접수", detail: "관리자 등록(전화 예약)" })
+      .then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
   }
   return NextResponse.json({ ok: true });
 }

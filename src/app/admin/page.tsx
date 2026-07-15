@@ -8,10 +8,11 @@ import { formatDate, formatPhone } from "@/lib/util";
 type Reservation = {
   id: string; store_id: string; theme_id: string; theme_name: string;
   date: string; time: string; people: number; name: string; phone: string;
-  deposit: number; deposit_paid: boolean; status: string;
+  deposit: number; deposit_paid: boolean; deposit_payer: string | null; status: string;
   refund_bank: string | null; refund_account: string | null; refund_holder: string | null;
   refund_rate: number | null; refunded: boolean; memo: string | null; source: string;
   created_at: string; confirmed_at: string | null; cancelled_at: string | null;
+  paid_at: string | null; refunded_at: string | null; // 돈이 실제로 오간 시각
 };
 type Stats = {
   total: number; byStatus: Record<string, number>; pendingUnpaid: number; todayCount: number; depositPaidSum: number;
@@ -20,6 +21,19 @@ type Stats = {
   themes: { name: string; count: number }[]; activeTotal: number;
 };
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
+
+/* 전화번호 — 폰에서 누르면 바로 전화/문자.
+   글자로만 두면 번호를 눈으로 읽고 손으로 다시 찍어야 하고, 오타 나면 엉뚱한 사람에게 걸림. */
+function Phone({ v }: { v: string }) {
+  if (!v) return null;
+  const raw = v.replace(/[^0-9]/g, "");
+  return (
+    <span className="ph">
+      <a href={`tel:${raw}`} title="전화 걸기">{formatPhone(v)}</a>
+      <a href={`sms:${raw}`} className="ph-sms" title="문자 보내기" aria-label="문자 보내기">💬</a>
+    </span>
+  );
+}
 // 매일 하는 일(예약·돈)은 앞에, 가끔 하는 일은 뒤로. 2단계는 기존 .viewtoggle 재사용.
 const TABS = [
   { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
@@ -264,7 +278,7 @@ function ListView() {
           <div className="head" onClick={() => setOpenId(openId === r.id ? null : r.id)}>
             <span className="when">{formatDate(r.date)} {r.time}</span>
             <span className="tname">{r.theme_name}</span>
-            <span className="who">{r.name} · {formatPhone(r.phone)} · {r.people}명</span>
+            <span className="who">{r.name} · <Phone v={r.phone} /> · {r.people}명</span>
             <span className="rt">
               {r.source === "phone" && <span className="src-tag">전화</span>}
               <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
@@ -423,8 +437,10 @@ function DayView() {
                   {r ? (
                     <>
                       <button className="s-guest" onClick={() => setDetail(r)} title="눌러서 상세·처리">
-                        ✏️ {r.name} {formatPhone(r.phone)} · {r.people}명
+                        ✏️ {r.name} · {r.people}명
                       </button>
+                      {/* 전화는 버튼 밖에 — 버튼 안에 링크를 넣을 수 없음 */}
+                      <Phone v={r.phone} />
                       <span className="rt">
                         {r.source === "phone" && <span className="src-tag">전화</span>}
                         <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
@@ -459,6 +475,74 @@ function DayView() {
   );
 }
 
+/* 손님 카드 — 이 전화번호의 과거 이력 + 아직 안 한 테마 + 변경 이력.
+   데이터는 이미 쌓이고 있는데 화면에서 안 쓰던 것을 꺼내 보여줌. */
+function GuestHistory({ phone, currentId }: { phone: string; currentId: string }) {
+  const [rows, setRows] = useState<Reservation[] | null>(null);
+  const [logs, setLogs] = useState<{ id: string; action: string; detail: string | null; created_at: string }[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/admin/reservations?q=${encodeURIComponent(phone)}`)
+      .then((r) => r.json()).then((j) => setRows(j.reservations || [])).catch(() => setRows([]));
+    fetch(`/api/admin/reservation-logs?id=${currentId}`)
+      .then((r) => r.json()).then((j) => setLogs(j.logs || [])).catch(() => {});
+  }, [phone, currentId]);
+
+  if (!rows) return null;
+  const past = rows.filter((x) => x.id !== currentId);
+  const visited = rows.filter((x) => x.status === "confirmed" || x.status === "noshow");
+  const noshow = rows.filter((x) => x.status === "noshow").length;
+  const doneThemes = new Set(visited.map((x) => x.theme_id));
+  const notYet = THEMES.filter((t) => !doneThemes.has(t.id));
+  const nth = visited.length + 1;
+
+  return (
+    <div className="gcard">
+      <div className="gc-top">
+        <b>👤 손님 이력</b>
+        {visited.length > 0 ? <span className="badge-st st-confirmed">{nth}번째 방문</span> : <span className="badge-st st-pending">첫 방문</span>}
+        {noshow > 0 && <span className="badge-st st-noshow">⚠️ 노쇼 {noshow}회</span>}
+        <span className="sp" />
+        <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? "접기 ▲" : `자세히 (예약 ${rows.length}건) ▼`}</button>
+      </div>
+
+      {notYet.length > 0 && visited.length > 0 && (
+        <p className="hint" style={{ margin: "8px 0 0" }}>
+          아직 안 한 테마: <b style={{ color: "var(--text)" }}>{notYet.map((t) => t.name).join(" · ")}</b> — 권해드릴 수 있어요
+        </p>
+      )}
+
+      {open && (
+        <div style={{ marginTop: 10 }}>
+          {past.length > 0 && (
+            <>
+              <div className="gc-h">지난 예약 {past.length}건</div>
+              {past.map((x) => (
+                <div key={x.id} className="gc-row">
+                  <span style={{ minWidth: 118 }}>{formatDate(x.date)} {x.time}</span>
+                  <span style={{ color: "var(--cyan)", flex: 1 }}>{x.theme_name}</span>
+                  <span className={`badge-st st-${x.status}`}>{ST_LABEL[x.status] || x.status}</span>
+                </div>
+              ))}
+            </>
+          )}
+          <div className="gc-h" style={{ marginTop: past.length ? 12 : 0 }}>이 예약의 변경 이력</div>
+          {logs.length === 0 ? (
+            <p className="hint" style={{ margin: 0 }}>기록이 없어요. (이 기능이 생기기 전 예약이거나, 아직 변경이 없었어요)</p>
+          ) : logs.map((l) => (
+            <div key={l.id} className="gc-row">
+              <span style={{ minWidth: 118, color: "var(--faint)" }}>{l.created_at.replace("T", " ").slice(5, 16)}</span>
+              <b style={{ minWidth: 84 }}>{l.action}</b>
+              <span style={{ color: "var(--muted)" }}>{l.detail || ""}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* 예약 1건 상세·처리 (날짜별 보기에서 손님 이름 클릭 시) */
 function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -478,12 +562,16 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
         <h3>{r.theme_name} · {formatDate(r.date)} {r.time}</h3>
         <div className="res-summary">
           <div className="r"><span>이름</span><b>{r.name}</b></div>
-          <div className="r"><span>전화</span><b>{formatPhone(r.phone)}</b></div>
+          <div className="r"><span>전화</span><b><Phone v={r.phone} /></b></div>
           <div className="r"><span>인원</span><b>{r.people}명</b></div>
           <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원 {r.deposit_paid ? "(입금완료)" : "(미입금)"}</b></div>
+          {r.deposit_payer && <div className="r"><span>입금자명</span><b>{r.deposit_payer}{r.deposit_payer !== r.name && <span style={{ color: "var(--amber)", fontWeight: 400, fontSize: 12 }}> · 예약자와 다름</span>}</b></div>}
           <div className="r"><span>상태</span><b>{ST_LABEL[r.status] || r.status}</b></div>
           <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
         </div>
+
+        <GuestHistory phone={r.phone} currentId={r.id} />
+
         <div className="field" style={{ marginTop: 12 }}>
           <label>메모</label><textarea rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="관리자 메모" />
         </div>
@@ -657,6 +745,7 @@ function PayQueue({ onDone }: { onDone: () => void }) {
   const [openExp, setOpenExp] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [payer, setPayer] = useState<Record<string, string>>({}); // 예약id → 통장에 찍힌 이름
   const [, setNow] = useState(Date.now); // 카운트다운 1초마다 리렌더
 
   const load = useCallback(async () => {
@@ -681,11 +770,13 @@ function PayQueue({ onDone }: { onDone: () => void }) {
     Math.max(0, Math.ceil((new Date(createdAt).getTime() + EXPIRE_MINUTES * 60000 - Date.now()) / 60000));
 
   async function confirmPay(r: Reservation) {
-    if (!confirm(`${r.name}님 ${r.deposit.toLocaleString()}원 입금을 확인하셨나요?\n\n확정 처리되고 손님에게 입금확정 문자가 나갑니다.`)) return;
+    const p = (payer[r.id] || "").trim();
+    const who = p && p !== r.name ? `\n입금자명: ${p} (예약자와 다름)` : "";
+    if (!confirm(`${r.name}님 ${r.deposit.toLocaleString()}원 입금을 확인하셨나요?${who}\n\n확정 처리되고 손님에게 입금확정 문자가 나갑니다.`)) return;
     setBusy(r.id);
     const res = await fetch("/api/admin/reservations", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: r.id, deposit_paid: true }),
+      body: JSON.stringify({ id: r.id, deposit_paid: true, ...(p ? { deposit_payer: p } : {}) }),
     });
     setBusy(null);
     if (res.ok) { load(); onDone(); } else alert((await res.json()).error || "처리 실패");
@@ -712,11 +803,18 @@ function PayQueue({ onDone }: { onDone: () => void }) {
             <div className="head" style={{ cursor: "default" }}>
               <span className={"when" + (m <= 5 ? " urgent" : "")}>⏳ {m}분 남음</span>
               {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
-              <span className="who"><b>{r.name}</b> · {formatPhone(r.phone)}</span>
+              <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
               <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>
               <span className="amt">{r.deposit.toLocaleString()}원</span>
               <span className="rt">
                 {r.source === "phone" && <span className="src-tag">전화</span>}
+                {/* 통장에 찍힌 이름이 예약자와 다를 때(친구·엄마·회사 이름) 적어둔다.
+                    비워두면 예약자명으로 들어온 것으로 본다. */}
+                <input
+                  className="payer" type="text" placeholder="입금자명 (다를 때만)"
+                  value={payer[r.id] ?? ""} onChange={(e) => setPayer({ ...payer, [r.id]: e.target.value })}
+                  title="통장에 찍힌 이름이 예약자와 다르면 적어주세요"
+                />
                 <button className="btn sm primary" disabled={busy === r.id} onClick={() => confirmPay(r)}>
                   {busy === r.id ? "처리 중…" : "입금 확인"}
                 </button>
@@ -741,7 +839,7 @@ function PayQueue({ onDone }: { onDone: () => void }) {
               <div key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 0", borderTop: "1px solid var(--line)", fontSize: 13 }}>
                 <span style={{ color: "var(--faint)", minWidth: 42 }}>{r.cancelled_at?.slice(11, 16)}</span>
                 <b style={{ minWidth: 60 }}>{r.name}</b>
-                <span style={{ color: "var(--muted)" }}>{formatPhone(r.phone)}</span>
+                <Phone v={r.phone} />
                 <span style={{ color: "var(--cyan)" }}>{r.theme_name}</span>
                 <span className="amt" style={{ marginLeft: "auto" }}>{r.deposit.toLocaleString()}원</span>
               </div>
@@ -813,7 +911,7 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
         <div key={r.id} className="rrow open">
           <div className="head" style={{ cursor: "default" }}>
             <span className="when">{daysAgoLabel(r.cancelled_at)}</span>
-            <span className="who"><b>{r.refund_holder || r.name}</b> · {formatPhone(r.phone)}</span>
+            <span className="who"><b>{r.refund_holder || r.name}</b> · <Phone v={r.phone} /></span>
             <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time}</span>
             <span className="amt">{refundAmount(r).toLocaleString()}원</span>
             <span className="rt"><span className="badge-st st-pending">환불 {r.refund_rate}%</span></span>
@@ -875,7 +973,10 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
 }
 
 /* 📒 입출금 내역 — 포트원 결제내역의 상단 집계(받은 돈/돌려준 돈/실수령) 패턴.
-   ⚠️ 한계: 입금·환불의 "처리 시각" 칼럼이 DB에 없어 거래순 장부는 불가 → 기준은 예약일(date). */
+   ✅ 이제 "돈이 오간 날" 기준(paid_at·refunded_at). 예약일 기준이던 한계를 해소.
+   한 예약이 7월 입금 + 8월 환불이면 두 달에 나뉘어 각각 잡힌다(= 통장과 맞음). */
+type Tx = { id: string; at: string; kind: "in" | "out"; amount: number; r: Reservation };
+
 function Ledger() {
   const t0 = todayKst();
   const [from, setFrom] = useState(t0.slice(0, 8) + "01");
@@ -886,24 +987,33 @@ function Ledger() {
 
   const load = useCallback(async () => {
     setLoaded(false);
-    const res = await fetch(`/api/admin/reservations?from=${from}&to=${to}`);
+    const res = await fetch(`/api/admin/reservations?basis=money&from=${from}&to=${to}`);
     if (res.ok) setRows(((await res.json()).reservations || []) as Reservation[]);
     setLoaded(true);
   }, [from, to]);
   useEffect(() => { load(); }, [load]);
 
-  const refAmt = (r: Reservation) => (r.refunded ? refundAmount(r) : 0);
-  const money = rows.filter((r) => r.deposit_paid); // 돈이 실제로 오간 것만이 장부
-  const view = money.filter((r) => (kind === "all" ? true : kind === "in" ? !r.refunded : r.refunded));
-  const inSum = money.reduce((s, r) => s + r.deposit, 0);
-  const outSum = money.reduce((s, r) => s + refAmt(r), 0);
+  // 예약 1건이 거래 2건(입금·환불)을 만들 수 있다 → 거래 단위로 펼친다
+  const inRange = (iso: string | null | undefined) => !!iso && iso.slice(0, 10) >= from && iso.slice(0, 10) <= to;
+  const txs: Tx[] = [];
+  for (const r of rows) {
+    if (r.paid_at && inRange(r.paid_at)) txs.push({ id: r.id + ":in", at: r.paid_at, kind: "in", amount: r.deposit, r });
+    if (r.refunded && r.refunded_at && inRange(r.refunded_at)) txs.push({ id: r.id + ":out", at: r.refunded_at, kind: "out", amount: refundAmount(r), r });
+  }
+  txs.sort((a, b) => b.at.localeCompare(a.at));
+  const view = txs.filter((t) => (kind === "all" ? true : t.kind === kind));
+  const inSum = txs.filter((t) => t.kind === "in").reduce((s, t) => s + t.amount, 0);
+  const outSum = txs.filter((t) => t.kind === "out").reduce((s, t) => s + t.amount, 0);
 
   function exportCsv() {
     if (view.length === 0) { alert("내보낼 내역이 없습니다."); return; }
     const cell = (v: unknown) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     // 계좌·전화는 넣지 않음(개인정보)
-    const header = ["예약일", "시간", "테마", "이름", "받은 예약금", "환불액", "실수령", "상태"];
-    const body = view.map((r) => [r.date, r.time, r.theme_name, r.name, r.deposit, refAmt(r), r.deposit - refAmt(r), r.refunded ? "환불함" : "입금완료"]);
+    const header = ["돈 오간 날", "구분", "금액", "이름", "테마", "예약일", "예약시간"];
+    const body = view.map((t) => [
+      t.at.replace("T", " ").slice(0, 16), t.kind === "in" ? "입금" : "환불",
+      t.kind === "in" ? t.amount : -t.amount, t.r.name, t.r.theme_name, t.r.date, t.r.time,
+    ]);
     const csv = [header, ...body].map((row) => row.map(cell).join(",")).join("\r\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -934,24 +1044,24 @@ function Ledger() {
       </div>
 
       <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
-        <b>예약 날짜 기준</b>이에요 (입금·환불한 날 기준이 아니라). 입금 확인된 예약만 나옵니다.
+        <b>돈이 실제로 오간 날 기준</b>이에요 — 통장과 맞춰볼 수 있습니다. (예약 날짜가 아니라 입금·환불을 처리한 날)
       </p>
 
       {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
         : view.length === 0 ? <div className="notice info">이 기간엔 오간 돈이 없습니다.</div>
-          : view.map((r) => (
-            <div key={r.id} className="rrow">
+          : view.map((t) => (
+            <div key={t.id} className="rrow">
               <div className="head" style={{ cursor: "default" }}>
-                <span className="when">{formatDate(r.date)} {r.time}</span>
-                <span className="who">{r.name}</span>
-                <span className="tname">{r.theme_name}</span>
-                <span className="amt">+{r.deposit.toLocaleString()}</span>
-                <span className="amt" style={{ color: refAmt(r) ? "var(--muted)" : "var(--faint)" }}>
-                  {refAmt(r) ? `−${refAmt(r).toLocaleString()}` : "−"}
+                <span className="when">{t.at.replace("T", " ").slice(5, 16)}</span>
+                <span className="who">{t.r.name}{t.r.deposit_payer && t.r.deposit_payer !== t.r.name ? ` (입금 ${t.r.deposit_payer})` : ""}</span>
+                <span className="tname">{t.r.theme_name} · {formatDate(t.r.date)} {t.r.time}</span>
+                <span className="amt" style={{ color: t.kind === "in" ? "#137a4c" : "var(--muted)" }}>
+                  {t.kind === "in" ? "+" : "−"}{t.amount.toLocaleString()}원
                 </span>
-                <span className="amt"><b>{(r.deposit - refAmt(r)).toLocaleString()}원</b></span>
                 <span className="rt">
-                  {r.refunded ? <span className="badge-st st-cancelled">환불함</span> : <span className="badge-st st-confirmed">입금완료</span>}
+                  {t.kind === "in"
+                    ? <span className="badge-st st-confirmed">입금</span>
+                    : <span className="badge-st st-cancelled">환불 {t.r.refund_rate}%</span>}
                 </span>
               </div>
             </div>
@@ -1173,16 +1283,27 @@ function SettingsTab() {
   const [slotInput, setSlotInput] = useState(""); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
   const [storeSlots, setStoreSlots] = useState<Record<string, StoreSlots>>({});
   const [leadMin, setLeadMin] = useState("10");
+  const [deposits, setDeposits] = useState<Record<string, string>>({}); // 테마id → 예약금(문자열, 입력칸용)
   useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
     setSlots(c.timeSlots);
     setStoreSlots(c.storeSlots && typeof c.storeSlots === "object" ? c.storeSlots : {});
     setLeadMin(String(c.minLeadMinutes ?? 10));
+    // 저장된 값이 있으면 그것, 없으면 코드 기본값
+    const d: Record<string, string> = {};
+    THEMES.forEach((t) => { d[t.id] = String(c.themeDeposits?.[t.id] ?? t.deposit); });
+    setDeposits(d);
     setLoaded(true);
   }); }, []);
   async function save() {
     setMsg("");
+    // 코드 기본값과 같은 건 저장하지 않는다 → 나중에 기본값을 바꾸면 자동으로 따라감
+    const themeDeposits: Record<string, number> = {};
+    for (const t of THEMES) {
+      const n = Number(deposits[t.id]);
+      if (Number.isFinite(n) && n >= 0 && n !== t.deposit) themeDeposits[t.id] = Math.floor(n);
+    }
     const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      timeSlots: slots, storeSlots, minLeadMinutes: Number(leadMin) || 0,
+      timeSlots: slots, storeSlots, minLeadMinutes: Number(leadMin) || 0, themeDeposits,
     }) });
     if (res.ok) setMsg("저장되었습니다 ✅"); else { const j = await res.json(); setMsg(j.error || "저장 실패"); }
   }
@@ -1203,16 +1324,29 @@ function SettingsTab() {
         <p className="hint">시작이 코앞인 방을 손님이 덜컥 예약하는 걸 막아요. <b>전화로 받는 예약(관리자 등록)은 이 제한을 받지 않습니다.</b></p>
       </div>
       <div className="field">
-        <label>테마별 예약금 (읽기 전용)</label>
+        <label>테마별 예약금</label>
         <div style={{ border: "1px solid var(--line)", borderRadius: 9, overflow: "hidden" }}>
-          {THEMES.map((t, i) => (
-            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", fontSize: 13.5, borderTop: i ? "1px solid var(--line)" : "none" }}>
-              <span>{t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span></span>
-              <b style={{ fontFeatureSettings: '"tnum"' }}>{t.deposit.toLocaleString()}원</b>
-            </div>
-          ))}
+          {THEMES.map((t, i) => {
+            const v = deposits[t.id] ?? String(t.deposit);
+            const changed = Number(v) !== t.deposit;
+            return (
+              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 12px", fontSize: 13.5, borderTop: i ? "1px solid var(--line)" : "none" }}>
+                <span>{t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span></span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {changed && <span className="tpl-src edited" title={`원래 ${t.deposit.toLocaleString()}원`}>✎ 바꿈</span>}
+                  <input type="number" min="0" step="1000" value={v}
+                    onChange={(e) => setDeposits({ ...deposits, [t.id]: e.target.value })}
+                    style={{ width: 108, textAlign: "right", fontFeatureSettings: '"tnum"', fontWeight: 700 }} />
+                  <span style={{ color: "var(--muted)" }}>원</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
-        <div className="hint">예약금은 테마별로 코드에서 관리됩니다. (변경은 개발자에게 요청)</div>
+        <div className="hint">
+          ⚠️ 예약금을 바꾸면 <b>[설정 › 문자 문구]의 예약대기 안내</b>에 적힌 금액도 같이 고쳐주세요 —
+          안 그러면 손님이 <b>문자에 적힌 옛 금액</b>을 입금합니다. (문자 문구는 테마별로 따로예요)
+        </div>
       </div>
       </div>
 
@@ -1337,14 +1471,32 @@ function SmsTab() {
   const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false); const [err, setErr] = useState("");
   // 종류별로 지금 편집중인 테마 ("" = 모든 테마 공통)
   const [pickTheme, setPickTheme] = useState<Record<string, string>>({});
+  const [logQ, setLogQ] = useState(""); const [onlyFailed, setOnlyFailed] = useState(false);
+  const [resend, setResend] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    fetch("/api/admin/sms").then((r) => r.json()).then((j) => {
+    const p = new URLSearchParams();
+    if (logQ.trim()) p.set("q", logQ.trim());
+    if (onlyFailed) p.set("only", "failed");
+    fetch("/api/admin/sms?" + p.toString()).then((r) => r.json()).then((j) => {
       if (j.error) { setErr(j.error); setLoaded(true); return; }
       setGroups(j.templates || []); setLog(j.log || []); setAligo(j.aligoReady); setKakao(!!j.kakaoReady); setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, []);
-  useEffect(() => { load(); }, [load]);
+  }, [logQ, onlyFailed]);
+
+  // 실패한 문자 다시 보내기 — 그때 나갔어야 할 문구 그대로
+  async function resendSms(id: string) {
+    setResend(id);
+    const res = await fetch("/api/admin/sms", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }),
+    });
+    setResend(null);
+    if (res.ok) { setMsg("다시 보냈어요 ✅"); load(); }
+    else { const j = await res.json(); setMsg("⚠️ " + (j.error || "재발송 실패")); }
+  }
+  // 검색어는 Enter·[찾기] 눌렀을 때만 조회한다(타이핑마다 서버를 부르지 않게).
+  // 체크박스는 누르는 즉시 반영.
+  useEffect(() => { load(); }, [onlyFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 화면에서 문구 고칠 때
   function edit(type: string, themeId: string, body: string) {
@@ -1428,20 +1580,39 @@ function SmsTab() {
       })}
       {msg && <div className={msg.startsWith("⚠️") ? "msg-err" : "notice ok"}>{msg}</div>}
       <div className="admin-card">
-        <b>📨 최근 발송 내역 (50건)</b>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <b>📨 발송 내역</b>
+          <span className="sp" />
+          {/* "저 문자 못 받았어요" 전화가 오면 이름·전화로 바로 찾는다 (예전엔 50건을 눈으로 훑어야 했음) */}
+          <input type="search" className="payer" style={{ width: 150 }} placeholder="이름·전화 검색"
+            value={logQ} onChange={(e) => setLogQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
+          <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 400, cursor: "pointer" }}>
+            <input type="checkbox" checked={onlyFailed} onChange={(e) => setOnlyFailed(e.target.checked)} style={{ width: "auto", accentColor: "var(--brand)" }} />
+            실패·미발송만
+          </label>
+          <button className="btn sm" onClick={() => load()}>찾기</button>
+        </div>
         <div style={{ marginTop: 8 }}>
-          {log.length === 0 ? <span style={{ color: "var(--muted)" }}>내역 없음</span> : log.map((l) => (
+          {log.length === 0 ? <span style={{ color: "var(--muted)" }}>{logQ || onlyFailed ? "찾는 내역이 없어요." : "내역 없음"}</span> : log.map((l) => (
             <div key={l.id} style={{ padding: "7px 0", borderTop: "1px solid var(--line)", fontSize: 12.5 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ color: l.status === "sent" ? "var(--green)" : l.status === "failed" ? "var(--danger)" : "var(--faint)", fontWeight: 700, minWidth: 54 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ color: l.status === "sent" ? "#137a4c" : l.status === "failed" ? "var(--danger)" : "var(--faint)", fontWeight: 700, minWidth: 54 }}>
                   {l.status === "sent" ? "발송" : l.status === "failed" ? "실패" : "미발송"}
                 </span>
-                <span style={{ minWidth: 34, fontSize: 11, fontWeight: 700, color: l.channel === "alimtalk" ? "#3c1e1e" : "var(--faint)", background: l.channel === "alimtalk" ? "#fee500" : "var(--bg2)", borderRadius: 5, padding: "1px 6px", alignSelf: "center" }}>
+                <span style={{ minWidth: 34, fontSize: 11, fontWeight: 700, color: l.channel === "alimtalk" ? "#3c1e1e" : "var(--faint)", background: l.channel === "alimtalk" ? "#fee500" : "var(--bg2)", borderRadius: 5, padding: "1px 6px" }}>
                   {l.channel === "alimtalk" ? "카톡" : "문자"}
                 </span>
-                <span style={{ minWidth: 110 }}>{formatPhone(l.phone)}</span>
+                <Phone v={l.phone} />
                 <span style={{ color: "var(--faint)" }}>{l.created_at?.replace("T", " ").slice(5, 16)}</span>
+                {l.status !== "sent" && (
+                  <span className="rt">
+                    <button className="btn sm ghost" disabled={resend === l.id} onClick={() => resendSms(l.id)}>
+                      {resend === l.id ? "보내는 중…" : "↻ 다시 보내기"}
+                    </button>
+                  </span>
+                )}
               </div>
+              {l.error && <div style={{ color: "var(--danger)", marginTop: 2, fontSize: 11.5 }}>⚠️ {l.error}</div>}
               <div style={{ color: "var(--muted)", whiteSpace: "pre-wrap", marginTop: 2 }}>{l.body}</div>
             </div>
           ))}

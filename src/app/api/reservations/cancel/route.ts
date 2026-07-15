@@ -91,6 +91,11 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: "취소 중 오류가 발생했습니다." }, { status: 500 });
 
+  // 변경 이력 — 손님이 직접 취소한 것도 남긴다("제가 취소한 적 없는데요?" 대비)
+  await db.from("reservation_logs").insert({
+    reservation_id: id, action: "손님 취소", detail: `환불율 ${refundRate}%`,
+  }).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
+
   // 취소 안내 문자 (알리고 키 있을 때만 실제 발송)
   await sendReservationSms("cancel", {
     name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
