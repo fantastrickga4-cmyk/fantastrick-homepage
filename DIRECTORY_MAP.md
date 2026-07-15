@@ -15,7 +15,9 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 ├─ supabase\
 │  └─ schema.sql        ← 예약·리뷰 데이터베이스 표 만드는 SQL (Supabase에 1회 실행)
 ├─ public\
-│  └─ images\           ← 웹에서 쓰는 이미지(로고·포스터·지도 등, assets에서 복사)
+│  ├─ images\           ← 웹에서 쓰는 이미지(로고·포스터·지도 등, assets에서 복사)
+│  └─ fonts\            ← 로고 글씨체로 직접 만든 폰트(fantastrick-logo.woff2, 1KB)
+│                         ⚠️ 대문자 F A N T S R I C K + Y 만 들어있음 — 히어로 워드마크 전용
 ├─ src\
 │  ├─ app\
 │  │  ├─ layout.tsx     ← 공통 틀(헤더·푸터·폰트). 제목용 디스플레이 폰트=next/font(Gothic A1) + 전역 필름 그레인(.grain)
