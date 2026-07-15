@@ -1,12 +1,13 @@
 import { getSupabase } from "./supabase";
 import { formatDate } from "./util";
+import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
 
-// 문자 템플릿 기본값 (DB에 없으면 사용). 치환: {이름}{테마}{날짜}{시간}{인원}{환불율}
+// 문자 템플릿 기본값 (DB에도 테마별 문구에도 없을 때). 치환: {이름}{테마}{날짜}{시간}{인원}{환불율}
+// reservation·payment·cancel·admin_cancel 은 기존 사이트 문구를 그대로 옮긴 sms-templates.ts 를 사용.
 export const DEFAULT_TEMPLATES: Record<string, string> = {
+  ...TYPE_FALLBACK,
   confirm:
     "[판타스트릭] {이름}님, 예약이 확정되었습니다.\n{테마} / {날짜} {시간} / {인원}명\n방문 감사합니다!",
-  cancel:
-    "[판타스트릭] {이름}님, 예약이 취소되었습니다.\n{테마} / {날짜} {시간}\n환불 {환불율}% 안내드립니다.",
   reminder:
     "[판타스트릭] {이름}님, 내일 예약 안내드립니다.\n{테마} / {날짜} {시간} / {인원}명\n늦지 않게 방문해 주세요!",
 };
@@ -23,24 +24,37 @@ export function renderTemplate(body: string, v: Vars): string {
     .replaceAll("{환불율}", v.refundRate != null ? String(v.refundRate) : "");
 }
 
-export async function getTemplate(type: string): Promise<string> {
+// 문구 우선순위: 관리자가 저장한 DB 문구 > 테마별 기존 문구 > 종류별 기본값
+export async function getTemplate(type: string, themeId?: string): Promise<string> {
   const db = getSupabase();
   if (db) {
     const { data } = await db.from("sms_templates").select("body").eq("type", type).single();
     if (data?.body) return data.body as string;
   }
+  if (themeId) {
+    const t = THEME_TEMPLATES[`${type}:${themeId}`];
+    if (t) return t;
+  }
   return DEFAULT_TEMPLATES[type] || "";
+}
+
+// 발송 로그 기록. 실패해도 발송 자체는 막지 않되, 조용히 삼키지 말고 서버 로그에 남긴다.
+// (channel 컬럼 마이그레이션 누락으로 로그가 통째로 안 쌓이는 걸 오래 못 본 적이 있음)
+async function writeLog(row: Record<string, unknown>) {
+  const db = getSupabase();
+  if (!db) return;
+  const { error } = await db.from("sms_log").insert(row);
+  if (error) console.error("[sms_log 기록 실패]", error.message, row.type);
 }
 
 // 문자 발송. 알리고(ALIGO) 키가 있으면 실제 발송, 없으면 발송 로그만 'skipped' 로 남김.
 export async function sendSms(phone: string, body: string, type: string): Promise<{ ok: boolean; skipped?: boolean }> {
-  const db = getSupabase();
   const key = process.env.ALIGO_API_KEY;
   const userId = process.env.ALIGO_USER_ID;
   const sender = process.env.ALIGO_SENDER;
 
   if (!key || !userId || !sender) {
-    await db?.from("sms_log").insert({ phone, body, type, status: "skipped", channel: "sms", error: "ALIGO 키 미설정(미발송)" });
+    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "ALIGO 키 미설정(미발송)" });
     return { ok: false, skipped: true };
   }
   try {
@@ -48,10 +62,10 @@ export async function sendSms(phone: string, body: string, type: string): Promis
     const res = await fetch("https://apis.aligo.in/send/", { method: "POST", body: form });
     const j = await res.json();
     const ok = String(j.result_code) === "1";
-    await db?.from("sms_log").insert({ phone, body, type, status: ok ? "sent" : "failed", channel: "sms", error: ok ? null : String(j.message || "") });
+    await writeLog({ phone, body, type, status: ok ? "sent" : "failed", channel: "sms", error: ok ? null : String(j.message || "") });
     return { ok };
   } catch (e) {
-    await db?.from("sms_log").insert({ phone, body, type, status: "failed", channel: "sms", error: String(e) });
+    await writeLog({ phone, body, type, status: "failed", channel: "sms", error: String(e) });
     return { ok: false };
   }
 }
@@ -89,7 +103,6 @@ export async function sendAlimtalk(phone: string, body: string, type: string): P
   const tpl_code = KAKAO_TPL[type];
   if (!apikey || !userid || !sender || !senderkey || !tpl_code) return null; // 미설정 → SMS 폴백
 
-  const db = getSupabase();
   const token = await getKakaoToken(apikey, userid);
   if (!token) return null; // 토큰 실패 → SMS 폴백
   try {
@@ -101,20 +114,21 @@ export async function sendAlimtalk(phone: string, body: string, type: string): P
     const res = await fetch("https://kakaoapi.aligo.in/akv10/alimtalk/send/", { method: "POST", body: form });
     const j = await res.json();
     const ok = String(j.code) === "0";
-    await db?.from("sms_log").insert({ phone, body, type, status: ok ? "sent" : "failed", channel: "alimtalk", error: ok ? null : String(j.message || "") });
+    await writeLog({ phone, body, type, status: ok ? "sent" : "failed", channel: "alimtalk", error: ok ? null : String(j.message || "") });
     return { ok };
   } catch (e) {
-    await db?.from("sms_log").insert({ phone, body, type, status: "failed", channel: "alimtalk", error: String(e) });
+    await writeLog({ phone, body, type, status: "failed", channel: "alimtalk", error: String(e) });
     return { ok: false };
   }
 }
 
 // 예약 1건에 대해 특정 타입 문자 발송 (템플릿 렌더 포함)
+// theme_id 가 있으면 그 테마의 기존 문구를 사용(사자의 서는 인스타·길안내가 더 붙는 등 테마마다 다름).
 export async function sendReservationSms(
-  type: "confirm" | "cancel" | "reminder",
-  r: { name: string; phone: string; theme_name: string; date: string; time: string; people: number; refund_rate?: number | null }
+  type: SmsType,
+  r: { name: string; phone: string; theme_name: string; date: string; time: string; people: number; refund_rate?: number | null; theme_id?: string }
 ) {
-  const tpl = await getTemplate(type);
+  const tpl = await getTemplate(type, r.theme_id);
   const body = renderTemplate(tpl, {
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
     refundRate: r.refund_rate ?? undefined,

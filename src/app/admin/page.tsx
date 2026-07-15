@@ -861,7 +861,7 @@ function StoreSlotsEditor({ storeSlots, setStoreSlots, fallback }: { storeSlots:
 /* ============ 문자 탭 ============ */
 type SmsLog = { id: string; phone: string; body: string; type: string; status: string; error: string | null; channel?: string | null; created_at: string };
 function SmsTab() {
-  const [tpls, setTpls] = useState<Record<string, string>>({ confirm: "", cancel: "", reminder: "" });
+  const [tpls, setTpls] = useState<Record<string, string>>({ confirm: "", cancel: "", admin_cancel: "", reminder: "" });
   const [log, setLog] = useState<SmsLog[]>([]); const [aligo, setAligo] = useState(false); const [kakao, setKakao] = useState(false); const [msg, setMsg] = useState(""); const [loaded, setLoaded] = useState(false);
   const load = () => fetch("/api/admin/sms").then((r) => r.json()).then((j) => { setTpls(j.templates); setLog(j.log || []); setAligo(j.aligoReady); setKakao(!!j.kakaoReady); setLoaded(true); });
   useEffect(() => { load(); }, []);
@@ -870,7 +870,7 @@ function SmsTab() {
     const res = await fetch("/api/admin/sms", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, body: tpls[type] }) });
     setMsg(res.ok ? `${LABEL[type]} 저장됨 ✅` : "저장 실패");
   }
-  const LABEL: Record<string, string> = { confirm: "예약확정 문자", cancel: "취소 문자", reminder: "방문 리마인더" };
+  const LABEL: Record<string, string> = { confirm: "예약확정 문자 (입금 없이 확정 시)", cancel: "취소 문자 (손님이 직접 취소)", admin_cancel: "관리자 취소 안내 문자", reminder: "방문 리마인더" };
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
     <div>
@@ -881,7 +881,11 @@ function SmsTab() {
           ? "✅ 알리고 문자 연동됨 — 확정/취소 시 자동 발송됩니다. (알림톡 키 등록 시 카톡 우선 발송)"
           : "⚠️ 알리고/알림톡 키가 아직 없어요. 지금은 발송 내역만 기록되고 실제 발송은 안 나가요. (가입·키 등록 시 자동 발송)"}
       </div>
-      {(["confirm", "cancel", "reminder"] as const).map((type) => (
+      <div className="notice info" style={{ marginBottom: 14 }}>
+        💰 <b>입금확정 문자</b>와 <b>예약대기(계좌안내) 문자</b>는 테마마다 문구가 달라서(사자의 서는 인스타·길안내가 더 붙어요)
+        여기서 편집하지 않고 기존 사이트 문구를 그대로 사용합니다.
+      </div>
+      {(["confirm", "cancel", "admin_cancel", "reminder"] as const).map((type) => (
         <div key={type} className="admin-card">
           <b>{LABEL[type]}</b>
           <p className="hint" style={{ margin: "3px 0 8px" }}>치환: {"{이름} {테마} {날짜} {시간} {인원} {환불율}"}</p>

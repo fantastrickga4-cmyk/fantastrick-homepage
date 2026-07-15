@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
-    .select("id, status, date, time, theme_name, people")
+    .select("id, status, date, time, theme_id, theme_name, people")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   // 취소 안내 문자 (알리고 키 있을 때만 실제 발송)
   await sendReservationSms("cancel", {
-    name, phone, theme_name: found.theme_name, date: found.date, time: found.time,
+    name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
     people: found.people, refund_rate: refundRate,
   }).catch(() => {});
 

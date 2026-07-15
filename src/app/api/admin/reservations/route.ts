@@ -100,10 +100,19 @@ export async function PATCH(req: NextRequest) {
   const id = String(body.id || "");
   if (!id) return NextResponse.json({ error: "예약 id가 필요합니다." }, { status: 400 });
 
+  // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내기 위해 필요
+  const { data: before } = await db
+    .from("reservations")
+    .select("status, deposit_paid, name, phone, theme_id, theme_name, date, time, people, refund_rate")
+    .eq("id", id)
+    .single();
+  if (!before) return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
+
   const patch: Record<string, unknown> = {};
   if (typeof body.status === "string" && ["pending", "confirmed", "cancelled", "noshow"].includes(body.status)) {
     patch.status = body.status;
     if (body.status === "confirmed") patch.confirmed_at = new Date().toISOString();
+    if (body.status === "cancelled") patch.cancelled_at = new Date().toISOString();
   }
   if (typeof body.deposit_paid === "boolean") patch.deposit_paid = body.deposit_paid;
   if (typeof body.refunded === "boolean") patch.refunded = body.refunded;
@@ -111,17 +120,28 @@ export async function PATCH(req: NextRequest) {
 
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
 
+  // 입금확인 = 예약확정 (기존 fantastrick.co.kr 과 같은 방식).
+  // 입금을 확인하면 대기 상태를 확정으로 함께 올리고, 안내는 입금확정 문자 1통만 보낸다.
+  const nowPaid = patch.deposit_paid === true && !before.deposit_paid;
+  if (nowPaid && before.status === "pending" && patch.status == null) {
+    patch.status = "confirmed";
+    patch.confirmed_at = new Date().toISOString();
+  }
+
   const { error } = await db.from("reservations").update(patch).eq("id", id);
   if (error) return NextResponse.json({ error: "수정 중 오류가 발생했습니다." }, { status: 500 });
 
-  // 확정 처리 시 확정 안내 문자 (알리고 키 있을 때만 실제 발송)
-  if (patch.status === "confirmed") {
-    const { data: r } = await db
-      .from("reservations")
-      .select("name, phone, theme_name, date, time, people")
-      .eq("id", id)
-      .single();
-    if (r) await sendReservationSms("confirm", r).catch(() => {});
+  // 안내 문자 (알리고 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
+  const r = { ...before, refund_rate: before.refund_rate };
+  if (nowPaid) {
+    // 입금확인 → 예약확정 안내 (기존 payment 문자)
+    await sendReservationSms("payment", r).catch(() => {});
+  } else if (patch.status === "confirmed" && before.status !== "confirmed") {
+    // 입금 없이 관리자가 확정한 경우
+    await sendReservationSms("confirm", r).catch(() => {});
+  } else if (patch.status === "cancelled" && before.status !== "cancelled") {
+    // 관리자가 취소한 경우 (기존 admin_cancel 문자)
+    await sendReservationSms("admin_cancel", r).catch(() => {});
   }
   return NextResponse.json({ ok: true });
 }
