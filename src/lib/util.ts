@@ -41,6 +41,43 @@ export function formatDate(d: string): string {
   return `${dt.getFullYear()}.${m}.${day} (${w})`;
 }
 
+// ─── 기록된 시각 표시 (DB는 UTC로 저장 · 화면엔 한국 시각으로) ────────
+// ⚠️ DB의 시각(created_at·paid_at·refunded_at·cancelled_at 등)은 UTC ISO 문자열이다.
+//    "2026-07-15T10:30:00Z".slice(11,16) 처럼 그냥 잘라 쓰면 10:30 으로 보이는데
+//    실제로는 19:30(한국)이라 9시간 어긋난다. 시각을 화면에 낼 땐 반드시 이 함수를 쓸 것.
+const KST_OFFSET = 9 * 60 * 60 * 1000;
+
+// "2026-07-15T10:30:12Z" → "2026.07.15 (수) 19:30"
+export function formatStamp(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return "-";
+  const k = new Date(t + KST_OFFSET);
+  const w = ["일", "월", "화", "수", "목", "금", "토"][k.getUTCDay()];
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${k.getUTCFullYear()}.${p(k.getUTCMonth() + 1)}.${p(k.getUTCDate())} (${w}) ${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+}
+
+// 짧게: "07.15 19:30" (표·목록처럼 자리가 좁을 때)
+export function formatStampShort(iso: string | null | undefined): string {
+  const s = formatStamp(iso);
+  return s === "-" ? "-" : s.slice(5).replace(/ \(.\)/, "");
+}
+
+// 시각만: "19:30"
+export function formatStampTime(iso: string | null | undefined): string {
+  const s = formatStamp(iso);
+  return s === "-" ? "-" : s.slice(-5);
+}
+
+// 기록된 시각이 한국 날짜로 며칠인지 → "2026-07-15"
+//   ("오늘 취소된 건" 같은 걸 고를 때 iso.slice(0,10) 을 쓰면 새벽 0~9시 건을 어제로 센다)
+export function kstDateOf(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  return isNaN(t) ? "" : new Date(t + KST_OFFSET).toISOString().slice(0, 10);
+}
+
 // ─── 예약 오픈 규칙 ─────────────────────────────────────────────
 // 예약창은 일주일치만 오픈: 이용일(date)의 N일 전 저녁 9시(KST)에 열린다.
 // 예) 7/17 예약은 7/10 21:00(KST)에 오픈.

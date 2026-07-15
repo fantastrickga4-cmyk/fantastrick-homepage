@@ -1,9 +1,9 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
-import { isRefundPending, refundAmount } from "@/lib/money";
+import { isRefundPending, refundAmount, cancelledBy } from "@/lib/money";
 import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
-import { formatDate, formatPhone } from "@/lib/util";
+import { formatDate, formatPhone, formatStamp, formatStampShort, formatStampTime, kstDateOf } from "@/lib/util";
 
 type Reservation = {
   id: string; store_id: string; theme_id: string; theme_name: string;
@@ -315,7 +315,7 @@ function ListView() {
       `${r.people}명`,
       r.deposit,
       ST_LABEL[r.status] || r.status,
-      r.created_at?.replace("T", " ").slice(0, 16) || "",
+      formatStamp(r.created_at),
     ]);
     const csv = [header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");
     // UTF-8 BOM: 엑셀 한글 깨짐 방지
@@ -392,8 +392,17 @@ function ListView() {
           <div className="detail">
             <div className="res-summary" style={{ margin: 0 }}>
               <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원</b></div>
-              <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
-              {r.confirmed_at && <div className="r"><span>확정</span><b>{r.confirmed_at.replace("T", " ").slice(0, 16)}</b></div>}
+              <div className="r"><span>접수</span><b>{formatStamp(r.created_at)}</b></div>
+              {r.confirmed_at && <div className="r"><span>확정</span><b>{formatStamp(r.confirmed_at)}</b></div>}
+              {/* 돈·취소가 언제 일어났는지 — "언제 취소했냐"는 환불율(100/80/0%)의 근거라 시각까지 남긴다 */}
+              {r.paid_at && <div className="r"><span>입금 확인</span><b>{formatStamp(r.paid_at)}</b></div>}
+              {r.cancelled_at && (
+                <div className="r">
+                  <span>취소</span>
+                  <b>{formatStamp(r.cancelled_at)} <span style={{ color: "var(--muted)", fontWeight: 400 }}>· {cancelledBy(r)}</span></b>
+                </div>
+              )}
+              {r.refunded_at && <div className="r"><span>환불 완료</span><b>{formatStamp(r.refunded_at)}</b></div>}
             </div>
             {/* 환불 처리는 [입금·환불 › 환불 처리] 탭이 유일한 입구 — 여기선 상태만 알려준다
                 (입구가 두 곳이면 "여기서 했나 저기서 했나" 혼동) */}
@@ -655,7 +664,7 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
             <p className="hint" style={{ margin: 0 }}>기록이 없어요. (이 기능이 생기기 전 예약이거나, 아직 변경이 없었어요)</p>
           ) : logs.map((l) => (
             <div key={l.id} className="gc-row">
-              <span style={{ minWidth: 118, color: "var(--faint)" }}>{l.created_at.replace("T", " ").slice(5, 16)}</span>
+              <span style={{ minWidth: 118, color: "var(--faint)" }}>{formatStampShort(l.created_at)}</span>
               <b style={{ minWidth: 84 }}>{l.action}</b>
               <span style={{ color: "var(--muted)" }}>{l.detail || ""}</span>
             </div>
@@ -712,7 +721,7 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
           <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원 {r.deposit_paid ? "(입금완료)" : "(미입금)"}</b></div>
           {r.deposit_payer && <div className="r"><span>입금자명</span><b>{r.deposit_payer}{r.deposit_payer !== r.name && <span style={{ color: "var(--amber)", fontWeight: 400, fontSize: 12 }}> · 예약자와 다름</span>}</b></div>}
           <div className="r"><span>상태</span><b>{ST_LABEL[r.status] || r.status}</b></div>
-          <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
+          <div className="r"><span>접수</span><b>{formatStamp(r.created_at)}</b></div>
         </div>
 
         {/* 예약 옮기기 — "한 시간만 미뤄주세요"가 제일 흔한 요청인데 지금까진 취소→재등록뿐이었음 */}
@@ -930,7 +939,7 @@ function PayQueue({ onDone }: { onDone: () => void }) {
       const rows = ((await b.json()).reservations || []) as Reservation[];
       // 시간초과 자동취소는 expire.ts 가 남기는 메모로 판별 (전용 칼럼이 없어 이 방법뿐)
       const today = todayKst();
-      setExpired(rows.filter((r) => (r.memo || "").includes("자동 취소") && r.cancelled_at?.slice(0, 10) === today));
+      setExpired(rows.filter((r) => (r.memo || "").includes("자동 취소") && kstDateOf(r.cancelled_at) === today));
     }
     setLoaded(true);
   }, []);
@@ -1027,7 +1036,7 @@ function PayQueue({ onDone }: { onDone: () => void }) {
             </p>
             {expired.map((r) => (
               <div key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 0", borderTop: "1px solid var(--line)", fontSize: 13 }}>
-                <span style={{ color: "var(--faint)", minWidth: 42 }}>{r.cancelled_at?.slice(11, 16)}</span>
+                <span style={{ color: "var(--faint)", minWidth: 42 }}>{formatStampTime(r.cancelled_at)}</span>
                 <b style={{ minWidth: 60 }}>{r.name}</b>
                 <Phone v={r.phone} />
                 <span style={{ color: "var(--cyan)" }}>{r.theme_name}</span>
@@ -1119,7 +1128,7 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
             </div>
             <p className="hint" style={{ margin: "2px 0 0" }}>
               예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
-              {" · "}취소 {r.cancelled_at?.replace("T", " ").slice(0, 16)}
+              {" · "}취소 {formatStamp(r.cancelled_at)} ({cancelledBy(r)})
               {r.refund_holder && r.refund_holder !== r.name && <> · ⚠️ 예금주가 예약자({r.name})와 달라요</>}
             </p>
             <div className="act-row">
@@ -1138,9 +1147,10 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
           {done.map((r) => (
             <div key={r.id} className="rrow">
               <div className="head" style={{ cursor: "default" }}>
-                <span className="when" style={{ color: "var(--faint)" }}>{formatDate(r.date)}</span>
+                {/* 예약일이 아니라 '환불을 보낸 시각' — 통장 이체 기록과 맞춰보는 자리라 이게 맞다 */}
+                <span className="when" style={{ color: "var(--faint)" }}>{formatStampShort(r.refunded_at)}</span>
                 <span className="who">{r.refund_holder || r.name}</span>
-                <span className="tname">{r.theme_name}</span>
+                <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time}</span>
                 <span className="amt">{refundAmount(r).toLocaleString()}원</span>
                 <span className="rt">
                   <span className="badge-st st-confirmed">환불완료</span>
@@ -1184,7 +1194,8 @@ function Ledger() {
   useEffect(() => { load(); }, [load]);
 
   // 예약 1건이 거래 2건(입금·환불)을 만들 수 있다 → 거래 단위로 펼친다
-  const inRange = (iso: string | null | undefined) => !!iso && iso.slice(0, 10) >= from && iso.slice(0, 10) <= to;
+  // 한국 날짜로 비교 — UTC 문자열을 그냥 자르면 새벽 0~9시 거래가 전날로 밀린다
+  const inRange = (iso: string | null | undefined) => { const d = kstDateOf(iso); return !!d && d >= from && d <= to; };
   const txs: Tx[] = [];
   for (const r of rows) {
     if (r.paid_at && inRange(r.paid_at)) txs.push({ id: r.id + ":in", at: r.paid_at, kind: "in", amount: r.deposit, r });
@@ -1199,9 +1210,9 @@ function Ledger() {
     if (view.length === 0) { alert("내보낼 내역이 없습니다."); return; }
     const cell = (v: unknown) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     // 계좌·전화는 넣지 않음(개인정보)
-    const header = ["돈 오간 날", "구분", "금액", "이름", "테마", "예약일", "예약시간"];
+    const header = ["돈 오간 날(한국시각)", "구분", "금액", "이름", "테마", "예약일", "예약시간"];
     const body = view.map((t) => [
-      t.at.replace("T", " ").slice(0, 16), t.kind === "in" ? "입금" : "환불",
+      formatStamp(t.at), t.kind === "in" ? "입금" : "환불",
       t.kind === "in" ? t.amount : -t.amount, t.r.name, t.r.theme_name, t.r.date, t.r.time,
     ]);
     const csv = [header, ...body].map((row) => row.map(cell).join(",")).join("\r\n");
@@ -1242,7 +1253,7 @@ function Ledger() {
           : view.map((t) => (
             <div key={t.id} className="rrow">
               <div className="head" style={{ cursor: "default" }}>
-                <span className="when">{t.at.replace("T", " ").slice(5, 16)}</span>
+                <span className="when">{formatStampShort(t.at)}</span>
                 <span className="who">{t.r.name}{t.r.deposit_payer && t.r.deposit_payer !== t.r.name ? ` (입금 ${t.r.deposit_payer})` : ""}</span>
                 <span className="tname">{t.r.theme_name} · {formatDate(t.r.date)} {t.r.time}</span>
                 <span className="amt" style={{ color: t.kind === "in" ? "#137a4c" : "var(--muted)" }}>
@@ -1420,7 +1431,7 @@ function ReviewsAdminTab() {
             </div>
             <div className="detail">
               <div className="rev-body" style={{ whiteSpace: "pre-wrap", margin: "4px 0 10px", color: "var(--text)" }}>{r.body}</div>
-              <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 10 }}>{r.created_at?.replace("T", " ").slice(0, 16)}</div>
+              <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 10 }}>{formatStamp(r.created_at)}</div>
               <div className="act-row">
                 {r.status === "pending" && <>
                   <button className="btn sm ok" onClick={() => act("moderate", { id: r.id, status: "approved" })}>승인(게시)</button>
@@ -1803,7 +1814,7 @@ function SmsTab() {
                   {l.channel === "alimtalk" ? "카톡" : "문자"}
                 </span>
                 <Phone v={l.phone} />
-                <span style={{ color: "var(--faint)" }}>{l.created_at?.replace("T", " ").slice(5, 16)}</span>
+                <span style={{ color: "var(--faint)" }}>{formatStampShort(l.created_at)}</span>
                 {l.status !== "sent" && (
                   <span className="rt">
                     <button className="btn sm ghost" disabled={resend === l.id} onClick={() => resendSms(l.id)}>

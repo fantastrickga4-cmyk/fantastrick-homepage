@@ -21,3 +21,13 @@ export function isRefundPending(r: MoneyRow): boolean {
 export function refundAmount(r: Pick<MoneyRow, "deposit" | "refund_rate">): number {
   return Math.round((r.deposit * (r.refund_rate ?? 0)) / 100);
 }
+
+// 누가 취소했나 — DB에 '취소한 사람' 칸은 없지만 남는 흔적으로 구분된다(SQL 추가 불필요).
+//   · 손님 취소(/reservation) : 환불 계좌를 반드시 입력받으므로 refund_account 가 있다
+//   · 자동 취소(expire.ts)    : 메모에 "미입금으로 자동 취소" 를 남긴다
+//   · 그 외                   : 관리자가 화면에서 [취소 처리] 를 누른 것
+export function cancelledBy(r: { refund_account?: string | null; memo?: string | null }): string {
+  if ((r.memo || "").includes("자동 취소")) return "미입금 자동취소";
+  if (r.refund_account) return "손님이 직접 취소";
+  return "관리자 취소";
+}
