@@ -102,19 +102,19 @@ export default function AdminPage() {
 }
 
 /* ============ 예약 관리 탭 ============
-   기존 fantastrick.co.kr(Booked) 관리자와 같은 흐름:
+   기본은 "날짜별" — 기존 fantastrick.co.kr(Booked) 관리자와 같은 흐름:
    달력에서 날짜 클릭 → 테마 탭(건수 배지) → 그 날 시간대별 손님 목록.
-   기존 목록·검색·입금대기 큐는 "목록·검색" 보기로 유지.                        */
+   "목록·검색"은 날짜를 모를 때 이름·전화로 찾고, 취소건을 보고 되돌리는 용도(날짜별엔 없는 기능).
+   ※ "월 전체" 보기는 삭제함(2026-07-15) — 날짜별과 같은 달력인데 읽기 전용이라 손실 없음.  */
 function ReservationsTab() {
-  const [view, setView] = useState<"day" | "month" | "list">("day");
+  const [view, setView] = useState<"day" | "list">("day");
   return (
     <>
       <div className="viewtoggle">
         <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>📅 날짜별</button>
-        <button className={view === "month" ? "on" : ""} onClick={() => setView("month")}>🗓 월 전체</button>
         <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>📋 목록·검색</button>
       </div>
-      {view === "day" ? <DayView /> : view === "month" ? <CalendarTab /> : <ListView />}
+      {view === "day" ? <DayView /> : <ListView />}
     </>
   );
 }
@@ -540,65 +540,6 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
         {err && <div className="msg-err">⚠️ {err}</div>}
         <div className="modal-btns" style={{ marginTop: 14 }}><button className="btn ghost" onClick={onClose}>닫기</button><button className="btn primary" onClick={submit} disabled={busy}>{busy ? "등록 중…" : "등록"}</button></div>
       </div>
-    </div>
-  );
-}
-
-/* ============ 캘린더 탭 ============ */
-function CalendarTab() {
-  const [ym, setYm] = useState(() => { const d = new Date(Date.now() + 9 * 3600 * 1000); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; });
-  const [rows, setRows] = useState<Reservation[]>([]);
-  const [pick, setPick] = useState<string | null>(null);
-
-  useEffect(() => {
-    const first = `${ym.y}-${String(ym.m + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(ym.y, ym.m + 1, 0).getDate();
-    const last = `${ym.y}-${String(ym.m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-    fetch(`/api/admin/reservations?from=${first}&to=${last}`).then((r) => r.json()).then((j) => setRows(j.reservations || [])).catch(() => {});
-    setPick(null);
-  }, [ym]);
-
-  const byDay: Record<string, Reservation[]> = {};
-  for (const r of rows) if (r.status !== "cancelled") (byDay[r.date] = byDay[r.date] || []).push(r);
-
-  const firstDow = new Date(ym.y, ym.m, 1).getDay();
-  const days = new Date(ym.y, ym.m + 1, 0).getDate();
-  const cells: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
-  const dstr = (d: number) => `${ym.y}-${String(ym.m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  const prev = () => setYm((s) => s.m === 0 ? { y: s.y - 1, m: 11 } : { y: s.y, m: s.m - 1 });
-  const next = () => setYm((s) => s.m === 11 ? { y: s.y + 1, m: 0 } : { y: s.y, m: s.m + 1 });
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-        <button className="btn sm" onClick={prev}>◀</button>
-        <b style={{ fontSize: 17 }}>{ym.y}년 {ym.m + 1}월</b>
-        <button className="btn sm" onClick={next}>▶</button>
-      </div>
-      <div className="cal-grid">
-        {["일", "월", "화", "수", "목", "금", "토"].map((w) => <div key={w} className="cal-dow">{w}</div>)}
-        {cells.map((d, i) => d === null ? <div key={i} /> : (
-          <div key={i} className={"cal-cell" + (pick === dstr(d) ? " pick" : "")} onClick={() => setPick(dstr(d))}>
-            <span className="cal-d">{d}</span>
-            {byDay[dstr(d)] && <span className="cal-n">{byDay[dstr(d)].length}건</span>}
-          </div>
-        ))}
-      </div>
-      {pick && (
-        <div className="admin-card" style={{ marginTop: 16 }}>
-          <b>{formatDate(pick)} 예약 {(byDay[pick] || []).length}건</b>
-          <div style={{ marginTop: 10 }}>
-            {(byDay[pick] || []).length === 0 ? <span style={{ color: "var(--muted)" }}>예약 없음</span> :
-              (byDay[pick] || []).sort((a, b) => a.time.localeCompare(b.time)).map((r) => (
-                <div key={r.id} style={{ display: "flex", gap: 10, padding: "6px 0", borderTop: "1px solid var(--line)", fontSize: 13 }}>
-                  <b style={{ minWidth: 48 }}>{r.time}</b><span style={{ color: "var(--cyan)", minWidth: 90 }}>{r.theme_name}</span>
-                  <span style={{ color: "var(--muted)" }}>{r.name} · {r.people}명</span>
-                  <span className={`badge-st st-${r.status}`} style={{ marginLeft: "auto" }}>{ST_LABEL[r.status]}</span>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
