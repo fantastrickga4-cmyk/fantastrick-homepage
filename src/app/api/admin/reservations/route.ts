@@ -9,7 +9,7 @@ import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations } from "@/lib/expire";
 
 const COLS =
-  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at";
+  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
 
 // 변경 이력에 쓸 한국어 상태명
 const ST_KO: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
@@ -187,6 +187,11 @@ export async function PATCH(req: NextRequest) {
   // 돈이 실제로 움직인 시각 기록 — 이게 있어야 입출금 내역이 "예약일"이 아니라 "돈 들어온 날" 기준이 됨
   if (nowPaid) patch.paid_at = now;
   if (nowUnpaid) patch.paid_at = null;      // 입금확인을 잘못 눌러 되돌리는 경우
+
+  // 입금을 누가 확인했나 — 'auto' 는 자동매칭 프로그램(bank-auto)이 보낼 때만.
+  // 관리자 화면은 아무것도 안 보내므로 기본값 'manual'(사장님이 버튼 누름)이 된다.
+  if (nowPaid) patch.paid_source = body.paid_source === "auto" ? "auto" : "manual";
+  if (nowUnpaid) patch.paid_source = null;
   if (nowRefunded) patch.refunded_at = now;
   if (patch.refunded === false && before.refunded) patch.refunded_at = null;
 

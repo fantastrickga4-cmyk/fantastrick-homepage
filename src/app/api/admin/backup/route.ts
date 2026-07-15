@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const [reservations, reviews, settings, smsTemplates, blocked, logs] = await Promise.all([
     // ⚠️ pin(손님 비밀번호)·cancel_token 은 백업에서 뺀다 — 파일이 새면 남의 예약을 취소할 수 있음
-    grab("reservations", "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at"),
+    grab("reservations", "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source"),
     grab("reviews"),
     grab("app_settings"),
     grab("sms_templates"),

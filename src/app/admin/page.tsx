@@ -13,6 +13,7 @@ type Reservation = {
   refund_rate: number | null; refunded: boolean; memo: string | null; source: string;
   created_at: string; confirmed_at: string | null; cancelled_at: string | null;
   paid_at: string | null; refunded_at: string | null; // 돈이 실제로 오간 시각
+  paid_source: string | null; // 입금확인을 처리한 주체: manual(사장님 버튼) / auto(자동매칭) / null(이 기능 전 기록)
 };
 type Stats = {
   total: number; byStatus: Record<string, number>; pendingUnpaid: number; todayCount: number; depositPaidSum: number;
@@ -395,7 +396,14 @@ function ListView() {
               <div className="r"><span>접수</span><b>{formatStamp(r.created_at)}</b></div>
               {r.confirmed_at && <div className="r"><span>확정</span><b>{formatStamp(r.confirmed_at)}</b></div>}
               {/* 돈·취소가 언제 일어났는지 — "언제 취소했냐"는 환불율(100/80/0%)의 근거라 시각까지 남긴다 */}
-              {r.paid_at && <div className="r"><span>입금 확인</span><b>{formatStamp(r.paid_at)}</b></div>}
+              {r.paid_at && (
+                <div className="r">
+                  <span>입금 확인</span>
+                  <b>{formatStamp(r.paid_at)}
+                    {r.paid_source && <span style={{ color: "var(--muted)", fontWeight: 400 }}> · {r.paid_source === "auto" ? "🤖 자동매칭" : "✋ 사장님이 직접"}</span>}
+                  </b>
+                </div>
+              )}
               {r.cancelled_at && (
                 <div className="r">
                   <span>취소</span>
@@ -1210,9 +1218,10 @@ function Ledger() {
     if (view.length === 0) { alert("내보낼 내역이 없습니다."); return; }
     const cell = (v: unknown) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     // 계좌·전화는 넣지 않음(개인정보)
-    const header = ["돈 오간 날(한국시각)", "구분", "금액", "이름", "테마", "예약일", "예약시간"];
+    const header = ["돈 오간 날(한국시각)", "구분", "처리", "금액", "이름", "테마", "예약일", "예약시간"];
     const body = view.map((t) => [
       formatStamp(t.at), t.kind === "in" ? "입금" : "환불",
+      t.kind === "in" ? (t.r.paid_source === "auto" ? "자동매칭" : t.r.paid_source === "manual" ? "수동" : "") : "",
       t.kind === "in" ? t.amount : -t.amount, t.r.name, t.r.theme_name, t.r.date, t.r.time,
     ]);
     const csv = [header, ...body].map((row) => row.map(cell).join(",")).join("\r\n");
@@ -1260,6 +1269,9 @@ function Ledger() {
                   {t.kind === "in" ? "+" : "−"}{t.amount.toLocaleString()}원
                 </span>
                 <span className="rt">
+                  {/* 입금을 자동매칭이 잡았는지 사장님이 직접 눌렀는지 — 자동매칭 붙이기 전 기록은 표시 없음 */}
+                  {t.kind === "in" && t.r.paid_source === "auto" && <span className="src-tag" title="자동매칭 프로그램이 처리">🤖 자동</span>}
+                  {t.kind === "in" && t.r.paid_source === "manual" && <span className="src-tag" title="관리자 화면에서 입금 확인 버튼을 눌러 처리">✋ 수동</span>}
                   {t.kind === "in"
                     ? <span className="badge-st st-confirmed">입금</span>
                     : <span className="badge-st st-cancelled">환불 {t.r.refund_rate}%</span>}

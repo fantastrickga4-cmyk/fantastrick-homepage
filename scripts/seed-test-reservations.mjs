@@ -64,11 +64,11 @@ const CASES = [
 
   { 설명: "오늘 · 입금자명이 예약자와 다름 (통장엔 엄마 이름)",
     theme: "time", date: day(0), time: "22:00", people: 3, name: "정민재", phone: "0004",
-    status: "confirmed", paid: true, payer: "정영숙", created: minsAgo(1500), paid_at: minsAgo(1440) },
+    status: "confirmed", paid: true, payer: "정영숙", created: minsAgo(1500), paid_at: minsAgo(1440), src: "manual" },
 
-  { 설명: "내일 · 입금완료 확정",
+  { 설명: "내일 · 자동매칭이 입금을 잡아준 건 (🤖 자동 배지)",
     theme: "firstfoundbride", date: day(1), time: "18:00", people: 5, name: "최유진", phone: "0005",
-    status: "confirmed", paid: true, created: minsAgo(700), paid_at: minsAgo(660) },
+    status: "confirmed", paid: true, created: minsAgo(700), paid_at: minsAgo(660), src: "auto" },
 
   { 설명: "모레 · 접수만 됨 (아직 입금 확인 전, 시간 넉넉)",
     theme: "bookofduat", date: day(2), time: "17:10", people: 2, name: "한도윤", phone: "0006",
@@ -109,6 +109,8 @@ for (const c of CASES) {
     deposit, deposit_paid: c.paid, status: c.status,
     deposit_payer: c.payer ?? null,
     paid_at: c.paid_at ?? null,
+    // 입금을 누가 확인했나: manual(사장님 버튼) / auto(자동매칭) — 안 정한 건은 비워둠(이 기능 전 기록처럼 보임)
+    paid_source: c.src ?? (c.paid ? "manual" : null),
     created_at: c.created,
     cancelled_at: c.cancelled_at ?? null,
     refunded_at: c.refunded_at ?? null,
