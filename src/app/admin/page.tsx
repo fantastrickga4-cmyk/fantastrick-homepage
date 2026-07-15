@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, slotEndTime, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone } from "@/lib/util";
 
 type Reservation = {
@@ -368,18 +368,16 @@ function DayView() {
 
         {!cfg ? <p style={{ color: "var(--muted)", fontSize: 13 }}>시간표 불러오는 중…</p>
           : allTimes.length === 0 ? <div className="notice info">이 날은 예약을 받지 않는 요일입니다. (시간표 없음)</div>
-            : allTimes.map((time, i) => {
+            : allTimes.map((time) => {
               const r = themeRows.find((x) => x.time === time);
               const bk = blockFor(time);
               const offSchedule = !slots.includes(time);
-              // 끝시각 = 시작 + 테마 소요시간. 단 다음 칸과 겹치면 다음 칸 시작까지만 표시.
-              // (사자의 서는 80분짜리를 70분 간격으로 받고 있어 그대로 그리면 겹쳐 보임)
-              const next = allTimes[i + 1];
-              let end = slotEndTime(time, theme.minutes);
-              if (next && end > next) end = next;
+              // 시작시각만 표시 — 기존 사이트도 끝시각은 숨김(booked_hide_end_times=on)이고,
+              // 저장된 끝시각 자체가 의미 없는 값(같은 시간표가 10분/60분으로 뒤섞여 저장돼 있음).
+              // 테마 소요시간은 위 머리말에 한 번만 표시.
               return (
                 <div key={time} className={"slotrow" + (r ? " taken" : "") + (bk && !r ? " blocked" : "")}>
-                  <span className="s-time">🕘 {time} – {end}</span>
+                  <span className="s-time">🕘 {time}</span>
                   {r ? (
                     <>
                       <span className="s-state full">예약 있음</span>

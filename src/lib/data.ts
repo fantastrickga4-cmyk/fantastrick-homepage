@@ -246,14 +246,6 @@ export function slotsForThemeDate(
   return slotsForStoreDate(storeSlots, fallback, storeId, date);
 }
 
-// 시작시각 + 소요시간(분) → 종료시각 "HH:MM" (기존 관리자처럼 "12:30 – 13:30" 표기용)
-export function slotEndTime(start: string, minutes: number): string {
-  if (!isSlotTime(start) || !minutes) return "";
-  const [h, m] = start.split(":").map(Number);
-  const total = h * 60 + m + minutes;
-  return String(Math.floor(total / 60) % 24).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
-}
-
 // 예약금 (1인 기준, 원) — 추후 매장/테마별로 조정 가능
 export const DEPOSIT_PER_PERSON = 10000;
 
