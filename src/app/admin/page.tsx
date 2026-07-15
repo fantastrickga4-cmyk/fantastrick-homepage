@@ -251,156 +251,19 @@ function ContentTab() {
   );
 }
 
-/* 설정 — 예약 규칙·휴무·문자 문구·알림. 전부 "가끔 바꾸는 것" */
+/* 설정 — 예약 규칙·휴무·문자 문구. 전부 "가끔 바꾸는 것" */
 function SettingsHub() {
-  const [v, setV] = useState<"gen" | "block" | "sms" | "push">("gen");
+  const [v, setV] = useState<"gen" | "block" | "sms">("gen");
   return (
     <>
       <div className="viewtoggle">
         <button className={v === "gen" ? "on" : ""} onClick={() => setV("gen")}>예약 규칙·시간표</button>
         <button className={v === "block" ? "on" : ""} onClick={() => setV("block")}>🚫 휴무·마감</button>
         <button className={v === "sms" ? "on" : ""} onClick={() => setV("sms")}>📨 문자 문구</button>
-        <button className={v === "push" ? "on" : ""} onClick={() => setV("push")}>🔔 폰 알림</button>
       </div>
-      {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : v === "sms" ? <SmsTab /> : <PushTab />}
+      {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : <SmsTab />}
     </>
   );
-}
-
-/* 🔔 폰 알림 — 관리자 화면을 안 켜놔도 새 예약을 알려준다.
-   지금 🔔 새 예약 알림은 화면을 띄워놔야만 와서, 현장에 있으면 30분 자동취소가 먼저 돈다. */
-function PushTab() {
-  const [ready, setReady] = useState<boolean | null>(null);
-  const [devices, setDevices] = useState<{ id: string; label: string; created_at: string; last_ok_at: string | null }[]>([]);
-  const [err, setErr] = useState(""); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
-  const [mine, setMine] = useState<string | null>(null); // 이 폰의 endpoint
-
-  const load = useCallback(async () => {
-    const r = await fetch("/api/admin/push");
-    const j = await r.json();
-    if (j.error) { setErr(j.error); setReady(false); return; }
-    setReady(!!j.ready); setDevices(j.devices || []);
-    // 이 기기가 이미 등록돼 있는지
-    try {
-      const reg = await navigator.serviceWorker?.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      setMine(sub?.endpoint || null);
-    } catch { /* 지원 안 하는 브라우저 */ }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const supported = typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
-
-  async function enable() {
-    setErr(""); setMsg(""); setBusy(true);
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") { setErr("알림을 허용해야 받을 수 있어요. 브라우저 설정에서 이 사이트의 알림을 켜주세요."); setBusy(false); return; }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
-      const res = await fetch("/api/admin/push", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub.toJSON(), label: guessDevice() }),
-      });
-      if (!res.ok) { setErr((await res.json()).error || "등록 실패"); setBusy(false); return; }
-      setMsg("이 기기에서 알림을 받습니다 ✅"); await load();
-    } catch (e) {
-      setErr("알림을 켜지 못했어요: " + (e as Error).message);
-    }
-    setBusy(false);
-  }
-
-  async function disable() {
-    setBusy(true);
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      if (sub) { await fetch(`/api/admin/push?endpoint=${encodeURIComponent(sub.endpoint)}`, { method: "DELETE" }); await sub.unsubscribe(); }
-      setMsg("이 기기 알림을 껐어요."); await load();
-    } catch { setErr("해제 실패"); }
-    setBusy(false);
-  }
-
-  async function test() {
-    setBusy(true); setErr(""); setMsg("");
-    const res = await fetch("/api/admin/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test: true }) });
-    const j = await res.json();
-    setBusy(false);
-    if (res.ok) setMsg(`${j.sent}개 기기로 테스트 알림을 보냈어요. 폰을 확인해 보세요 🔔`);
-    else setErr(j.error || "테스트 실패");
-  }
-
-  if (ready === null) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
-
-  return (
-    <div className="admin-card" style={{ maxWidth: 620 }}>
-      <h3 className="card-h">🔔 폰으로 새 예약 알림</h3>
-      <div className="notice info" style={{ marginBottom: 14 }}>
-        관리자 화면을 <b>안 켜놔도</b> 새 예약이 들어오면 폰에 알림이 떠요.
-        지금은 화면을 띄워놔야만 알림(🔔)이 와서, 현장에 계시면 <b>30분 자동취소</b>가 먼저 돌아 예약이 날아갑니다.
-        <br />📱 폰에서는 <b>브라우저 메뉴 → 홈 화면에 추가</b> 한 뒤 켜시면 앱처럼 알림이 옵니다.
-      </div>
-
-      {err && <div className="msg-err">⚠️ {err}</div>}
-      {msg && <div className="notice ok">{msg}</div>}
-
-      {!ready ? (
-        <div className="notice warn">알림 키(VAPID)가 아직 서버에 없어요. 배포 환경변수를 확인해 주세요.</div>
-      ) : !supported ? (
-        <div className="notice warn">이 브라우저는 알림을 지원하지 않아요. 크롬·삼성인터넷에서 열어주세요.</div>
-      ) : (
-        <div className="act-row" style={{ marginTop: 4 }}>
-          {mine ? (
-            <>
-              <span className="badge-st st-confirmed">이 기기 알림 켜짐</span>
-              <button className="btn sm ghost" disabled={busy} onClick={disable}>이 기기 끄기</button>
-            </>
-          ) : (
-            <button className="btn sm primary" disabled={busy} onClick={enable}>{busy ? "켜는 중…" : "이 기기에서 알림 받기"}</button>
-          )}
-          {devices.length > 0 && <button className="btn sm" disabled={busy} onClick={test}>테스트 알림 보내기</button>}
-        </div>
-      )}
-
-      <div className="gc-h" style={{ marginTop: 18 }}>알림 받는 기기 {devices.length}대</div>
-      {devices.length === 0 ? (
-        <p className="hint" style={{ margin: 0 }}>아직 없어요. 위 버튼으로 이 기기를 등록해 주세요.</p>
-      ) : devices.map((d) => (
-        <div key={d.id} className="gc-row">
-          <b style={{ minWidth: 130 }}>{d.label}</b>
-          <span style={{ color: "var(--faint)" }}>등록 {d.created_at.slice(5, 10)}</span>
-          <span style={{ color: "var(--muted)" }}>{d.last_ok_at ? `마지막 알림 ${d.last_ok_at.slice(5, 16).replace("T", " ")}` : "아직 받은 적 없음"}</span>
-          <span className="rt">
-            <button className="btn sm ghost" onClick={async () => {
-              if (!confirm(`"${d.label}" 기기의 알림을 끌까요?`)) return;
-              await fetch(`/api/admin/push?id=${d.id}`, { method: "DELETE" }); load();
-            }}>끄기</button>
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// VAPID 키(base64url) → 브라우저가 요구하는 바이트 배열 (표준 보일러플레이트)
-function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const buf = new ArrayBuffer(raw.length);
-  const arr = new Uint8Array(buf);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr;
-}
-
-// "삼성 갤럭시(크롬)" 처럼 대충 알아볼 이름
-function guessDevice(): string {
-  const ua = navigator.userAgent;
-  const mob = /Android|iPhone|iPad/i.test(ua) ? "폰" : "PC";
-  const br = /SamsungBrowser/i.test(ua) ? "삼성인터넷" : /Edg/i.test(ua) ? "엣지" : /Chrome/i.test(ua) ? "크롬" : /Safari/i.test(ua) ? "사파리" : "브라우저";
-  return `${mob}(${br})`;
 }
 
 function ListView() {
