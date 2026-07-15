@@ -182,8 +182,11 @@ export default function Home() {
     <>
       {/* HERO — 타이포(FANTASY + TRICK = FANTASTRICK) */}
       <section className="hero-t" id="home">
+        {/* 배경 3겹 — 무대 조명 · 설계도 모눈 · 그레인 질감 (globals.css 설명 참고) */}
         <div className="ht-mesh" aria-hidden="true" />
+        <div className="ht-grid" aria-hidden="true" />
         <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
+        <div className="ht-noise" aria-hidden="true" />
         <div className="ht-stack">
           <div className="ht-eyebrow">PREMIUM ESCAPE ROOM</div>
           <div className="ht-slogan">
