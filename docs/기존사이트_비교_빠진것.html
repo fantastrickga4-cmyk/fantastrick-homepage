@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기존 사이트에 있는데 우리에게 없는 것 — 비교 분석</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --line:#2a2f3d;
+    --text:#e8eaf0; --muted:#9aa2b4; --faint:#6b7386;
+    --brand:#3b7bf0; --violet:#8f6ae0; --green:#37c98b; --amber:#f3b552; --red:#e06565;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0d0f15,#12141c);color:var(--text);
+    font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 22px 90px}
+  header.hero{border:1px solid var(--line);border-radius:20px;padding:34px 30px;
+    background:radial-gradient(120% 140% at 0% 0%,rgba(59,123,240,.16),transparent 55%),var(--panel)}
+  .eyebrow{color:var(--violet);font-weight:800;letter-spacing:.18em;font-size:12px;text-transform:uppercase}
+  h1{font-size:30px;margin:10px 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;max-width:76ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--muted)}
+  .pill b{color:var(--text)}
+  .verdict{margin-top:18px;background:rgba(224,101,101,.09);border:1px solid rgba(224,101,101,.4);border-radius:14px;padding:16px 18px}
+  .verdict .vt{color:#f2a0a0;font-weight:800;font-size:12.5px;letter-spacing:.1em;margin-bottom:6px}
+  .verdict p{margin:6px 0;font-size:14.5px;color:#f6d0d0}
+  .verdict b{color:#fff}
+
+  h2{font-size:21px;margin:48px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .h2sub{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+  .ok{color:var(--green)} .no{color:var(--red)} .par{color:var(--amber)}
+
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:12px 0}
+  .item.crit{border-color:rgba(224,101,101,.45);background:linear-gradient(180deg,rgba(224,101,101,.06),var(--panel))}
+  .item .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .num{display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;background:var(--panel2);
+    border:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--brand)}
+  .item h4{margin:0;font-size:15.5px}
+  .sp{flex:1}
+  .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .t-hi{background:rgba(224,101,101,.16);color:#f2a0a0;border:1px solid rgba(224,101,101,.4)}
+  .t-mid{background:rgba(243,181,82,.15);color:#f3ca8f;border:1px solid rgba(243,181,82,.38)}
+  .t-low{background:rgba(154,162,180,.14);color:#c2c8d4;border:1px solid rgba(154,162,180,.32)}
+  .quote{background:#0c0e14;border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:8px;
+    padding:10px 14px;margin:10px 0;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.8}
+  .quote b{color:var(--text)}
+  .item p{margin:6px 0;font-size:13.5px}
+  .item .why{color:var(--muted)}
+  .item .why b{color:var(--text)}
+
+  .box{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:16px 0}
+  .box.warn{background:rgba(243,181,82,.08);border-color:rgba(243,181,82,.35)}
+  .box.ok2{background:rgba(55,201,139,.07);border-color:rgba(55,201,139,.3)}
+  .box h3{margin:0 0 8px;font-size:16px}
+  ul.clean{list-style:none;padding:0;margin:8px 0}
+  ul.clean li{padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  ul.clean li:first-child{border-top:none}
+  ul.clean li b{color:var(--text)}
+  code{background:#0c0e14;border:1px solid var(--line);border-radius:6px;padding:1.5px 6px;font-size:12.5px;color:#9fd0ff;
+    font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+  .foot{margin-top:46px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.9}
+  @media(max-width:640px){h1{font-size:23px}.wrap{padding:30px 15px 60px}th,td{padding:8px}.item{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">기존 사이트 ↔ 새 사이트 비교</div>
+  <h1>기존에 있는데 우리에게 없는 것</h1>
+  <p class="sub">
+    기존 <code>fantastrick.co.kr</code> 의 손님 화면(홈·예약하기·테마 상세 4개·FAQ·컨설팅 문의·about)을
+    <b>로그인 없이 읽기만</b> 해서 전수 조사하고, 새 사이트와 항목별로 대조했습니다.
+    <b>분석만 했고 코드는 하나도 안 건드렸습니다.</b>
+  </p>
+  <div class="meta-row">
+    <span class="pill">조사일 <b>2026-07-15</b></span>
+    <span class="pill">비교 페이지 <b>기존 7 / 우리 5</b></span>
+    <span class="pill">기존 사이트 <b>무변경(조회만)</b></span>
+  </div>
+
+  <div class="verdict">
+    <div class="vt">⚠️ 제일 큰 것 두 개</div>
+    <p><b>① 우리 사이트엔 "가격"이 아예 없습니다.</b> 기존엔 테마마다 인원별 요금표(2인 34,000원/인 · 3인 32,000원/인 · 4인↑ 30,000원/인)가 있는데,
+      우리는 <b>예약금(30,000원)만</b> 보입니다. 손님이 "이거 얼마예요?"를 알 수 없습니다.</p>
+    <p><b>② 우리 문자가 지키지 못할 약속을 하고 있습니다.</b> 손님에게 나가는 예약대기 문자에
+      <b>"(자정이후 예약자의 경우 익일 오전10시까지)"</b> 라고 적혀 있는데, 코드엔 그 예외가 없습니다.
+      밤 12시 넘어 예약한 손님은 <b>30분 뒤 그냥 자동취소</b>됩니다.</p>
+  </div>
+</header>
+
+<h2>한눈에 보기</h2>
+<table>
+  <thead><tr><th>항목</th><th style="width:130px">기존 사이트</th><th style="width:130px">우리</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td><b>이용 금액 (인원별)</b></td><td class="ok">✅ 테마마다</td><td class="no">❌ 없음</td><td>예약금만 있음</td></tr>
+    <tr><td><b>테마 상세 페이지</b></td><td class="ok">✅ <code>/rooms/{id}</code></td><td class="no">❌ 404</td><td>홈 카드가 전부</td></tr>
+    <tr><td><b>시놉시스(스토리)</b></td><td class="ok">✅ 테마마다</td><td class="no">❌ 없음</td><td>우리는 장르 태그만</td></tr>
+    <tr><td><b>주의사항 (※)</b></td><td class="ok">✅ 복장·음주·인원</td><td class="no">❌ 없음</td><td>안전·클레임 직결</td></tr>
+    <tr><td><b>수용 인원 (3~5인)</b></td><td class="ok">✅ 표시</td><td class="no">❌ 없음</td><td>예약 시 선택만 가능</td></tr>
+    <tr><td>오시는 길 (출구·도보·주차)</td><td class="ok">✅ 상세</td><td class="par">△ 주소만</td><td>지하철·주차 안내 없음</td></tr>
+    <tr><td>사업자 정보</td><td class="ok">✅ 등록번호까지</td><td class="par">△ 일부</td><td>표시 의무 확인 필요</td></tr>
+    <tr><td>계좌번호 사전 안내</td><td class="ok">✅ 예약 전에도</td><td class="par">△ 예약 후에만</td><td>팝업·문자로만</td></tr>
+    <tr><td>다른 테마 추천</td><td class="ok">✅ 캐러셀</td><td class="no">❌ 없음</td><td>테마 상세 하단</td></tr>
+    <tr><td>테마 갤러리</td><td class="ok">✅ 17장</td><td class="par">△ 포스터 1장</td><td></td></tr>
+    <tr><td>인스타그램 피드</td><td class="ok">✅ 홈</td><td class="no">❌ 없음</td><td></td></tr>
+    <tr><td>실시간 채팅</td><td class="ok">✅</td><td class="no">❌ 없음</td><td>플러그인</td></tr>
+    <tr><td>손님 로그인</td><td class="ok">✅</td><td class="par">△ 전화+이름+PIN</td><td>우리 방식이 더 단순</td></tr>
+    <tr><td>자주 묻는 질문</td><td class="par">△ 메뉴만</td><td class="no">❌ 없음</td><td><b>기존도 내용 비어있음</b></td></tr>
+    <tr><td>컨설팅 문의</td><td class="par">△ 메뉴만</td><td class="ok">✅ 비즈니스 페이지</td><td><b>기존은 빈 페이지 — 우리가 나음</b></td></tr>
+    <tr><td>판타스트릭 소개(about)</td><td class="par">△ 메뉴만</td><td class="ok">✅ 홈에 통합</td><td><b>기존은 빈 페이지</b></td></tr>
+    <tr><td>후기 시스템</td><td class="no">❌ 없음</td><td class="ok">✅ 작성·승인</td><td>우리만 있음</td></tr>
+    <tr><td>예약 조회·취소(셀프)</td><td class="no">❌ 없음</td><td class="ok">✅ 환불규정 포함</td><td>우리만 있음</td></tr>
+  </tbody>
+</table>
+
+<h2>🔴 꼭 채워야 할 것</h2>
+<p class="h2sub">손님이 <b>돈을 내기 전에 알아야 할 정보</b>거나, <b>사고·클레임</b>으로 이어지는 것들입니다.</p>
+
+<div class="item crit">
+  <div class="top"><span class="num">1</span><h4>이용 금액 (인원별 요금표)</h4><span class="sp"></span><span class="tag t-hi">가장 큼</span></div>
+  <p class="why">기존 테마 상세의 <b>"예약 시 안내 사항"</b> 표에 이렇게 적혀 있습니다:</p>
+  <div class="quote">이용 금액   2인    34,000원 / 인
+            3인    32,000원 / 인
+            4인 이상 30,000원 / 인
+
+예약금 (30,000원)을 계좌이체 해 주시면 <b>남은 금액은 매장에서 결제</b>하시면 됩니다.</div>
+  <p class="why"><b>우리 사이트엔 가격이 한 글자도 없습니다.</b> 홈·예약·비즈니스 어디에도요.
+    손님은 <b>예약금 30,000원만 보고</b> "이게 전부인가? 2명이면 3만원?" 하고 오해합니다.
+    실제로는 2인이면 68,000원인데요. <b>현장에서 금액이 달라 다투는 일</b>이 생길 수 있습니다.</p>
+</div>
+
+<div class="item crit">
+  <div class="top"><span class="num">2</span><h4>문자가 지키지 못할 약속을 하고 있음 (자정 예외)</h4><span class="sp"></span><span class="tag t-hi">지금 나가는 중</span></div>
+  <p class="why">손님에게 <b>지금 나가는</b> 예약대기 문자 마지막 줄:</p>
+  <div class="quote">예약 후 30분 이내에 입금확인이
+되지 않을 경우 예약이 자동 취소 됩니다.
+<b>(자정이후 예약자의 경우 익일 오전10시까지)</b></div>
+  <p class="why">그런데 <code>lib/expire.ts</code> 에는 <b>자정 예외가 없습니다.</b>
+    <code>created_at &lt; (지금 - 30분)</code> 이면 <b>밤이든 낮이든 무조건 취소</b>합니다.
+    즉 <b>밤 11시에 예약한 손님에게 "내일 아침 10시까지 넣으시면 돼요"라고 문자를 보내놓고, 30분 뒤에 취소</b>해버립니다.</p>
+  <p class="why">이건 기존 사이트가 <b>배려하던 것</b>입니다(그래서 그 문구가 있음). 우리가 문구만 가져오고 동작은 안 가져왔습니다.
+    <b>밤 예약이 통째로 날아갈 수 있습니다.</b></p>
+</div>
+
+<div class="item crit">
+  <div class="top"><span class="num">3</span><h4>테마 주의사항 (※)</h4><span class="sp"></span><span class="tag t-hi">안전·클레임</span></div>
+  <p class="why">기존 테마 상세마다 있습니다. 예:</p>
+  <div class="quote"><b>태초의 신부</b>
+※ 테마 내부에서 발생한 <b>의류/신발의 오염에 대한 보상이 불가</b>합니다. 편한 복장을 권장합니다.
+※ 2인부터 플레이 가능하시나, 추천 인원은 3인 이상입니다.
+
+<b>사자의 서</b>
+※ 테마 이용 시 <b>바지 착용</b>을 강력히 권해드립니다.
+※ 안전을 위해 <b>음주 시 테마 이용이 불가</b>합니다.
+※ 추천 인원은 3~4인으로 5인 이상 이용 시 좁은 공간이 있습니다.</div>
+  <p class="why">우리 사이트엔 <b>하나도 없습니다.</b> 이건 단순 안내가 아니라
+    <b>"옷 버렸는데 보상해주세요" · "술 먹고 왔는데 왜 못 하냐"</b> 같은 분쟁을 미리 막는 문장입니다.
+    <b>미리 고지하지 않으면 매장이 불리해집니다.</b></p>
+</div>
+
+<h2>🟠 있으면 좋은 것</h2>
+
+<div class="item">
+  <div class="top"><span class="num">4</span><h4>테마별 상세 페이지</h4><span class="sp"></span><span class="tag t-mid">중간</span></div>
+  <p class="why">기존은 테마마다 <code>/rooms/{id}/</code> 페이지가 있습니다. 담긴 것:
+    <b>히어로 배너 · 난이도 · 인원 · 시간 · 연락처 · 포스터 · 시놉시스 · 주의사항 · 예약 안내표(가격·계좌·오시는길) · 예약 달력 · 사업자정보 · 다른 테마 추천 캐러셀</b>.</p>
+  <p class="why">우리는 <b>404</b> 입니다. 홈의 테마 카드(포스터·시간·난이도·장르)가 전부라
+    <b>테마 하나를 깊게 보여줄 자리가 없습니다.</b> 위 1·3번(가격·주의사항)이 들어갈 자연스러운 집이기도 합니다.</p>
+</div>
+
+<div class="item">
+  <div class="top"><span class="num">5</span><h4>시놉시스 (테마 스토리)</h4><span class="sp"></span><span class="tag t-mid">중간</span></div>
+  <div class="quote">암흑가 최고의 마에스트로라고 불리는 범죄 기획자 &lt;스네이크&gt;
+그가 &lt;아담&gt;이 보호 관리하는 &lt;태초의 신부&gt;를 노리고
+프로젝트팀 &lt;이브&gt;를 만든다는 정보가 퍼지고 있다.
+이런 빅 이벤트에 빠질 수는 없지 않겠어?</div>
+  <p class="why">우리는 <b>장르 태그만</b> 있습니다("잠입 · SF 판타지").
+    방탈출은 <b>세계관을 보고 고르는 상품</b>인데, 고를 근거가 없습니다.</p>
+</div>
+
+<div class="item">
+  <div class="top"><span class="num">6</span><h4>수용 인원 · 오시는 길 상세 · 사업자 정보</h4><span class="sp"></span><span class="tag t-mid">중간</span></div>
+  <p class="why"><b>인원</b> — 기존은 <code>3-5</code> 처럼 표시. 우리는 예약할 때 인원을 고르게만 하고 <b>몇 명까지 되는지 안 알려줍니다.</b></p>
+  <p class="why"><b>오시는 길</b> — 기존:</p>
+  <div class="quote">9호선 신논현 역 1번, 2번 출구 도보 5분 거리
+매장에는 <b>주차공간이 없습니다.</b> 대중 교통을 추천합니다.
+아래 공영주차장을 이용해 주세요.
+반포보물 반포공영주차장 (도보 5분 – 주차면 수 많음)</div>
+  <p class="why">우리는 <b>주소·전화번호만</b> 있습니다. 지도도, 지하철 출구도, 주차 안내도 없습니다.
+    차 끌고 왔다가 주차 못 하면 그날 기분이 망가집니다.</p>
+  <p class="why"><b>사업자 정보</b> — 기존 테마 상세 하단에 <b>상호·대표자·사업자등록번호(175-54-00122)·주소·Tel·E-mail</b>.
+    우리는 비즈니스 페이지에 일부만. <b>전자상거래법상 표시 의무</b>가 있는지 확인이 필요합니다(예약금을 받는 사이트라서).</p>
+</div>
+
+<h2>🟢 급하지 않은 것</h2>
+<ul class="clean">
+  <li><b>다른 테마 추천 캐러셀</b> — 테마 상세 하단에 나머지 테마 3개. 테마 상세를 만들면 같이.</li>
+  <li><b>테마 갤러리(17장)</b> — 우리는 포스터 1장. 단, 방탈출은 내부 사진을 많이 보여주면 스포일러라 <b>일부러 안 하는 것도 방법</b>입니다.</li>
+  <li><b>인스타그램 피드</b> — 기존 홈에 있음. 우리는 없음.</li>
+  <li><b>실시간 채팅</b> — 기존은 플러그인. 1인 운영이라 <b>답이 늦으면 안 하느니만 못합니다.</b></li>
+  <li><b>손님 로그인</b> — 기존은 회원 로그인. 우리는 <b>전화+이름+비밀번호 4자리</b>로 조회·취소. <b>우리 방식이 더 단순하고 가입 부담이 없습니다.</b> 굳이 따라갈 필요 없음.</li>
+  <li><b>계좌번호 사전 안내</b> — 기존은 예약 전에도 계좌가 보임. 우리는 예약 후 팝업·문자. 우리 방식도 무리 없음.</li>
+</ul>
+
+<h2>⚪ 따라갈 필요 없는 것 — 기존이 비어 있음</h2>
+<div class="box warn">
+  <h3>메뉴는 있는데 눌러보면 빈 페이지</h3>
+  <p style="font-size:14px;color:var(--muted);margin:6px 0">
+    직접 열어봤습니다. <b>제목 배너만 있고 내용이 하나도 없습니다.</b>
+  </p>
+  <ul class="clean">
+    <li><b>자주 묻는 질문 (/faqs/)</b> — 제목만. FAQ 항목 <b>0개</b>. 손님이 눌렀다가 빈 화면을 봅니다.</li>
+    <li><b>컨설팅 문의 (/contacts/)</b> — 제목만. 문의 폼도 안 보임. <b>우리 비즈니스(B2B) 페이지가 훨씬 낫습니다.</b></li>
+    <li><b>판타스트릭 소개 (/about/)</b> — 제목만. <b>우리는 홈에 브랜드 소개가 들어가 있습니다.</b></li>
+  </ul>
+  <p style="font-size:13.5px;color:var(--muted);margin-top:8px">
+    → 이 3개는 <b>"우리가 빠뜨린 것"이 아닙니다.</b> 기존 사이트의 미완성 부분입니다.
+    FAQ는 <b>새로 만들 가치</b>는 있지만, 기존에서 가져올 내용은 없습니다.
+  </p>
+</div>
+
+<h2>✅ 반대로 — 우리가 기존보다 나은 것</h2>
+<div class="box ok2">
+  <ul class="clean">
+    <li><b>후기 시스템</b> — 손님이 직접 작성 → 관리자 승인 → 게시. <b>기존엔 아예 없습니다.</b></li>
+    <li><b>예약 조회·취소(셀프)</b> — 손님이 직접 취소 + 환불율 자동계산(24h 전 100% / 이내 80% / 당일 0%) + 환불계좌 접수. 기존은 <b>전화·문자로만</b>.</li>
+    <li><b>테마별·요일별 시간표</b> — 기존과 동일한 시간표를 쓰되, 관리자가 화면에서 고칠 수 있음.</li>
+    <li><b>예약 임박 차단(10분)</b> · <b>비즈니스(B2B) 페이지</b> · <b>팝업 공지</b> — 기존 대비 동등하거나 나음.</li>
+    <li><b>관리자</b> — 오늘 화면 · 입금/환불 큐 · 손님 카드 · 변경 이력 · 장부 등, 기존 워드프레스보다 앞섭니다.</li>
+  </ul>
+</div>
+
+<h2>정리 — 제 생각</h2>
+<div class="box warn">
+  <p style="font-size:15px;margin:4px 0"><b>빠진 것 대부분은 "기능"이 아니라 "정보"입니다.</b></p>
+  <p style="font-size:14px;color:var(--muted);margin:8px 0">
+    인스타 피드나 채팅 같은 걸 안 만들어서 문제가 아니라,
+    <b>가격 · 스토리 · 주의사항 · 인원 · 오시는 길</b> — 손님이 <b>고르고 결제하기 전에 알아야 할 것들</b>이 비어 있습니다.
+    이건 코드 문제가 아니라 <b>내용을 채우는 문제</b>라, 기존 사이트에서 그대로 옮겨오면 됩니다(이미 다 조사해뒀습니다).
+  </p>
+  <p style="font-size:14px;color:var(--muted);margin:8px 0">
+    <b>다만 2번(자정 예외)만은 성격이 다릅니다.</b> 이건 <b>지금 손님에게 나가고 있는 거짓 약속</b>이고,
+    새 사이트로 손님을 받기 시작하면 <b>밤 예약이 실제로 날아갑니다.</b> 이것만 따로 봐주세요.
+  </p>
+  <p style="font-size:13.5px;color:var(--faint);margin-top:10px">
+    ※ 이 문서는 <b>분석만</b> 했습니다. 코드는 하나도 안 바꿨습니다. 기존 사이트도 <b>읽기만</b> 했습니다.
+  </p>
+</div>
+
+<p class="foot">
+  기존 사이트 ↔ 새 사이트 비교 · 2026-07-15<br>
+  기존 <code>fantastrick.co.kr</code> 공개 페이지 7개 · 새 사이트 5개 전수 대조 (스크린샷 근거 <code>docs/_cmp/</code>)<br>
+  기존 사이트는 로그인 없이 조회만 수행 — 어떤 것도 변경하지 않았습니다
+</p>
+
+</div>
+</body>
+</html>
