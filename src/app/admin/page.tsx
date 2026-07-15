@@ -17,9 +17,10 @@ type Stats = {
   themes: { name: string; count: number }[]; activeTotal: number;
 };
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
+// 탭은 3개만 — 매일 하는 일(예약)은 최상단, 가끔 하는 일은 묶어서 뒤로.
+// 2단계는 기존 .viewtoggle 을 재사용한다(새 컴포넌트 안 만듦).
 const TABS = [
-  { k: "res", label: "예약 관리" }, { k: "cal", label: "캘린더" }, { k: "slot", label: "시간대" },
-  { k: "rev", label: "리뷰" }, { k: "notice", label: "팝업 공지" }, { k: "set", label: "설정" }, { k: "sms", label: "문자" },
+  { k: "res", label: "예약" }, { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
 export default function AdminPage() {
@@ -73,12 +74,8 @@ export default function AdminPage() {
         ))}
       </div>
       {tab === "res" && <ReservationsTab />}
-      {tab === "cal" && <CalendarTab />}
-      {tab === "slot" && <SlotsTab />}
-      {tab === "rev" && <ReviewsAdminTab />}
-      {tab === "notice" && <NoticeTab />}
-      {tab === "set" && <SettingsTab />}
-      {tab === "sms" && <SmsTab />}
+      {tab === "cont" && <ContentTab />}
+      {tab === "set" && <SettingsHub />}
     </div>
   );
 }
@@ -88,14 +85,44 @@ export default function AdminPage() {
    달력에서 날짜 클릭 → 테마 탭(건수 배지) → 그 날 시간대별 손님 목록.
    기존 목록·검색·입금대기 큐는 "목록·검색" 보기로 유지.                        */
 function ReservationsTab() {
-  const [view, setView] = useState<"day" | "list">("day");
+  const [view, setView] = useState<"day" | "month" | "list">("day");
   return (
     <>
       <div className="viewtoggle">
-        <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>📅 날짜별 보기</button>
+        <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>📅 날짜별</button>
+        <button className={view === "month" ? "on" : ""} onClick={() => setView("month")}>🗓 월 전체</button>
         <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>📋 목록·검색</button>
       </div>
-      {view === "day" ? <DayView /> : <ListView />}
+      {view === "day" ? <DayView /> : view === "month" ? <CalendarTab /> : <ListView />}
+    </>
+  );
+}
+
+/* 리뷰·공지 — 둘 다 "손님에게 보이는 것" 관리라 묶음 */
+function ContentTab() {
+  const [v, setV] = useState<"rev" | "notice">("rev");
+  return (
+    <>
+      <div className="viewtoggle">
+        <button className={v === "rev" ? "on" : ""} onClick={() => setV("rev")}>후기</button>
+        <button className={v === "notice" ? "on" : ""} onClick={() => setV("notice")}>📢 팝업 공지</button>
+      </div>
+      {v === "rev" ? <ReviewsAdminTab /> : <NoticeTab />}
+    </>
+  );
+}
+
+/* 설정 — 예약 규칙·휴무·문자 문구. 전부 "가끔 바꾸는 것" */
+function SettingsHub() {
+  const [v, setV] = useState<"gen" | "block" | "sms">("gen");
+  return (
+    <>
+      <div className="viewtoggle">
+        <button className={v === "gen" ? "on" : ""} onClick={() => setV("gen")}>예약 규칙·시간표</button>
+        <button className={v === "block" ? "on" : ""} onClick={() => setV("block")}>🚫 휴무·마감</button>
+        <button className={v === "sms" ? "on" : ""} onClick={() => setV("sms")}>📨 문자 문구</button>
+      </div>
+      {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : <SmsTab />}
     </>
   );
 }
@@ -180,17 +207,17 @@ function ListView() {
       </div>
       {stats && (
         <>
+          {/* 색은 "내가 처리해야 하는 것"(앰버)에만. 나머지 숫자는 색 없음 */}
           <div className="stat-row dash4">
             <div className="stat"><b>{stats.todayCount}</b><span>오늘 예약</span></div>
             <div className="stat amber"><b>{stats.byStatus.pending || 0}</b><span>확정 대기(미입금)</span></div>
             <div className="stat"><b>{stats.weekCount}</b><span>이번 주 예약(월~일)</span></div>
-            <div className="stat green"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
+            <div className="stat"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
           </div>
-          <div className="stat-row">
-            <div className="stat"><b>{stats.todayCount}</b><span>오늘 예약</span></div>
-            <div className="stat amber"><b>{stats.byStatus.pending || 0}</b><span>확정 대기</span></div>
-            <div className="stat green"><b>{stats.byStatus.confirmed || 0}</b><span>확정</span></div>
-            <div className="stat red"><b>{stats.byStatus.cancelled || 0}</b><span>취소</span></div>
+          {/* 보조 통계 — 위 줄과 중복되던 "오늘 예약"·"확정 대기" 제거 */}
+          <div className="stat-row sub3">
+            <div className="stat"><b>{stats.byStatus.confirmed || 0}</b><span>확정</span></div>
+            <div className="stat"><b>{stats.byStatus.cancelled || 0}</b><span>취소</span></div>
             <div className="stat"><b>{(stats.depositPaidSum || 0).toLocaleString()}</b><span>입금확인 합계(원)</span></div>
           </div>
           {stats.themes.length > 0 && (
@@ -227,9 +254,11 @@ function ListView() {
             <span className="when">{formatDate(r.date)} {r.time}</span>
             <span className="tname">{r.theme_name}</span>
             <span className="who">{r.name} · {formatPhone(r.phone)} · {r.people}명</span>
-            {r.source === "phone" && <span className="src-tag">전화</span>}
-            <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
-            <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+            <span className="rt">
+              {r.source === "phone" && <span className="src-tag">전화</span>}
+              <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
+              <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+            </span>
           </div>
           <div className="detail">
             <div className="res-summary" style={{ margin: 0 }}>
@@ -253,7 +282,7 @@ function ListView() {
             <div className="act-row">
               <button className="btn sm" onClick={() => patch(r.id, { memo: (document.getElementById(`memo-${r.id}`) as HTMLTextAreaElement).value })}>메모 저장</button>
               <button className={"btn sm " + (r.deposit_paid ? "ghost" : "primary")} onClick={() => patch(r.id, { deposit_paid: !r.deposit_paid })}>{r.deposit_paid ? "입금 취소" : "입금 확인"}</button>
-              {r.status !== "confirmed" && r.status !== "cancelled" && <button className="btn sm" style={{ background: "var(--green)", color: "#062", borderColor: "var(--green)" }} onClick={() => patch(r.id, { status: "confirmed" })}>예약 확정</button>}
+              {r.status !== "confirmed" && r.status !== "cancelled" && <button className="btn sm ok" onClick={() => patch(r.id, { status: "confirmed" })}>예약 확정</button>}
               {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" onClick={() => patch(r.id, { status: "noshow" })}>노쇼 처리</button>}
               {r.status !== "cancelled" && <button className="btn sm danger" onClick={() => { if (confirm("이 예약을 취소 처리할까요?")) patch(r.id, { status: "cancelled" }); }}>취소 처리</button>}
               {r.status === "cancelled" && <button className="btn sm ghost" onClick={() => patch(r.id, { status: "pending" })}>취소 되돌리기</button>}
@@ -381,27 +410,30 @@ function DayView() {
                   <span className="s-time">🕘 {time}</span>
                   {r ? (
                     <>
-                      <span className="s-state full">예약 있음</span>
                       <button className="s-guest" onClick={() => setDetail(r)} title="눌러서 상세·처리">
                         ✏️ {r.name} {formatPhone(r.phone)} · {r.people}명
                       </button>
-                      {r.source === "phone" && <span className="src-tag">전화</span>}
-                      <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
-                      <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+                      <span className="rt">
+                        {r.source === "phone" && <span className="src-tag">전화</span>}
+                        <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
+                        <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+                      </span>
                     </>
                   ) : bk ? (
                     <>
                       <span className="s-state closed">🚫 마감됨{bk.reason ? ` · ${bk.reason}` : ""}</span>
-                      <span className="sp" />
-                      <button className="btn sm ghost" onClick={() => unblock(bk.id)}>열기</button>
+                      <span className="rt">
+                        <button className="btn sm ghost" onClick={() => unblock(bk.id)}>열기</button>
+                      </span>
                     </>
                   ) : (
                     <>
                       <span className="s-state open">예약 없음</span>
                       {offSchedule && <span className="src-tag">시간표 밖</span>}
-                      <span className="sp" />
-                      <button className="btn sm ghost" onClick={() => block(time)}>마감</button>
-                      <button className="btn sm primary" onClick={() => setAdd({ themeId: theme.id, date: pick, time })}>+ 예약 넣기</button>
+                      <span className="rt">
+                        <button className="btn sm ghost" onClick={() => block(time)}>마감</button>
+                        <button className="btn sm" onClick={() => setAdd({ themeId: theme.id, date: pick, time })}>+ 예약 넣기</button>
+                      </span>
                     </>
                   )}
                 </div>
@@ -446,7 +478,8 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
         <div className="act-row">
           <button className="btn sm" disabled={busy} onClick={() => patch({ memo })}>메모 저장</button>
           <button className={"btn sm " + (r.deposit_paid ? "ghost" : "primary")} disabled={busy} onClick={() => patch({ deposit_paid: !r.deposit_paid })}>{r.deposit_paid ? "입금 취소" : "입금 확인"}</button>
-          {r.status !== "confirmed" && r.status !== "cancelled" && <button className="btn sm" style={{ background: "var(--green)", color: "#062", borderColor: "var(--green)" }} disabled={busy} onClick={() => patch({ status: "confirmed" })}>예약 확정</button>}
+          {/* 지금 해야 할 일 하나만 파랗게 — 미입금이면 [입금 확인], 입금됐으면 [예약 확정] */}
+          {r.status !== "confirmed" && r.status !== "cancelled" && <button className={"btn sm " + (r.deposit_paid ? "primary" : "ok")} disabled={busy} onClick={() => patch({ status: "confirmed" })}>예약 확정</button>}
           {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" disabled={busy} onClick={() => patch({ status: "noshow" })}>노쇼 처리</button>}
           {r.status !== "cancelled" && <button className="btn sm danger" disabled={busy} onClick={() => { if (confirm("이 예약을 취소 처리할까요?")) patch({ status: "cancelled" }); }}>취소 처리</button>}
           {r.status === "cancelled" && <button className="btn sm ghost" disabled={busy} onClick={() => patch({ status: "pending" })}>취소 되돌리기</button>}
@@ -592,7 +625,7 @@ function SlotsTab() {
             <span className="when">{formatDate(b.date)}</span>
             <span className="tname">{b.time || "하루 전체 휴무"}</span>
             <span className="who">{b.theme_id ? (THEMES.find((t) => t.id === b.theme_id)?.name || b.theme_id) : "전 테마"}{b.reason ? ` · ${b.reason}` : ""}</span>
-            <button className="btn sm ghost" style={{ marginLeft: "auto" }} onClick={() => del(b.id)}>열기(해제)</button>
+            <span className="rt"><button className="btn sm ghost" onClick={() => del(b.id)}>열기(해제)</button></span>
           </div></div>
         ))}
       </div>
@@ -643,7 +676,11 @@ function NoticeTab() {
       <div className="admin-card">
         <label className="nt-switch">
           <input type="checkbox" checked={n.enabled} onChange={(e) => set("enabled", e.target.checked)} />
-          <b>{n.enabled ? "✅ 공지 켜짐 (손님에게 보임)" : "⬜ 공지 꺼짐 (아무에게도 안 보임)"}</b>
+          {/* 이모지(⬜)가 가짜 체크박스로 보여 네모가 두 개처럼 읽혔음 → 상태는 배지로 */}
+          <b>공지 팝업</b>
+          <span className={"badge-st " + (n.enabled ? "st-confirmed" : "st-noshow")}>
+            {n.enabled ? "손님에게 보임" : "안 보임"}
+          </span>
         </label>
 
         <div className="field" style={{ marginTop: 14 }}>
@@ -748,7 +785,8 @@ function ReviewsAdminTab() {
           <div key={r.id} className="rrow open">
             <div className="head" style={{ cursor: "default" }}>
               <span className="tname">{r.theme_name}</span>
-              <span className="rev-stars" style={{ color: "var(--gold, #e9b949)" }}>{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
+              {/* --gold 는 보라(--violet)라 관리자 별만 보라였음 → 손님 후기 화면과 같은 #e0930c 로 통일 */}
+              <span className="rev-stars" style={{ color: "#e0930c" }}>{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
               <span className="who">{r.name}{r.phone ? ` · ${formatPhone(r.phone)}` : ""}</span>
               {r.source && <span className="src-tag">{r.source}</span>}
               <span className={`badge-st st-${r.status === "approved" ? "confirmed" : r.status === "rejected" ? "cancelled" : "pending"}`}>{REV_ST_LABEL[r.status] || r.status}</span>
@@ -758,7 +796,7 @@ function ReviewsAdminTab() {
               <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 10 }}>{r.created_at?.replace("T", " ").slice(0, 16)}</div>
               <div className="act-row">
                 {r.status === "pending" && <>
-                  <button className="btn sm" style={{ background: "var(--green)", color: "#062", borderColor: "var(--green)" }} onClick={() => act("moderate", { id: r.id, status: "approved" })}>승인(게시)</button>
+                  <button className="btn sm ok" onClick={() => act("moderate", { id: r.id, status: "approved" })}>승인(게시)</button>
                   <button className="btn sm" onClick={() => act("moderate", { id: r.id, status: "rejected" })}>거부</button>
                 </>}
                 {r.status === "approved" && <button className="btn sm ghost" onClick={() => act("moderate", { id: r.id, status: "pending" })}>게시 취소</button>}
@@ -829,7 +867,9 @@ function SettingsTab() {
   }
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
   return (
-    <div className="admin-card" style={{ maxWidth: 560 }}>
+    <div className="set-grid">
+      <div className="admin-card">
+      <h3 className="card-h">예약 규칙</h3>
       <div className="field">
         <label>⏱ 예약 임박 차단</label>
         <select value={leadMin} onChange={(e) => setLeadMin(e.target.value)}>
@@ -854,6 +894,37 @@ function SettingsTab() {
         <div className="hint">예약금은 테마별로 코드에서 관리됩니다. (변경은 개발자에게 요청)</div>
       </div>
       <div className="field">
+        <label>예약 받을 테마 (체크 해제 시 예약 화면에서 숨김)</label>
+        {THEMES.map((t) => (
+          <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, padding: "4px 0" }}>
+            <input type="checkbox" checked={!disabled.includes(t.id)} onChange={(e) => { if (e.target.checked) setDisabled(disabled.filter((x) => x !== t.id)); else setDisabled([...disabled, t.id]); }} style={{ width: "auto" }} />
+            {t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span>
+          </label>
+        ))}
+      </div>
+      </div>
+
+      <div className="admin-card">
+      <h3 className="card-h">외부 노출 (네이버·구글)</h3>
+      <div className="field">
+        <label>외부 리뷰 링크 (홈·후기 페이지에 버튼으로 노출)</label>
+        <input type="url" value={naverUrl} onChange={(e) => setNaverUrl(e.target.value)} placeholder="네이버 플레이스 리뷰 URL (https://…)" style={{ marginBottom: 8 }} />
+        <input type="url" value={googleUrl} onChange={(e) => setGoogleUrl(e.target.value)} placeholder="구글 리뷰 URL (https://…)" />
+        <div className="hint">URL을 비우면 해당 버튼은 노출되지 않아요.</div>
+      </div>
+      <div className="field">
+        <label>외부 표시 평점·리뷰수 (선택 · 뱃지로 노출)</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" step="0.1" min="0" max="5" value={extRating} onChange={(e) => setExtRating(e.target.value)} placeholder="평점 (예 4.9)" style={{ flex: 1 }} />
+          <input type="number" min="0" value={extCount} onChange={(e) => setExtCount(e.target.value)} placeholder="리뷰수 (예 320)" style={{ flex: 1 }} />
+        </div>
+        <div className="hint">0이거나 비우면 뱃지를 숨겨요.</div>
+      </div>
+      </div>
+
+      <div className="admin-card wide">
+      <h3 className="card-h">예약 시간표</h3>
+      <div className="field">
         <label>기본 예약 시간대 <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>(아래 매장별 설정이 없는 매장에 적용)</span></label>
         <div className="optrow" style={{ marginBottom: 8 }}>
           {slots.map((s) => <div key={s} className="opt on" style={{ minWidth: 64, flex: "0 0 auto" }} onClick={() => setSlots(slots.filter((x) => x !== s))}>{s} ✕</div>)}
@@ -870,31 +941,13 @@ function SettingsTab() {
         <div className="hint" style={{ marginTop: 0, marginBottom: 10 }}>매장을 켜면 그 매장은 기본 대신 아래 시간표를 써요. 특정 요일만 다르게(또는 휴무) 지정할 수 있어요. 예: 2호점 월~목 휴무.</div>
         <StoreSlotsEditor storeSlots={storeSlots} setStoreSlots={setStoreSlots} fallback={slots} />
       </div>
-      <div className="field">
-        <label>예약 받을 테마 (체크 해제 시 예약 화면에서 숨김)</label>
-        {THEMES.map((t) => (
-          <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, padding: "4px 0" }}>
-            <input type="checkbox" checked={!disabled.includes(t.id)} onChange={(e) => { if (e.target.checked) setDisabled(disabled.filter((x) => x !== t.id)); else setDisabled([...disabled, t.id]); }} style={{ width: "auto" }} />
-            {t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span>
-          </label>
-        ))}
       </div>
-      <div className="field">
-        <label>외부 리뷰 링크 (홈·후기 페이지에 버튼으로 노출)</label>
-        <input type="url" value={naverUrl} onChange={(e) => setNaverUrl(e.target.value)} placeholder="네이버 플레이스 리뷰 URL (https://…)" style={{ marginBottom: 8 }} />
-        <input type="url" value={googleUrl} onChange={(e) => setGoogleUrl(e.target.value)} placeholder="구글 리뷰 URL (https://…)" />
-        <div className="hint">URL을 비우면 해당 버튼은 노출되지 않아요.</div>
+
+      {/* 저장 버튼은 항상 손 닿는 곳에 (설정이 길어서 맨 아래까지 스크롤해야 했음) */}
+      <div className="save-bar">
+        {msg && <span className="notice ok" style={{ margin: 0, padding: "6px 10px" }}>{msg}</span>}
+        <span className="rt"><button className="btn primary" onClick={save}>설정 저장</button></span>
       </div>
-      <div className="field">
-        <label>외부 표시 평점·리뷰수 (선택 · 뱃지로 노출)</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input type="number" step="0.1" min="0" max="5" value={extRating} onChange={(e) => setExtRating(e.target.value)} placeholder="평점 (예 4.9)" style={{ flex: 1 }} />
-          <input type="number" min="0" value={extCount} onChange={(e) => setExtCount(e.target.value)} placeholder="리뷰수 (예 320)" style={{ flex: 1 }} />
-        </div>
-        <div className="hint">0이거나 비우면 뱃지를 숨겨요.</div>
-      </div>
-      {msg && <div className="notice ok">{msg}</div>}
-      <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={save}>설정 저장</button>
     </div>
   );
 }
@@ -954,7 +1007,8 @@ function StoreSlotsEditor({ storeSlots, setStoreSlots, fallback }: { storeSlots:
                     };
                     return (
                       <div key={dow} style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-                        <b style={{ minWidth: 18, paddingTop: 7, color: dow === 0 ? "var(--red, #e05561)" : dow === 6 ? "var(--brand, #3b7bf0)" : "var(--text)" }}>{label}</b>
+                        {/* --red 는 정의된 적 없는 토큰이라 늘 브랜드 밖 폴백색이 떴음 → --blood 로 */}
+                        <b style={{ minWidth: 18, paddingTop: 7, color: dow === 0 ? "var(--blood)" : dow === 6 ? "var(--brand)" : "var(--text)" }}>{label}</b>
                         <select value={mode} onChange={(e) => setMode(e.target.value)} style={{ width: "auto", minWidth: 90 }}>
                           <option value="default">기본 사용</option>
                           <option value="closed">휴무</option>
@@ -1068,12 +1122,12 @@ function SmsTab() {
             )}
 
             <p className="hint" style={{ margin: "3px 0 8px" }}>치환: {"{이름} {테마} {날짜} {시간} {인원} {환불율}"}</p>
-            <textarea rows={g.perTheme ? 10 : 3} value={body} onChange={(e) => edit(g.type, cur, e.target.value)}
-              style={{ width: "100%", background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 9, color: "var(--text)", padding: 10, fontFamily: "inherit", fontSize: 13.5, lineHeight: 1.6 }} />
+            <textarea className="tpl-ta" rows={g.perTheme ? 10 : 6} value={body} onChange={(e) => edit(g.type, cur, e.target.value)} />
             <div className="act-row">
-              <button className="btn sm primary" onClick={() => saveTpl(g.type, cur, label)}>저장</button>
+              {/* 저장 6개가 전부 파랬음 → 기본 버튼으로. 수정 여부는 위 .tpl-src 배지가 알려줌 */}
+              <button className="btn sm" onClick={() => saveTpl(g.type, cur, label)}>저장</button>
               {saved && <button className="btn sm ghost" onClick={() => resetTpl(g.type, cur, label)}>↩️ 기존 문구로 되돌리기</button>}
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--faint)", alignSelf: "center" }}>{body.length}자</span>
+              <span className="rt" style={{ fontSize: 12, color: "var(--faint)" }}>{body.length}자</span>
             </div>
           </div>
         );
