@@ -5,6 +5,7 @@ import { themeById, slotsForThemeDate, isTooSoon } from "@/lib/data";
 import { getConfig, depositOf } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { sweepExpiredReservations } from "@/lib/expire";
+import { pushToAdmins } from "@/lib/push";
 
 const TOO_MANY = { error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." };
 
@@ -126,6 +127,14 @@ export async function POST(req: NextRequest) {
   // 변경 이력의 시작점
   await db.from("reservation_logs").insert({ reservation_id: data.id, action: "접수", detail: "손님이 홈페이지에서 예약" })
     .then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
+
+  // 사장님 폰으로 알림 — 30분 안에 입금확인을 못 하면 자동취소되므로 빨리 알아야 한다.
+  // 실패해도 예약은 성공이므로 절대 막지 않는다.
+  pushToAdmins({
+    title: `🔔 새 예약 · ${theme.name}`,
+    body: `${name}님 ${people}명 · ${date} ${time} · ${deposit.toLocaleString()}원 입금 대기`,
+    url: "/admin",
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true, id: data.id, deposit });
 }

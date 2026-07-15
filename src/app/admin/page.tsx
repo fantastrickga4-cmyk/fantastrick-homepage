@@ -34,16 +34,16 @@ function Phone({ v }: { v: string }) {
     </span>
   );
 }
-// 매일 하는 일(예약·돈)은 앞에, 가끔 하는 일은 뒤로. 2단계는 기존 .viewtoggle 재사용.
+// 로그인하면 "오늘 뭐 해야 하지"부터. 매일 하는 일(예약·돈)이 앞, 가끔 하는 일은 뒤.
 const TABS = [
-  { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
+  { k: "home", label: "오늘" }, { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
   { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
 export default function AdminPage() {
   const [phase, setPhase] = useState<"checking" | "login" | "in">("checking");
   const [id, setId] = useState(""); const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
-  const [tab, setTab] = useState("res");
+  const [tab, setTab] = useState("home");
 
   async function check() {
     const res = await fetch("/api/admin/reservations?status=__probe__");
@@ -107,11 +107,115 @@ export default function AdminPage() {
           </a>
         ))}
       </div>
+      {tab === "home" && <HomeTab onGo={setTab} />}
       {tab === "res" && <ReservationsTab />}
       {tab === "money" && <MoneyTab />}
       {tab === "cont" && <ContentTab />}
       {tab === "set" && <SettingsHub />}
     </div>
+  );
+}
+
+/* ============ 오늘 (관리자 홈) ============
+   로그인하면 "오늘 뭐 해야 하지?"가 바로 보이게. 예전엔 7월 달력이 떠서
+   날짜 누르고 → 테마 탭 4번 누르고 → 입금·환불 탭 또 눌러야 알 수 있었음.
+   Checkfront "Daily Manifest" / FareHarbor Manifest 패턴. */
+function HomeTab({ onGo }: { onGo: (tab: string) => void }) {
+  const [rows, setRows] = useState<Reservation[] | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [, setNow] = useState(Date.now);
+  const today = todayKst();
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/admin/reservations?from=${today}&to=${today}`);
+    if (res.ok) { const j = await res.json(); setRows(j.reservations || []); setStats(j.stats || null); }
+  }, [today]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]); // 새 예약 자동 반영
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
+
+  if (!rows) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+
+  // 오늘 살아있는 예약을 시간순으로 (전 테마 한 화면 — 테마 탭 4번 안 눌러도 됨)
+  const live = rows.filter((r) => r.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
+  const nowHm = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(11, 16);
+  const next = live.find((r) => r.time >= nowHm && r.status !== "noshow");
+  const nPay = stats?.pendingUnpaid || 0;
+  const nRef = stats?.refundPending || 0;
+  const todo = nPay + nRef;
+
+  return (
+    <>
+      <div className="admin-top" style={{ marginBottom: 14 }}>
+        <h3 style={{ margin: 0, fontSize: 18 }}>{formatDate(today)} · 오늘 {live.length}팀</h3>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={load}>새로고침</button>
+      </div>
+
+      {/* 다음 손님 — 오늘 화면에서 제일 크게. "지금 뭘 준비해야 하나"의 답 */}
+      {next ? (
+        <div className="nextbox">
+          <span className="nb-lab">다음 손님</span>
+          <b className="nb-time">{next.time}</b>
+          <span className="nb-who">{next.name} · {next.people}명</span>
+          <span className="nb-theme">{next.theme_name}</span>
+          <span className="sp" />
+          <Phone v={next.phone} />
+          <span className={`dep ${next.deposit_paid ? "paid" : ""}`}>{next.deposit_paid ? "입금완료" : "미입금"}</span>
+        </div>
+      ) : (
+        <div className="notice ok" style={{ marginBottom: 14 }}>
+          {live.length === 0 ? "오늘은 예약이 없어요." : "오늘 예약이 다 끝났어요. 수고하셨습니다!"}
+        </div>
+      )}
+
+      {/* 돈으로 처리할 일 — 있을 때만 (0건이면 앰버가 거짓 경보가 됨) */}
+      {todo > 0 && (
+        <div className="notice warn" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <b>💰 처리할 일 {todo}건</b>
+          <span style={{ color: "var(--muted)", fontSize: 13.5 }}>
+            {nPay > 0 && `입금 확인 ${nPay}건`}{nPay > 0 && nRef > 0 && " · "}{nRef > 0 && `환불 ${nRef}건`}
+          </span>
+          <span className="sp" />
+          <button className="btn sm primary" onClick={() => onGo("money")}>처리하러 가기 →</button>
+        </div>
+      )}
+
+      {stats && (
+        <div className="stat-row sub3" style={{ marginBottom: 16 }}>
+          <div className="stat"><b>{live.length}</b><span>오늘 예약</span></div>
+          <div className="stat"><b>{live.filter((r) => r.deposit_paid).length}</b><span>입금완료</span></div>
+          <div className="stat"><b>{stats.weekCount}</b><span>이번 주(월~일)</span></div>
+        </div>
+      )}
+
+      <div className="admin-card">
+        <div className="day-head">
+          <b>오늘 예약</b>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>전 매장·전 테마 시간순</span>
+          <span className="sp" />
+          <button className="btn sm ghost" onClick={() => onGo("res")}>날짜별 보기 →</button>
+        </div>
+        {live.length === 0 ? (
+          <div className="notice info">오늘은 예약이 없습니다.</div>
+        ) : live.map((r) => {
+          const past = r.time < nowHm;
+          return (
+            <div key={r.id} className={"slotrow" + (past ? " blocked" : "")}>
+              <span className="s-time">🕘 {r.time}</span>
+              <span className="who"><b>{r.name}</b> · {r.people}명</span>
+              <span className="tname">{r.theme_name} <span style={{ color: "var(--faint)", fontSize: 12 }}>{STORES.find((s) => s.id === r.store_id)?.tag || ""}</span></span>
+              <Phone v={r.phone} />
+              <span className="rt">
+                {r.source === "phone" && <span className="src-tag">전화</span>}
+                <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
+                <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -147,19 +251,156 @@ function ContentTab() {
   );
 }
 
-/* 설정 — 예약 규칙·휴무·문자 문구. 전부 "가끔 바꾸는 것" */
+/* 설정 — 예약 규칙·휴무·문자 문구·알림. 전부 "가끔 바꾸는 것" */
 function SettingsHub() {
-  const [v, setV] = useState<"gen" | "block" | "sms">("gen");
+  const [v, setV] = useState<"gen" | "block" | "sms" | "push">("gen");
   return (
     <>
       <div className="viewtoggle">
         <button className={v === "gen" ? "on" : ""} onClick={() => setV("gen")}>예약 규칙·시간표</button>
         <button className={v === "block" ? "on" : ""} onClick={() => setV("block")}>🚫 휴무·마감</button>
         <button className={v === "sms" ? "on" : ""} onClick={() => setV("sms")}>📨 문자 문구</button>
+        <button className={v === "push" ? "on" : ""} onClick={() => setV("push")}>🔔 폰 알림</button>
       </div>
-      {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : <SmsTab />}
+      {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : v === "sms" ? <SmsTab /> : <PushTab />}
     </>
   );
+}
+
+/* 🔔 폰 알림 — 관리자 화면을 안 켜놔도 새 예약을 알려준다.
+   지금 🔔 새 예약 알림은 화면을 띄워놔야만 와서, 현장에 있으면 30분 자동취소가 먼저 돈다. */
+function PushTab() {
+  const [ready, setReady] = useState<boolean | null>(null);
+  const [devices, setDevices] = useState<{ id: string; label: string; created_at: string; last_ok_at: string | null }[]>([]);
+  const [err, setErr] = useState(""); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState<string | null>(null); // 이 폰의 endpoint
+
+  const load = useCallback(async () => {
+    const r = await fetch("/api/admin/push");
+    const j = await r.json();
+    if (j.error) { setErr(j.error); setReady(false); return; }
+    setReady(!!j.ready); setDevices(j.devices || []);
+    // 이 기기가 이미 등록돼 있는지
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      setMine(sub?.endpoint || null);
+    } catch { /* 지원 안 하는 브라우저 */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const supported = typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
+
+  async function enable() {
+    setErr(""); setMsg(""); setBusy(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setErr("알림을 허용해야 받을 수 있어요. 브라우저 설정에서 이 사이트의 알림을 켜주세요."); setBusy(false); return; }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
+      const res = await fetch("/api/admin/push", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON(), label: guessDevice() }),
+      });
+      if (!res.ok) { setErr((await res.json()).error || "등록 실패"); setBusy(false); return; }
+      setMsg("이 기기에서 알림을 받습니다 ✅"); await load();
+    } catch (e) {
+      setErr("알림을 켜지 못했어요: " + (e as Error).message);
+    }
+    setBusy(false);
+  }
+
+  async function disable() {
+    setBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (sub) { await fetch(`/api/admin/push?endpoint=${encodeURIComponent(sub.endpoint)}`, { method: "DELETE" }); await sub.unsubscribe(); }
+      setMsg("이 기기 알림을 껐어요."); await load();
+    } catch { setErr("해제 실패"); }
+    setBusy(false);
+  }
+
+  async function test() {
+    setBusy(true); setErr(""); setMsg("");
+    const res = await fetch("/api/admin/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test: true }) });
+    const j = await res.json();
+    setBusy(false);
+    if (res.ok) setMsg(`${j.sent}개 기기로 테스트 알림을 보냈어요. 폰을 확인해 보세요 🔔`);
+    else setErr(j.error || "테스트 실패");
+  }
+
+  if (ready === null) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
+
+  return (
+    <div className="admin-card" style={{ maxWidth: 620 }}>
+      <h3 className="card-h">🔔 폰으로 새 예약 알림</h3>
+      <div className="notice info" style={{ marginBottom: 14 }}>
+        관리자 화면을 <b>안 켜놔도</b> 새 예약이 들어오면 폰에 알림이 떠요.
+        지금은 화면을 띄워놔야만 알림(🔔)이 와서, 현장에 계시면 <b>30분 자동취소</b>가 먼저 돌아 예약이 날아갑니다.
+        <br />📱 폰에서는 <b>브라우저 메뉴 → 홈 화면에 추가</b> 한 뒤 켜시면 앱처럼 알림이 옵니다.
+      </div>
+
+      {err && <div className="msg-err">⚠️ {err}</div>}
+      {msg && <div className="notice ok">{msg}</div>}
+
+      {!ready ? (
+        <div className="notice warn">알림 키(VAPID)가 아직 서버에 없어요. 배포 환경변수를 확인해 주세요.</div>
+      ) : !supported ? (
+        <div className="notice warn">이 브라우저는 알림을 지원하지 않아요. 크롬·삼성인터넷에서 열어주세요.</div>
+      ) : (
+        <div className="act-row" style={{ marginTop: 4 }}>
+          {mine ? (
+            <>
+              <span className="badge-st st-confirmed">이 기기 알림 켜짐</span>
+              <button className="btn sm ghost" disabled={busy} onClick={disable}>이 기기 끄기</button>
+            </>
+          ) : (
+            <button className="btn sm primary" disabled={busy} onClick={enable}>{busy ? "켜는 중…" : "이 기기에서 알림 받기"}</button>
+          )}
+          {devices.length > 0 && <button className="btn sm" disabled={busy} onClick={test}>테스트 알림 보내기</button>}
+        </div>
+      )}
+
+      <div className="gc-h" style={{ marginTop: 18 }}>알림 받는 기기 {devices.length}대</div>
+      {devices.length === 0 ? (
+        <p className="hint" style={{ margin: 0 }}>아직 없어요. 위 버튼으로 이 기기를 등록해 주세요.</p>
+      ) : devices.map((d) => (
+        <div key={d.id} className="gc-row">
+          <b style={{ minWidth: 130 }}>{d.label}</b>
+          <span style={{ color: "var(--faint)" }}>등록 {d.created_at.slice(5, 10)}</span>
+          <span style={{ color: "var(--muted)" }}>{d.last_ok_at ? `마지막 알림 ${d.last_ok_at.slice(5, 16).replace("T", " ")}` : "아직 받은 적 없음"}</span>
+          <span className="rt">
+            <button className="btn sm ghost" onClick={async () => {
+              if (!confirm(`"${d.label}" 기기의 알림을 끌까요?`)) return;
+              await fetch(`/api/admin/push?id=${d.id}`, { method: "DELETE" }); load();
+            }}>끄기</button>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// VAPID 키(base64url) → 브라우저가 요구하는 바이트 배열 (표준 보일러플레이트)
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const buf = new ArrayBuffer(raw.length);
+  const arr = new Uint8Array(buf);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+// "삼성 갤럭시(크롬)" 처럼 대충 알아볼 이름
+function guessDevice(): string {
+  const ua = navigator.userAgent;
+  const mob = /Android|iPhone|iPad/i.test(ua) ? "폰" : "PC";
+  const br = /SamsungBrowser/i.test(ua) ? "삼성인터넷" : /Edg/i.test(ua) ? "엣지" : /Chrome/i.test(ua) ? "크롬" : /Safari/i.test(ua) ? "사파리" : "브라우저";
+  return `${mob}(${br})`;
 }
 
 function ListView() {
@@ -490,12 +731,27 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
   }, [phone, currentId]);
 
   if (!rows) return null;
+  const me = rows.find((x) => x.id === currentId);
   const past = rows.filter((x) => x.id !== currentId);
   const visited = rows.filter((x) => x.status === "confirmed" || x.status === "noshow");
   const noshow = rows.filter((x) => x.status === "noshow").length;
   const doneThemes = new Set(visited.map((x) => x.theme_id));
   const notYet = THEMES.filter((t) => !doneThemes.has(t.id));
   const nth = visited.length + 1;
+
+  // 이상한 예약 경고 — 1인 운영이라 실수를 잡아줄 사람이 없으니 화면이 잡는다.
+  const warns: string[] = [];
+  if (me) {
+    // ① 같은 날 같은 시간에 다른 테마도 예약 → 몸이 두 개가 아닌 이상 못 옴
+    const clash = past.filter((x) => x.status !== "cancelled" && x.date === me.date && x.time === me.time);
+    if (clash.length) warns.push(`같은 날 ${me.time}에 ${clash.map((c) => c.theme_name).join("·")}도 예약돼 있어요 — 같은 시간에 두 테마는 못 해요`);
+    // ② 같은 날 여러 건 (가능은 함 — 연달아 두 테마. 알려만 준다)
+    const sameDay = past.filter((x) => x.status !== "cancelled" && x.date === me.date && x.time !== me.time);
+    if (sameDay.length) warns.push(`같은 날 ${sameDay.length}건 더 있어요 (${sameDay.map((c) => `${c.time} ${c.theme_name}`).join(", ")})`);
+    // ③ 상습 취소
+    const cancels = past.filter((x) => x.status === "cancelled").length;
+    if (cancels >= 3) warns.push(`이 번호로 취소가 ${cancels}번 있었어요`);
+  }
 
   return (
     <div className="gcard">
@@ -506,6 +762,10 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
         <span className="sp" />
         <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? "접기 ▲" : `자세히 (예약 ${rows.length}건) ▼`}</button>
       </div>
+
+      {warns.map((w, i) => (
+        <div key={i} className="gc-warn">⚠️ {w}</div>
+      ))}
 
       {notYet.length > 0 && visited.length > 0 && (
         <p className="hint" style={{ margin: "8px 0 0" }}>
@@ -547,6 +807,15 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
 function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [memo, setMemo] = useState(r.memo || "");
+  const [move, setMove] = useState(false);
+  const [mDate, setMDate] = useState(r.date);
+  const [mTime, setMTime] = useState(r.time);
+  const [mPeople, setMPeople] = useState(r.people);
+  const [cfg, setCfg] = useState<AdminCfg | null>(null);
+  // 모달이 열릴 때 미리 시간표를 받아둔다.
+  // ("옮기기"를 누른 뒤 받으면, 로딩되기 전 잠깐 후보가 현재 시간 하나만 보여 "옮길 데가 없네?"로 오해함)
+  useEffect(() => { fetch("/api/admin/settings").then((x) => x.json()).then(setCfg).catch(() => {}); }, []);
+
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
     const res = await fetch("/api/admin/reservations", {
@@ -554,6 +823,19 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
     });
     setBusy(false);
     if (res.ok) onDone(); else { const j = await res.json(); alert(j.error || "처리 실패"); }
+  }
+
+  // 옮길 수 있는 시간 후보 = 그 테마·그 날짜의 시간표 (+ 지금 시간은 목록에 없어도 유지)
+  const theme = THEMES.find((t) => t.id === r.theme_id);
+  const moveSlots = (() => {
+    const list = cfg && theme ? slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme.id, theme.store, mDate) : [];
+    return Array.from(new Set([...list, mTime])).filter(Boolean).sort();
+  })();
+  const changed = mDate !== r.date || mTime !== r.time || mPeople !== r.people;
+
+  async function doMove() {
+    if (!confirm(`${r.name}님 예약을 옮길까요?\n\n${formatDate(r.date)} ${r.time}${r.people !== mPeople ? ` (${r.people}명)` : ""}\n→ ${formatDate(mDate)} ${mTime}${r.people !== mPeople ? ` (${mPeople}명)` : ""}\n\n취소·재등록이 아니라 그대로 옮기는 거라 입금·환불 상태는 유지됩니다.`)) return;
+    await patch({ date: mDate, time: mTime, people: mPeople });
   }
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -569,6 +851,33 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
           <div className="r"><span>상태</span><b>{ST_LABEL[r.status] || r.status}</b></div>
           <div className="r"><span>접수</span><b>{r.created_at?.replace("T", " ").slice(0, 16)}</b></div>
         </div>
+
+        {/* 예약 옮기기 — "한 시간만 미뤄주세요"가 제일 흔한 요청인데 지금까진 취소→재등록뿐이었음 */}
+        {r.status !== "cancelled" && (
+          <div className="mvbox">
+            {!move ? (
+              <button className="btn sm ghost" onClick={() => setMove(true)}>🕘 시간·날짜 옮기기</button>
+            ) : (
+              <>
+                <div className="gc-h">예약 옮기기 — 취소하지 않고 그대로 옮겨요 (입금·환불 상태 유지)</div>
+                <div className="mv-row">
+                  <input type="date" value={mDate} onChange={(e) => setMDate(e.target.value)} disabled={!cfg} />
+                  {/* 시간표가 오기 전엔 못 고르게 — 후보가 현재 시간뿐인 걸 "옮길 데 없음"으로 오해하지 않게 */}
+                  <select value={mTime} onChange={(e) => setMTime(e.target.value)} disabled={!cfg}>
+                    {moveSlots.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <select value={mPeople} onChange={(e) => setMPeople(Number(e.target.value))} disabled={!cfg}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}명</option>)}
+                  </select>
+                  <button className="btn sm primary" disabled={busy || !changed || !cfg} onClick={doMove}>{busy ? "옮기는 중…" : "옮기기"}</button>
+                  <button className="btn sm ghost" onClick={() => { setMove(false); setMDate(r.date); setMTime(r.time); setMPeople(r.people); }}>취소</button>
+                </div>
+                {!cfg ? <p className="hint" style={{ margin: "6px 0 0" }}>시간표 불러오는 중…</p>
+                  : <p className="hint" style={{ margin: "6px 0 0" }}>{THEMES.find((t) => t.id === r.theme_id)?.name}의 <b>{formatDate(mDate)}</b> 시간표예요. 이미 찬 칸으로는 못 옮겨요.</p>}
+              </>
+            )}
+          </div>
+        )}
 
         <GuestHistory phone={r.phone} currentId={r.id} />
 
@@ -1369,6 +1678,16 @@ function SettingsTab() {
         <div className="hint" style={{ marginTop: 0, marginBottom: 10 }}>매장을 켜면 그 매장은 기본 대신 아래 시간표를 써요. 특정 요일만 다르게(또는 휴무) 지정할 수 있어요. 예: 2호점 월~목 휴무.</div>
         <StoreSlotsEditor storeSlots={storeSlots} setStoreSlots={setStoreSlots} fallback={slots} />
       </div>
+      </div>
+
+      <div className="admin-card">
+        <h3 className="card-h">💾 전체 백업</h3>
+        <p className="hint" style={{ marginTop: 0 }}>
+          예약·리뷰·설정·시간표·문자 문구·휴무를 <b>파일 하나로</b> 내려받아요.
+          지금 쓰는 DB(무료 플랜)는 <b>실수로 지우면 되돌릴 방법이 없어서</b>, 가끔 받아두시면 안전해요.
+          <br />⚠️ 손님 이름·전화가 들어있으니 아무 데나 올리지 마세요. (손님 비밀번호는 일부러 뺐어요)
+        </p>
+        <a className="btn sm" href="/api/admin/backup" download>⬇ 전체 백업 받기 (JSON)</a>
       </div>
 
       {/* 저장 버튼은 항상 손 닿는 곳에 (설정이 길어서 맨 아래까지 스크롤해야 했음) */}

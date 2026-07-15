@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
-import { themeById } from "@/lib/data";
+import { themeById, isSlotTime } from "@/lib/data";
 import { isRefundPending, refundAmount } from "@/lib/money";
 import { getConfig, depositOf } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest) {
   // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내고, 변경 이력에 "뭐가 뭐로" 남기기 위해 필요
   const { data: before } = await db
     .from("reservations")
-    .select("status, deposit_paid, refunded, name, phone, theme_id, theme_name, date, time, people, refund_rate, deposit, memo")
+    .select("status, deposit_paid, refunded, name, phone, store_id, theme_id, theme_name, date, time, people, refund_rate, deposit, memo")
     .eq("id", id)
     .single();
   if (!before) return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
@@ -141,6 +141,37 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.refunded === "boolean") patch.refunded = body.refunded;
   if (typeof body.memo === "string") patch.memo = body.memo;
   if (typeof body.deposit_payer === "string") patch.deposit_payer = body.deposit_payer.trim() || null;
+
+  // 예약 옮기기 (날짜·시간·인원 변경) — 취소 후 재등록을 하지 않게 해서 장부가 더러워지는 걸 막는다.
+  //   취소→재등록을 하면 환불율이 계산되고 환불 큐에 뜨고 입금상태가 초기화됨(손님은 그대로 오는데도).
+  let moved: { from: string; to: string } | null = null;
+  const newDate = typeof body.date === "string" ? body.date : "";
+  const newTime = typeof body.time === "string" ? body.time : "";
+  const newPeople = body.people != null ? Number(body.people) : null;
+  if (newDate || newTime) {
+    const d = newDate || before.date;
+    const t = newTime || before.time;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !isSlotTime(t)) {
+      return NextResponse.json({ error: "날짜·시간 형식을 확인해 주세요." }, { status: 400 });
+    }
+    if (d !== before.date || t !== before.time) {
+      // 옮길 칸에 이미 다른 예약이 있는지 (취소건은 칸을 차지하지 않음 — uq_res_slot 과 같은 기준)
+      const { data: taken } = await db
+        .from("reservations")
+        .select("id, name")
+        .eq("store_id", before.store_id).eq("theme_id", before.theme_id)
+        .eq("date", d).eq("time", t).neq("status", "cancelled").neq("id", id)
+        .maybeSingle();
+      if (taken) return NextResponse.json({ error: `그 시간에는 이미 ${taken.name}님 예약이 있어요.` }, { status: 409 });
+      // 그 날짜에 마감(휴무·차단)이 걸려 있는지도 알려준다 (막지는 않음 — 사장님이 알고 넣는 경우가 있음)
+      patch.date = d; patch.time = t;
+      moved = { from: `${before.date} ${before.time}`, to: `${d} ${t}` };
+    }
+  }
+  if (newPeople != null) {
+    if (!(newPeople >= 1 && newPeople <= 8)) return NextResponse.json({ error: "인원은 1~8명 사이로 입력해 주세요." }, { status: 400 });
+    if (newPeople !== before.people) patch.people = newPeople;
+  }
 
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
 
@@ -170,6 +201,8 @@ export async function PATCH(req: NextRequest) {
   if (patch.status && patch.status !== before.status) {
     logs.push({ reservation_id: id, action: String(patch.status === "confirmed" ? "확정" : patch.status === "cancelled" ? "취소" : patch.status === "noshow" ? "노쇼" : "대기로 되돌림"), detail: `${ST_KO[before.status] || before.status} → ${ST_KO[String(patch.status)] || patch.status}` });
   }
+  if (moved) logs.push({ reservation_id: id, action: "시간 옮김", detail: `${moved.from} → ${moved.to}` });
+  if (patch.people != null) logs.push({ reservation_id: id, action: "인원 변경", detail: `${before.people}명 → ${patch.people}명` });
   if (typeof body.memo === "string" && body.memo !== (before.memo || "")) logs.push({ reservation_id: id, action: "메모", detail: body.memo.slice(0, 60) || "(지움)" });
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
