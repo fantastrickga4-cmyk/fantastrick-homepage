@@ -216,11 +216,15 @@ nav.main a:hover{color:var(--text)}
     .hero-t .ht-stack{
       animation:htLeave linear both;
       animation-timeline:scroll(root block);
-      animation-range:0 82vh;
+      /* ⚠️ 구간을 길게 잡으면 안 된다(처음엔 82vh 로 잡았다가 실패).
+         히어로 글자는 스크롤한 만큼 자연스럽게 위로 올라가 버리므로,
+         600px 쯤에서 흐려져 봐야 그땐 이미 화면 밖이라 아무도 못 본다.
+         → 글자가 아직 화면에 있는 동안(0~38vh) 다 끝내야 눈에 보인다. */
+      animation-range:0 38vh;
     }
     @keyframes htLeave{
-      0%,42%{opacity:1;translate:0 0;scale:1}
-      100%{opacity:0;translate:0 -46px;scale:.955}
+      0%{opacity:1;translate:0 0;scale:1}
+      100%{opacity:0;translate:0 -34px;scale:.965}
     }
   }
 }
