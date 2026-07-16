@@ -34,7 +34,7 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
         <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
         {t.murder && <span className="tmurder">머더룸</span>}
         <div className="tt">
-          <span className="store">{t.storeTag}</span>
+          <span className="tstore">{t.storeTag}</span>
           <h3>{t.name}</h3>
           <span className="tmeta">
             {t.minutes}분 · <Locks n={t.difficulty} /> · {t.genres[0]}
@@ -49,6 +49,7 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
 // 모바일=터치 스와이프(브라우저 기본) / PC=화살표 + 마우스로 잡아끌기(드래그).
 function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
   const railRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
   // 드래그 상태: 눌린 지점·시작 스크롤·움직인 거리(클릭이었는지 드래그였는지 판단용)
@@ -59,6 +60,17 @@ function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     if (!el) return;
     setCanPrev(el.scrollLeft > 8);
     setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+
+    // 포스터 아래 스크롤바 — 손잡이 폭=보이는 비율, 위치=스크롤 진행률.
+    // ⚠️ 상태(useState)로 하면 스크롤할 때마다 화면을 다시 그려 버벅인다 → DOM 에 직접 쓴다.
+    const bar = barRef.current;
+    if (!bar) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const wPct = Math.min(100, (el.clientWidth / el.scrollWidth) * 100);
+    const pos = max > 0 ? el.scrollLeft / max : 0;
+    bar.style.setProperty("--w", `${wPct}%`);
+    bar.style.setProperty("--x", `${pos * (100 - wPct)}%`);
+    bar.style.opacity = max > 4 ? "1" : "0"; // 넘칠 게 없으면(카드가 다 보이면) 숨김
   }, []);
 
   useEffect(() => {
@@ -106,11 +118,41 @@ function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     drag.current.moved = 0;
   };
 
+  // ── 스크롤바를 직접 끌기 ──
+  const barDrag = useRef(false);
+  const scrubTo = (clientX: number) => {
+    const el = railRef.current, bar = barRef.current;
+    if (!el || !bar) return;
+    const r = bar.getBoundingClientRect();
+    const max = el.scrollWidth - el.clientWidth;
+    // 손잡이 '가운데'가 커서로 오도록 보정 — 안 하면 항상 왼쪽으로 치우쳐 잡힌다
+    const half = (el.clientWidth / el.scrollWidth) * r.width / 2;
+    const ratio = (clientX - r.left - half) / (r.width - half * 2);
+    el.scrollLeft = Math.max(0, Math.min(max, ratio * max));
+  };
+  const onBarDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el) return;
+    barDrag.current = true;
+    el.classList.add("dragging"); // 끄는 동안 스냅·부드러운스크롤 해제(안 하면 커서에 안 붙음)
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    scrubTo(e.clientX);
+  };
+  const onBarMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (barDrag.current) scrubTo(e.clientX);
+  };
+  const onBarUp = () => {
+    if (!barDrag.current) return;
+    barDrag.current = false;
+    railRef.current?.classList.remove("dragging");
+  };
+
   return (
     <div className="theme-carousel reveal rv-focus">
       <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
       <div
         className="theme-rail"
+        id="theme-rail"
         ref={railRef}
         onPointerDown={onDown}
         onPointerMove={onMove}
@@ -127,6 +169,21 @@ function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
           <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
         ))}
       </div>
+      {/* 포스터 바로 아래 스크롤바 — "옆으로 더 있다 / 지금 여기쯤"을 보여준다. 끌어서 넘길 수도 있음 */}
+      <div
+        className="rail-bar"
+        ref={barRef}
+        onPointerDown={onBarDown}
+        onPointerMove={onBarMove}
+        onPointerUp={onBarUp}
+        onPointerCancel={onBarUp}
+        role="scrollbar"
+        aria-controls="theme-rail"
+        aria-orientation="horizontal"
+        aria-label="테마 목록 가로 스크롤"
+      >
+        <i />
+      </div>
       <button type="button" className="tc-arrow next" aria-label="다음 테마" disabled={!canNext} onClick={() => move(1)}>›</button>
     </div>
   );
@@ -141,7 +198,7 @@ function SoonRailCard({ t, no }: { t: Theme; no: number }) {
         <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
         <span className="tsoon">COMING SOON</span>
         <div className="tt">
-          <span className="store">{t.storeTag}</span>
+          <span className="tstore">{t.storeTag}</span>
           <h3>{t.name}</h3>
           <span className="tmeta">{(t.soonGenres && t.soonGenres[0]) || t.genres[0]}</span>
         </div>

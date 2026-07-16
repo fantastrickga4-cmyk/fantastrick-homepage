@@ -339,6 +339,15 @@ nav.main a:hover{color:var(--text)}
 @media(hover:hover) and (pointer:fine){ .theme-rail{cursor:grab} .theme-rail:active{cursor:grabbing} }
 .theme-rail.dragging{scroll-snap-type:none;scroll-behavior:auto;cursor:grabbing;user-select:none}
 .theme-rail.dragging .tcard{pointer-events:none}
+/* 포스터 바로 아래 가로 스크롤바 — 손잡이 폭=보이는 비율, 위치=진행률(page.tsx 가 --w/--x 로 넣어줌).
+   "옆으로 더 있다"를 알려주는 게 목적이라 브라우저 기본 스크롤바(OS마다 모양이 제각각)는 계속 숨기고 직접 그린다. */
+.rail-bar{position:relative;height:4px;margin:-14px 2px 0;border-radius:4px;background:var(--line);
+  cursor:pointer;touch-action:none;transition:opacity .2s,height .15s}
+.rail-bar:hover{height:6px}
+.rail-bar i{position:absolute;top:0;bottom:0;left:var(--x,0%);width:var(--w,30%);border-radius:4px;
+  background:linear-gradient(90deg,var(--brand-bright),var(--violet));transition:left .1s linear,width .1s linear}
+.theme-rail.dragging ~ .rail-bar i{transition:none}   /* 끄는 중엔 지연 없이 즉시 따라오게 */
+@media(max-width:520px){.rail-bar{margin-top:-10px}}
 .theme-rail .tcard{flex:0 0 calc((100% - 60px)/4);scroll-snap-align:start}
 @media(max-width:980px){.theme-rail{gap:16px}.theme-rail .tcard{flex-basis:calc((100% - 16px)/2)}}
 @media(max-width:520px){.theme-rail .tcard{flex-basis:82%}}
@@ -372,11 +381,14 @@ nav.main a:hover{color:var(--text)}
 .tcard .tmurder{position:absolute;top:11px;right:11px;z-index:3;font-size:10.5px;font-weight:700;color:#ffd7da;background:rgba(178,14,25,.72);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
 /* 하단: 이름(세리프) 기본 노출, 매장·메타는 호버 슬라이드업 */
 .tcard .tt{position:absolute;left:15px;right:15px;bottom:14px;z-index:3}
-.tcard .tt .store{display:block;font-size:11px;font-weight:600;color:#9dc0f5;opacity:0;transform:translateY(6px);transition:.3s}
+/* ⚠️ 클래스 이름은 .tstore — 매장 섹션의 .store(흰 박스 카드)와 이름이 겹쳐서,
+   테마 카드 라벨에 흰 배경·테두리·여백 16px 가 딸려 들어가던 버그가 있었다(호버 시 노출).
+   전역 .store 는 매장 카드 전용이므로 테마 카드 쪽 이름을 바꿔서 분리함. */
+.tcard .tt .tstore{display:block;font-size:11px;font-weight:600;color:#9dc0f5;opacity:0;transform:translateY(6px);transition:.3s}
 .tcard .tt h3{margin:3px 0 0;font-family:var(--font-display);font-weight:800;font-size:clamp(18px,1.4vw,22px);line-height:1.2;color:#fff;letter-spacing:-.005em}
 .tcard .tt .tmeta{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:#d3d9ec;opacity:0;transform:translateY(8px);transition:.3s}
 .tcard .tt .tmeta .lock{color:rgba(255,255,255,.45)} .tcard .tt .tmeta .lock.on{color:#9dc0f5}
-.tcard:hover .tt .store,.tcard:hover .tt .tmeta{opacity:1;transform:none}
+.tcard:hover .tt .tstore,.tcard:hover .tt .tmeta{opacity:1;transform:none}
 /* 준비중 카드 — 레일 안에서 운영중 카드와 같은 크기, 다만 클릭 불가·점선·포스터 없음(아직 없어서) */
 .tcard.soon{cursor:default;border-style:dashed;border-color:var(--line2)}
 .tcard.soon:hover{transform:none;box-shadow:none;border-color:var(--line2)}
@@ -387,7 +399,7 @@ nav.main a:hover{color:var(--text)}
   font-size:64px;color:rgba(20,22,42,.13);line-height:1}
 .tcard.soon .thumb::after{background:linear-gradient(180deg,rgba(9,11,17,0) 48%,rgba(9,11,17,.42) 72%,rgba(9,11,17,.78))}
 .tcard.soon .tcase{color:rgba(255,255,255,.72)}
-.tcard.soon .tt .store,.tcard.soon .tt .tmeta{opacity:1;transform:none}
+.tcard.soon .tt .tstore,.tcard.soon .tt .tmeta{opacity:1;transform:none}
 .tcard.soon .tt h3{color:#fff}
 .tsoon{position:absolute;top:11px;right:11px;z-index:3;font-size:10px;font-weight:800;letter-spacing:.1em;
   color:#fff;background:rgba(47,111,224,.85);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
