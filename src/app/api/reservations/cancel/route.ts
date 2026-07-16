@@ -3,17 +3,9 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, sanitizeText } from "@/lib/util";
 import { sendReservationSms } from "@/lib/sms";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
+import { refundRateFor } from "@/lib/money";
 
-// 환불율 계산 (한국시간 기준)
-// - 당일 예약(방문일이 오늘): 전액 환불 불가 → 0%
-// - 테마 시작까지 24시간 이상 남음: 100%
-// - 24시간 미만 남음: 80%
-function calcRefundRate(date: string, time: string): number {
-  // 테마 시작(KST)까지 24시간 이상 남으면 100%, 24시간 미만이면 80%
-  const startKST = new Date(`${date}T${time}:00+09:00`);
-  const hours = (startKST.getTime() - Date.now()) / 3600000;
-  return hours >= 24 ? 100 : 80;
-}
+// 환불율은 lib/money.ts 의 refundRateFor 하나만 쓴다 (손님 화면과 같은 계산을 쓰기 위함)
 
 // 예약 취소 (예약 id + 전화번호 일치해야 취소 가능) + 환불 계좌 저장
 export async function POST(req: NextRequest) {
@@ -74,7 +66,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 취소된 예약입니다." }, { status: 409 });
   }
 
-  const refundRate = calcRefundRate(found.date, found.time);
+  const refundRate = refundRateFor(found.date, found.time);
 
   const { error } = await db
     .from("reservations")

@@ -101,9 +101,6 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
           <div className="rm-acct">
             <span>입금 계좌</span><b>{BOOKING_INFO.account}</b>
           </div>
-          <ul className="rm-list">
-            {BOOKING_INFO.afterHours.map((l, i) => <li key={i}>{l}</li>)}
-          </ul>
           <Link href={`/reserve?theme=${theme.id}`} className="btn primary" style={{ marginTop: 16 }}>
             이 테마 예약하기 →
           </Link>

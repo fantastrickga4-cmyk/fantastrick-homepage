@@ -79,9 +79,10 @@ export default async function FaqPage() {
       <details className="faq">
         <summary>입금은 언제까지 해야 하나요?</summary>
         <div className="faq-b">
+          {/* 2026-07-17 사장님 지시로 '자정 이후 예약은 다음날 오전 10시까지' ·
+              '확인 문자는 10시부터 순차 발송' 안내를 내렸다. 규칙 자체(expire.ts 의 오전 10시 반 유예)는
+              그대로라, 새벽 손님은 안내를 못 봐도 실제로는 여전히 봐주고 있다. */}
           <p>예약 접수 후 <b>30분 이내</b>에 입금해 주세요. 확인이 안 되면 예약이 자동으로 취소됩니다.</p>
-          <p>다만 <b>자정(밤 12시) 이후에 예약</b>하신 경우에는 <b>다음날 오전 10시까지</b> 입금하시면 됩니다.</p>
-          <p className="faq-note">{BOOKING_INFO.afterHours[1]}</p>
         </div>
       </details>
 

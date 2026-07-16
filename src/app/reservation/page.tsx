@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { formatDate, formatPhone } from "@/lib/util";
 import { STORES } from "@/lib/data";
+import { refundRateFor } from "@/lib/money";
 
 type Reservation = {
   id: string;
@@ -23,13 +24,13 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "취소됨",
 };
 
-// 환불 계산 (KST 기준): 테마 시작까지 24시간 이상=100%, 24시간 미만=80%
+// 환불 계산 — 계산 자체는 lib/money.ts 하나만 쓴다.
+// 전에는 여기에 똑같은 식을 복사해 뒀는데, 그러면 서버만 고쳤을 때
+// "화면엔 80% 환불이라 해놓고 실제론 0원" 같은 사고가 난다.
 function refundInfo(date: string, time: string, deposit: number) {
-  const start = new Date(`${date}T${time}:00+09:00`).getTime();
-  const hours = (start - Date.now()) / 3_600_000;
-  const rate = hours >= 24 ? 100 : 80;
+  const rate = refundRateFor(date, time);
   const amount = Math.floor((deposit * rate) / 100);
-  return { hours, rate, amount };
+  return { rate, amount };
 }
 
 export default function ReservationLookup() {
@@ -260,22 +261,30 @@ export default function ReservationLookup() {
         </div>
       )}
 
-      {/* 환불 규정 확인 팝업 — 환불액 자동 계산 + (80%일 때) 동의 체크 필수 */}
+      {/* 환불 규정 확인 팝업 — 환불액 자동 계산 + (전액 환불이 아닐 때) 동의 체크 필수 */}
       {target && showPolicy && (() => {
         const ri = refundInfo(target.date, target.time, target.deposit);
-        const need = ri.rate < 100; // 80% 환불이면 동의 체크 필요
+        const need = ri.rate < 100; // 100% 가 아니면(80%·0%) 동의 체크 필요
         return (
           <div className="modal-overlay" style={{ zIndex: 310 }}>
             <div className="modal" style={{ maxWidth: 440 }}>
               <h3>환불 규정 안내</h3>
-              {need ? (
+              {ri.rate === 0 ? (
+                // 당일 취소 — 돌려받는 돈이 0원이라 가장 강하게 알려준다.
+                // (전에는 이 경우가 없어서 "80% 환불" 이라고 잘못 안내했다)
+                <p className="modal-policy">
+                  <b>오늘 이용하시는 예약</b>이라, 환불 규정에 따라{" "}
+                  <b style={{ color: "var(--danger)" }}>예약금이 환불되지 않습니다.</b>
+                  <br />그래도 취소하시겠어요?
+                </p>
+              ) : need ? (
                 <p className="modal-policy">
                   테마 시작까지 <b>24시간 미만</b>이 남아, 환불 규정에 따라{" "}
                   <b style={{ color: "var(--danger)" }}>총 예약금의 80%</b>만 환불됩니다.
                 </p>
               ) : (
                 <p className="modal-policy">
-                  테마 시작 <b>24시간 이상</b> 전이라{" "}
+                  테마 시작 <b>24시간 보다 많이</b> 남아{" "}
                   <b style={{ color: "var(--ok)" }}>전액(100%) 환불</b>됩니다.
                 </p>
               )}
@@ -289,7 +298,9 @@ export default function ReservationLookup() {
               {need && (
                 <label className="agree-row">
                   <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-                  <span>위 <b>80% 환불 규정</b>에 동의합니다.</span>
+                  <span>
+                    위 <b>{ri.rate === 0 ? "환불 불가" : "80% 환불"} 규정</b>에 동의합니다.
+                  </span>
                 </label>
               )}
 
