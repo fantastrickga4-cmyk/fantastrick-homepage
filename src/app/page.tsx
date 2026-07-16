@@ -301,7 +301,13 @@ export default function Home() {
             </div>
             <div className="rs-meta">
               <div className="s-src">
-                {revAvg ? `플레이어 후기 · ${reviews!.length}건` : "첫 후기를 기다리고 있어요"}
+                {/* 아직 불러오는 중일 때 "첫 후기를 기다리고 있어요"라고 하면 후기가 없다고 단정하는 셈이다.
+                    바로 아래 목록은 "불러오는 중…"이라고 말하고 있어서 서로 모순이었다. */}
+                {reviews === null
+                  ? "후기를 불러오는 중…"
+                  : revAvg
+                    ? `플레이어 후기 · ${reviews.length}건`
+                    : "첫 후기를 기다리고 있어요"}
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { THEMES, TIME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 
 type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number };
@@ -110,7 +110,14 @@ function ReserveInner() {
   const [showDeposit, setShowDeposit] = useState(false); // 접수 후 예약금 안내 팝업
   const [depositAck, setDepositAck] = useState(false);    // "확인했습니다" 체크 여부
 
-  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS });
+  // 시간표 기본값은 서버(settings.ts 의 DEFAULT_CONFIG)와 똑같은 값으로 시작한다.
+  //   전에는 timeSlots(전 매장 공통 fallback)만 갖고 시작해서, /api/config 가 도착하기 전에는
+  //   테마별 시간표 대신 엉뚱한 공통 시간표(10:00·11:30·13:00…)가 보였다.
+  //   → 손님이 그 사이에 "그 테마엔 없는 시간"을 골라 끝까지 입력하고 거절당했다.
+  //   기본값을 같게 두면 설정이 오기 전에도 처음부터 올바른 시간표가 뜬다(기다림 없음).
+  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, themeSlots: THEME_SLOTS });
+  // 사장님이 관리자 화면에서 시간표를 바꿨을 수도 있으므로, 답이 오기 전엔 고르지 못하게 한다.
+  const [cfgLoaded, setCfgLoaded] = useState(false);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [dayClosed, setDayClosed] = useState(false);
   // 마감된 칸이 어디인지 서버에 물어보는 중인가.
@@ -167,9 +174,15 @@ function ReserveInner() {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
   }, [preset]);
 
-  // 관리자 설정 불러오기 (예약금·시간대·숨김테마)
+  // 관리자 설정 불러오기 (예약금·시간대)
+  // 실패해도 위 기본값(THEME_SLOTS)으로 동작하므로 finally 에서 반드시 열어준다 —
+  // 안 그러면 설정 조회가 실패했을 때 손님이 영영 시간을 못 고른다.
   useEffect(() => {
-    fetch("/api/config").then((r) => r.json()).then((c) => { if (c?.timeSlots) setCfg(c); }).catch(() => {});
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((c) => { if (c?.timeSlots) setCfg(c); })
+      .catch(() => {})
+      .finally(() => setCfgLoaded(true));
   }, []);
 
   // 테마·날짜 선택 시 마감(차단/예약된) 시간 조회
@@ -342,9 +355,11 @@ function ReserveInner() {
                 const isBlocked = blocked.includes(tm);
                 // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
                 const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
-                // 아직 마감 정보를 모르는 동안(slotsLoading)에는 전부 못 누르게 한다.
-                // 모르는 상태에서 누르게 두면 이미 찬 칸을 고른 채로 끝까지 입력하게 된다.
-                const off = isBlocked || soon || slotsLoading;
+                // 아직 확실하지 않은 동안에는 전부 못 누르게 한다.
+                //   slotsLoading — 어느 칸이 찼는지 모름
+                //   !cfgLoaded   — 사장님이 시간표를 바꿨는지 모름
+                // 모르는 상태에서 누르게 두면 "이미 찬 칸"이나 "없는 시간"을 고른 채로 끝까지 입력하게 된다.
+                const off = isBlocked || soon || slotsLoading || !cfgLoaded;
                 return (
                   <button
                     key={tm}
@@ -362,14 +377,14 @@ function ReserveInner() {
               })}
             </div>
           )}
-          {slotsLoading && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
-          {!slotsLoading && !(dayClosed || noSlotsDay) && (
+          {(slotsLoading || !cfgLoaded) && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
+          {!slotsLoading && cfgLoaded && !(dayClosed || noSlotsDay) && (
             <div className="hint">
               ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
               {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
             </div>
           )}
-          {!slotsLoading && !time && !(dayClosed || noSlotsDay) && (
+          {!slotsLoading && cfgLoaded && !time && !(dayClosed || noSlotsDay) && (
             <div className="hint">시간을 선택하면 예약자 정보를 입력할 수 있어요.</div>
           )}
         </div>
