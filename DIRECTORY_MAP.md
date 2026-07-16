@@ -37,7 +37,8 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │                          expire.ts(미입금 30분 자동취소 + 자정 이후 예약은 오전 10시까지 유예),
 │                          sms-templates.ts(기존 문자 문구 4종×4테마 원문),
 │                          supabase.ts(DB연결), util.ts(전화번호 등)
-├─ assets\images\       ← 원본 이미지 보관 (public/images 의 원본)
+├─ assets\images\       ← 원본 이미지 보관소 16장 (여기가 원본. public/images 는 실제 쓰는 10장만 —
+│                         안 쓰던 6장은 2026-07-16 정리했고 원본은 여기 그대로 있음)
 └─ docs\                ← 문서·옛 프로토타입(참고용)
    ├─ 기능_로드맵.md          ← 앞으로 추가할 기능 목록·결정사항
    ├─ 설정_안내.md            ← ★ Supabase·Vercel 연결 방법 (사장님용)
