@@ -12,8 +12,15 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 ├─ next.config.ts       ← Next.js 설정
 ├─ tsconfig.json        ← TypeScript 설정
 ├─ .env.local.example   ← 환경변수(비밀키) 예시 — 복사해서 .env.local 만들기
+├─ vitest.config.ts     ← 테스트 설정 (입금 파서·매처 검증용. `npm test`)
+├─ tests\               ← parser.test.ts · matcher.test.ts (bank-auto 에서 함께 가져온 검증된 테스트 28개)
+├─ scripts\
+│  └─ import-from-wp.mts ← 기존 사이트(fantastrick.co.kr) 예약 → 이 사이트로 복사.
+│                          ⚠️기존 사이트엔 SELECT만 / 전화번호는 가짜로 바꿔 넣음
+│                          `npx tsx scripts/import-from-wp.mts` (미리보기) · `--apply` (실제)
 ├─ supabase\
-│  └─ schema.sql        ← 예약·리뷰 데이터베이스 표 만드는 SQL (Supabase에 1회 실행)
+│  ├─ schema.sql        ← 예약·리뷰 데이터베이스 표 만드는 SQL (Supabase에 1회 실행)
+│  └─ migration_*.sql   ← 나중에 칸·표를 더한 것들 (deposits=입금알림 기록 표 등)
 ├─ public\
 │  ├─ images\           ← 웹에서 쓰는 이미지(로고·포스터·지도 등, assets에서 복사)
 │  └─ fonts\            ← 로고 글씨체로 직접 만든 폰트(fantastrick-logo.woff2, 1KB)
@@ -31,8 +38,13 @@ fantastrick-homepage\   ← Next.js 웹앱 (예약·리뷰 자체 시스템)
 │  │  ├─ business\      ← 비즈니스(B2B) 페이지
 │  │  ├─ admin\         ← 관리자 (예약관리[날짜별·목록]·캘린더·시간대·리뷰·팝업공지·설정·문자)
 │  │  └─ api\           ← 서버 처리 (예약 생성/조회/취소, 리뷰 목록/작성, admin\*)
+│  │     └─ bank\deposit ← 태블릿이 카톡 입금알림을 보내는 곳. 이름+금액 맞는 예약 찾아
+│  │                       자동 입금확인. 입금확인 처리는 admin\reservations 를 그대로 호출(규칙 중복 금지)
 │  ├─ components\       ← Header.tsx, Footer.tsx, NoticeModal.tsx(팝업 공지)
+│  ├─ lib\bank\         ← 입금 자동매칭 (bank-auto 에서 이식). parser.ts(알림글자→이름·금액),
+│  │                       matcher.ts(이름+금액 정확일치 1건만), types.ts
 │  └─ lib\              ← data.ts(매장·테마·THEME_SLOTS 테마별 시간표), settings.ts(관리자 설정·공지),
+│                          sms.ts(문자발송 + ⚠️연습용번호 010-0000-XXXX 발송차단 가드),
 │                          theme-content.ts(테마별 가격·시놉시스·주의사항 + 계좌·환불규정·사업자정보 — 기존 사이트 원문),
 │                          expire.ts(미입금 30분 자동취소 + 자정 이후 예약은 오전 10시까지 유예),
 │                          sms-templates.ts(기존 문자 문구 4종×4테마 원문),

@@ -1,6 +1,25 @@
 import { getSupabase } from "./supabase";
-import { formatDate } from "./util";
+import { formatDate, normalizePhone } from "./util";
 import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
+
+// ─── 테스트 데이터 문자 차단 ────────────────────────────────────────────
+// 기존 사이트(fantastrick.co.kr)에서 가져온 연습용 예약은 전화번호를 이 대역
+// (010-0000-XXXX)으로 바꿔서 넣는다. 실제 손님 번호가 아니다.
+//
+// 왜 코드로까지 막나:
+//   이 사이트는 매일 아침 "내일 예약" 확정 건에 리마인더 문자를 자동 발송하고,
+//   관리자가 입금확인·취소 버튼을 눌러도 문자가 나간다. 연습 데이터에 진짜 번호가
+//   섞이면 아무 잘못 없는 손님에게 문자가 가버린다. 번호를 가짜로 바꾸는 것만으로도
+//   막히지만, 그 한 겹이 뚫렸을 때(예: 실수로 진짜 번호를 넣었을 때) 대비해
+//   발송 길목에서 한 번 더 막는다.
+//
+// 문자가 나가는 길은 결국 sendSms / sendAlimtalk 둘뿐이라, 여기만 막으면
+// 크론·관리자버튼·재발송 어느 경로로도 절대 나가지 않는다.
+export const TEST_PHONE_PREFIX = "0100000"; // 010-0000-XXXX
+
+export function isTestPhone(phone: string): boolean {
+  return normalizePhone(phone).startsWith(TEST_PHONE_PREFIX);
+}
 
 // 문자 템플릿 기본값 (DB에도 테마별 문구에도 없을 때). 치환: {이름}{테마}{날짜}{시간}{인원}{환불율}
 // reservation·payment·cancel·admin_cancel 은 기존 사이트 문구를 그대로 옮긴 sms-templates.ts 를 사용.
@@ -64,6 +83,12 @@ async function writeLog(row: Record<string, unknown>) {
 
 // 문자 발송. 알리고(ALIGO) 키가 있으면 실제 발송, 없으면 발송 로그만 'skipped' 로 남김.
 export async function sendSms(phone: string, body: string, type: string): Promise<{ ok: boolean; skipped?: boolean }> {
+  // 연습용 데이터에는 절대 발송하지 않는다 (알리고 키가 있어도).
+  if (isTestPhone(phone)) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "연습용 데이터(가져온 예약) — 발송 차단" });
+    return { ok: false, skipped: true };
+  }
+
   const key = process.env.ALIGO_API_KEY;
   const userId = process.env.ALIGO_USER_ID;
   const sender = process.env.ALIGO_SENDER;
@@ -111,6 +136,12 @@ async function getKakaoToken(apikey: string, userid: string): Promise<string | n
 
 // 카카오 알림톡 발송. 실패 시 알리고가 자동으로 SMS 대체발송(failover). 미설정이면 null → 호출측이 SMS 폴백.
 export async function sendAlimtalk(phone: string, body: string, type: string): Promise<{ ok: boolean } | null> {
+  // 연습용 데이터 차단. null 이 아니라 {ok:false} 를 돌려줘야 호출측이 SMS 로 폴백하지 않는다.
+  if (isTestPhone(phone)) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "alimtalk", error: "연습용 데이터(가져온 예약) — 발송 차단" });
+    return { ok: false };
+  }
+
   const apikey = process.env.ALIGO_API_KEY;
   const userid = process.env.ALIGO_USER_ID;
   const sender = process.env.ALIGO_SENDER;
