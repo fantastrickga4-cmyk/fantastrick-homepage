@@ -76,7 +76,7 @@ function ThemeCarousel({ themes }: { themes: Theme[] }) {
   };
 
   return (
-    <div className="theme-carousel reveal">
+    <div className="theme-carousel reveal rv-focus">
       <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
       <div className="theme-rail" ref={railRef}>
         {themes.map((t, i) => (
@@ -238,7 +238,7 @@ export default function Home() {
             <div className="eyebrow">REVIEWS</div>
             <h2 className="title">다녀간 이들이 남긴 이야기</h2>
           </div>
-          <div className="rev-summary reveal">
+          <div className="rev-summary reveal rv-left">
             <div className="rs-score">
               <span className="score">{revAvg ?? "—"}</span>
               <span className="of">/ 5.0</span>
@@ -311,7 +311,7 @@ export default function Home() {
             <h2 className="title">강남에서 만나는 세 개의 무대</h2>
             <p className="lead">강남역·신논현역 사이 — 세 매장 모두 걸어서 오갈 수 있습니다.</p>
           </div>
-          <div className="stores-layout reveal">
+          <div className="stores-layout reveal rv-right">
             <div className="stores-left">
               {STORES.map((s) => (
                 <div key={s.id} className={"store" + (s.tgc ? " tgc" : "")}>

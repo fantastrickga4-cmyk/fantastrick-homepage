@@ -205,6 +205,25 @@ nav.main a:hover{color:var(--text)}
   color:transparent;-webkit-text-stroke:1px rgba(47,111,224,.04);mix-blend-mode:multiply;animation:htGhost 50s ease-in-out infinite alternate}
 @keyframes htGhost{100%{transform:translate3d(1%,-.8%,0)}}
 .hero-t .ht-stack{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;padding:80px 22px 40px}
+/* 히어로 이별 연출 — 스크롤하면 위로 밀리며 사라진다. 그냥 잘려 올라가는 것과 달리 '장면 전환'이 된다.
+   · 진입 애니메이션(4.2초 시간표)과 안 겹침 — 이건 스크롤할 때만 일어남
+   · 흐림(blur)은 일부러 뺐다: 화면을 다시 그려야 해서 저사양 폰에서 버벅임.
+     opacity·transform 만 쓰면 그래픽카드가 처리해 부담이 거의 없다(전역 .grain 이 화면을 덮고 있어 특히 중요)
+   ⚠️ animation-timeline 은 반드시 animation 단축속성 '뒤'에 와야 한다(앞에 두면 덮어써져 조용히 안 됨)
+   ⚠️ 지원 안 하는 브라우저(파이어폭스 등)에선 연출만 빠지고 지금과 똑같이 보인다 */
+@media (prefers-reduced-motion:no-preference){
+  @supports (animation-timeline:scroll()){
+    .hero-t .ht-stack{
+      animation:htLeave linear both;
+      animation-timeline:scroll(root block);
+      animation-range:0 82vh;
+    }
+    @keyframes htLeave{
+      0%,42%{opacity:1;translate:0 0;scale:1}
+      100%{opacity:0;translate:0 -46px;scale:.955}
+    }
+  }
+}
 /* 라벨 색 = 딥블루(--brand). 밝은 블루(--brand-bright)는 배경이 진해지자 대비 3.8:1 로 떨어져 AA(4.5:1) 미달이었음
    (12px 작은 글자라 큰 글자 예외 3:1 도 못 씀) */
 .hero-t .ht-eyebrow{color:var(--brand);font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;opacity:0;animation:htUp .6s cubic-bezier(.16,1,.3,1) .1s both}
@@ -265,8 +284,22 @@ nav.main a:hover{color:var(--text)}
 .shead{margin-bottom:42px}
 
 /* reveal (progressive enhancement — only hides when JS is active) + 인덱스 기반 스태거 */
+/* 등장 연출 — 화면에 들어오면 .in 이 붙는다(page.tsx IntersectionObserver).
+   ⚠️ 이 방식은 스크롤 연동 CSS와 달리 모든 브라우저에서 동작하므로, 등장 연출은 계속 이걸 쓴다.
+   기본은 '아래서 위로'. 섹션마다 결을 달리하려고 변주를 둠 — 한 페이지에서 전부 같은 방향이면 리듬이 없다. */
 .js .reveal{opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*.09s)}
 .js .reveal.in{opacity:1;transform:none}
+/* 흐림에서 또렷하게 — 초점이 맞는 느낌. 포스터·지도처럼 '보는' 것에 */
+.js .reveal.rv-focus{transform:scale(.965);filter:blur(7px)}
+.js .reveal.rv-focus.in{transform:none;filter:blur(0)}
+/* 좌우에서 — 가로로 긴 것에. 좌·우를 번갈아 쓰면 리듬이 생긴다 */
+.js .reveal.rv-left{transform:translateX(-34px)}
+.js .reveal.rv-right{transform:translateX(34px)}
+.js .reveal.rv-left.in,.js .reveal.rv-right.in{transform:none}
+@media(max-width:760px){
+  /* 모바일은 가로 폭이 좁아 좌우 슬라이드가 답답하다 → 기본(위로)으로 되돌림 */
+  .js .reveal.rv-left,.js .reveal.rv-right{transform:translateY(26px)}
+}
 
 /* ---------- ABOUT ---------- */
 .about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:54px;align-items:start}
