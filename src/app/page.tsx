@@ -23,8 +23,10 @@ function Locks({ n }: { n: number }) {
 function ThemeCard({ t, no }: { t: Theme; no: number }) {
   // 카드 → 테마 상세(가격·시놉시스·주의사항). 예전엔 예약폼으로 바로 보내서
   // 손님이 가격도 스토리도 모른 채 예약부터 하게 됐음
+  // draggable=false — 포스터를 잡아끌 때 브라우저가 링크를 끌고 다니는 유령 이미지를 띄우지 않게.
+  // (전에는 CSS 로 카드 자체를 pointer-events:none 처리했는데, 그러면 클릭이 아예 안 먹었다)
   return (
-    <Link className="tcard" data-cat={t.cat} href={`/rooms/${t.id}`}>
+    <Link className="tcard" data-cat={t.cat} href={`/rooms/${t.id}`} draggable={false}>
       <div className="thumb">
         {/* ⚠️ CSS 배경(backgroundImage)으로 넣으면 next/image 최적화를 통째로 건너뛴다.
             예전엔 그렇게 해서 poster-ldc.png 1MB 원본이 그대로 내려갔음(화면엔 266px로 보이는데).

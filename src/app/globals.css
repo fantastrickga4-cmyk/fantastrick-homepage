@@ -292,7 +292,12 @@ nav.main a:hover{color:var(--text)}
 /* PC에서 마우스로 잡아끌기 — 끄는 동안엔 스냅·부드러운스크롤을 꺼야 커서에 착 붙는다 */
 @media(hover:hover) and (pointer:fine){ .theme-rail{cursor:grab} .theme-rail:active{cursor:grabbing} }
 .theme-rail.dragging{scroll-snap-type:none;scroll-behavior:auto;cursor:grabbing;user-select:none}
-.theme-rail.dragging .tcard{pointer-events:none}
+/* ⚠️ 여기에 `.theme-rail.dragging .tcard{pointer-events:none}` 를 두면 안 된다.
+   마우스를 누르는 순간 .dragging 이 붙어서 카드 링크가 통째로 죽고, 손을 뗄 때 클릭이
+   링크에 도달하지 못한다 → 1px 도 안 움직이고 그냥 눌러도 상세 페이지가 안 열렸다(2026-07-17 수정).
+   "끌고 나서 손 떼면 링크가 열리는" 문제는 page.tsx 의 onClickCapture 가 이미 막고 있다
+   (5px 넘게 움직였을 때만 클릭 취소). 포스터를 잡아끌 때 생기는 유령 이미지는 아래 user-drag 로 막는다. */
+.theme-rail .tcard,.theme-rail .tcard img{-webkit-user-drag:none;user-drag:none}
 /* 포스터 바로 아래 가로 스크롤바 — 손잡이 폭=보이는 비율, 위치=진행률(page.tsx 가 --w/--x 로 넣어줌).
    "옆으로 더 있다"를 알려주는 게 목적이라 브라우저 기본 스크롤바(OS마다 모양이 제각각)는 계속 숨기고 직접 그린다. */
 .rail-bar{position:relative;height:4px;margin:-14px 2px 0;border-radius:4px;background:var(--line);
