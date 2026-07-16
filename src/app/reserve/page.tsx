@@ -113,6 +113,11 @@ function ReserveInner() {
   const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS });
   const [blocked, setBlocked] = useState<string[]>([]);
   const [dayClosed, setDayClosed] = useState(false);
+  // 마감된 칸이 어디인지 서버에 물어보는 중인가.
+  //   이걸 안 두면: 날짜를 고른 순간 모든 칸이 "예약 가능"처럼 보이다가 2~3초 뒤 🚫 가 붙는다.
+  //   그 사이에 이미 찬 칸을 고른 손님은 이름·전화까지 다 입력하고 나서야 거절당한다(헛수고).
+  //   ※ 실제 이중예약은 서버가 막는다(uq_res_slot). 이건 손님을 헛고생시키지 않기 위한 것.
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
@@ -169,11 +174,25 @@ function ReserveInner() {
 
   // 테마·날짜 선택 시 마감(차단/예약된) 시간 조회
   useEffect(() => {
-    if (!themeId || !date) { setBlocked([]); setDayClosed(false); return; }
+    if (!themeId || !date) { setBlocked([]); setDayClosed(false); setSlotsLoading(false); return; }
+    // 답이 오기 전까지는 "모른다" 상태로 둔다 — 지난 날짜의 마감정보를 그대로 쓰면 안 된다.
+    let alive = true;
+    setSlotsLoading(true);
+    setBlocked([]);
+    setDayClosed(false);
     fetch(`/api/slots?theme=${themeId}&date=${date}`)
       .then((r) => r.json())
-      .then((d) => { setBlocked(d.blocked || []); setDayClosed(!!d.dayClosed); if (d.blocked?.includes(time)) setTime(""); })
-      .catch(() => {});
+      .then((d) => {
+        // 답을 기다리는 사이 손님이 다른 날짜를 골랐으면 이 답은 버린다.
+        // (안 버리면 늦게 도착한 옛 날짜의 마감정보가 새 날짜 위에 덮인다)
+        if (!alive) return;
+        setBlocked(d.blocked || []);
+        setDayClosed(!!d.dayClosed);
+        if (d.blocked?.includes(time)) setTime("");
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setSlotsLoading(false); });
+    return () => { alive = false; };
   }, [themeId, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit() {
@@ -323,7 +342,9 @@ function ReserveInner() {
                 const isBlocked = blocked.includes(tm);
                 // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
                 const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
-                const off = isBlocked || soon;
+                // 아직 마감 정보를 모르는 동안(slotsLoading)에는 전부 못 누르게 한다.
+                // 모르는 상태에서 누르게 두면 이미 찬 칸을 고른 채로 끝까지 입력하게 된다.
+                const off = isBlocked || soon || slotsLoading;
                 return (
                   <button
                     key={tm}
@@ -333,21 +354,22 @@ function ReserveInner() {
                     disabled={off}
                     style={{ minWidth: 64, flex: "0 0 auto" }}
                     onClick={() => { if (!off) setTime(tm); }}
-                    title={isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
+                    title={slotsLoading ? "확인 중" : isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
                   >
-                    {tm}{isBlocked ? " 🚫" : soon ? " ⏱" : ""}
+                    {tm}{slotsLoading ? "" : isBlocked ? " 🚫" : soon ? " ⏱" : ""}
                   </button>
                 );
               })}
             </div>
           )}
-          {!(dayClosed || noSlotsDay) && (
+          {slotsLoading && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
+          {!slotsLoading && !(dayClosed || noSlotsDay) && (
             <div className="hint">
               ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
               {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
             </div>
           )}
-          {!time && !(dayClosed || noSlotsDay) && (
+          {!slotsLoading && !time && !(dayClosed || noSlotsDay) && (
             <div className="hint">시간을 선택하면 예약자 정보를 입력할 수 있어요.</div>
           )}
         </div>
