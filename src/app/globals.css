@@ -371,7 +371,9 @@ nav.main a:hover{color:var(--text)}
 .tcard[data-cat^="s2"]::before{background:var(--violet)}
 .tcard[data-cat^="s3"]::before{background:var(--blood)}
 /* 세로 포스터(2:3) */
-.tcard .thumb{position:relative;aspect-ratio:2/3;overflow:hidden;background-position:center;background-repeat:no-repeat;background-size:cover;transition:transform .4s ease}
+.tcard .thumb{position:relative;aspect-ratio:2/3;overflow:hidden;transition:transform .4s ease}
+/* 포스터 = next/image <Image fill> (CSS 배경 아님 — 배경으로 넣으면 최적화를 건너뛴다) */
+.tcard .thumb-img{object-fit:cover}
 .tcard:hover .thumb{transform:scale(1.045)}
 .tcard .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,11,17,0) 42%,rgba(9,11,17,.5) 66%,rgba(9,11,17,.9));transition:.3s}
 .tcard:hover .thumb::after{background:linear-gradient(180deg,rgba(9,11,17,0) 34%,rgba(9,11,17,.6) 60%,rgba(9,11,17,.94))}

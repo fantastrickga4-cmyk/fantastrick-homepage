@@ -25,12 +25,18 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
   // 손님이 가격도 스토리도 모른 채 예약부터 하게 됐음
   return (
     <Link className="tcard" data-cat={t.cat} href={`/rooms/${t.id}`}>
-      <div
-        className="thumb"
-        style={{ backgroundImage: `url(${t.poster})` }}
-        role="img"
-        aria-label={`${t.name} 포스터`}
-      >
+      <div className="thumb">
+        {/* ⚠️ CSS 배경(backgroundImage)으로 넣으면 next/image 최적화를 통째로 건너뛴다.
+            예전엔 그렇게 해서 poster-ldc.png 1MB 원본이 그대로 내려갔음(화면엔 266px로 보이는데).
+            <Image fill> 로 넣으면 화면 크기에 맞게 줄이고 WebP 로 바꿔서 보냄 → 4장 합계 2,014KB → 187KB.
+            (예전에 배경으로 바꾼 이유였던 '호버 확대가 카드 밖으로 삐져나옴'은 .tcard{overflow:clip} 으로 이미 해결됨) */}
+        <Image
+          src={t.poster}
+          alt={`${t.name} 포스터`}
+          fill
+          sizes="(max-width:520px) 82vw, (max-width:980px) 45vw, 280px"
+          className="thumb-img"
+        />
         <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
         {t.murder && <span className="tmurder">머더룸</span>}
         <div className="tt">
