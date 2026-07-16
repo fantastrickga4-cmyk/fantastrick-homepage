@@ -335,6 +335,10 @@ nav.main a:hover{color:var(--text)}
   /* 카드 호버 리프트·그림자가 잘리지 않게 여백 확보 */
   padding:10px 2px 26px}
 .theme-rail::-webkit-scrollbar{display:none}
+/* PC에서 마우스로 잡아끌기 — 끄는 동안엔 스냅·부드러운스크롤을 꺼야 커서에 착 붙는다 */
+@media(hover:hover) and (pointer:fine){ .theme-rail{cursor:grab} .theme-rail:active{cursor:grabbing} }
+.theme-rail.dragging{scroll-snap-type:none;scroll-behavior:auto;cursor:grabbing;user-select:none}
+.theme-rail.dragging .tcard{pointer-events:none}
 .theme-rail .tcard{flex:0 0 calc((100% - 60px)/4);scroll-snap-align:start}
 @media(max-width:980px){.theme-rail{gap:16px}.theme-rail .tcard{flex-basis:calc((100% - 16px)/2)}}
 @media(max-width:520px){.theme-rail .tcard{flex-basis:82%}}
@@ -362,7 +366,7 @@ nav.main a:hover{color:var(--text)}
 .tcard:hover .thumb{transform:scale(1.045)}
 .tcard .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,11,17,0) 42%,rgba(9,11,17,.5) 66%,rgba(9,11,17,.9));transition:.3s}
 .tcard:hover .thumb::after{background:linear-gradient(180deg,rgba(9,11,17,0) 34%,rgba(9,11,17,.6) 60%,rgba(9,11,17,.94))}
-/* CASE 넘버 */
+/* TITLE 넘버 */
 .tcard .tcase{position:absolute;top:12px;left:14px;z-index:3;font-size:11px;letter-spacing:.14em;font-weight:600;color:rgba(255,255,255,.62);font-feature-settings:"tnum";transition:color .3s}
 .tcard:hover .tcase{color:#fff}
 .tcard .tmurder{position:absolute;top:11px;right:11px;z-index:3;font-size:10.5px;font-weight:700;color:#ffd7da;background:rgba(178,14,25,.72);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
@@ -373,15 +377,20 @@ nav.main a:hover{color:var(--text)}
 .tcard .tt .tmeta{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:#d3d9ec;opacity:0;transform:translateY(8px);transition:.3s}
 .tcard .tt .tmeta .lock{color:rgba(255,255,255,.45)} .tcard .tt .tmeta .lock.on{color:#9dc0f5}
 .tcard:hover .tt .store,.tcard:hover .tt .tmeta{opacity:1;transform:none}
-/* 준비중 슬림 스트립(활성과 위계 분리) */
-.soon-strip{margin-top:34px}
-.soon-label{display:block;font-size:12px;letter-spacing:.14em;font-weight:700;color:var(--faint);text-transform:uppercase;margin-bottom:12px}
-.soon-row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-@media(max-width:520px){.soon-row{grid-template-columns:1fr}}
-.scard{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px dashed var(--line2);border-radius:var(--r);padding:15px 18px;background:linear-gradient(180deg,#ffffff,#f0f2f6)}
-.scard .stag{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--brand);border:1px solid rgba(47,111,224,.3);border-radius:var(--r-full);padding:3px 10px}
-.scard .sname{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--muted)}
-.scard .sgen{font-size:12px;color:var(--faint);margin-left:auto}
+/* 준비중 카드 — 레일 안에서 운영중 카드와 같은 크기, 다만 클릭 불가·점선·포스터 없음(아직 없어서) */
+.tcard.soon{cursor:default;border-style:dashed;border-color:var(--line2)}
+.tcard.soon:hover{transform:none;box-shadow:none;border-color:var(--line2)}
+.tcard.soon .thumb{background:linear-gradient(180deg,#e9edf4,#dfe4ed);display:grid;place-items:center}
+.tcard.soon:hover .thumb{transform:none}
+/* 포스터 자리엔 로고 고스트 — 빈 회색 상자보다 낫다 */
+.tcard.soon .thumb::before{content:"?";font-family:var(--font-display);font-weight:800;
+  font-size:64px;color:rgba(20,22,42,.13);line-height:1}
+.tcard.soon .thumb::after{background:linear-gradient(180deg,rgba(9,11,17,0) 48%,rgba(9,11,17,.42) 72%,rgba(9,11,17,.78))}
+.tcard.soon .tcase{color:rgba(255,255,255,.72)}
+.tcard.soon .tt .store,.tcard.soon .tt .tmeta{opacity:1;transform:none}
+.tcard.soon .tt h3{color:#fff}
+.tsoon{position:absolute;top:11px;right:11px;z-index:3;font-size:10px;font-weight:800;letter-spacing:.1em;
+  color:#fff;background:rgba(47,111,224,.85);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
 .diff{display:inline-flex;gap:2px;vertical-align:-1px}
 .diff .lock{width:11px;height:12px;display:inline-block;color:var(--faint);background:currentColor;
   -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/></svg>") center/contain no-repeat;

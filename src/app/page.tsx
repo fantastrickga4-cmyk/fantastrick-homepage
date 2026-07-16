@@ -31,7 +31,7 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
         role="img"
         aria-label={`${t.name} 포스터`}
       >
-        <span className="tcase">CASE No.{String(no).padStart(2, "0")}</span>
+        <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
         {t.murder && <span className="tmurder">머더룸</span>}
         <div className="tt">
           <span className="store">{t.storeTag}</span>
@@ -45,11 +45,14 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
   );
 }
 
-// 테마 가로 슬라이드(캐러셀) — PC·모바일 동일 구성. 모바일은 터치 스와이프, PC는 화살표.
-function ThemeCarousel({ themes }: { themes: Theme[] }) {
+// 테마 가로 슬라이드(캐러셀) — 운영중 + 준비중 테마를 한 줄에.
+// 모바일=터치 스와이프(브라우저 기본) / PC=화살표 + 마우스로 잡아끌기(드래그).
+function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
   const railRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+  // 드래그 상태: 눌린 지점·시작 스크롤·움직인 거리(클릭이었는지 드래그였는지 판단용)
+  const drag = useRef({ on: false, startX: 0, startLeft: 0, moved: 0 });
 
   const update = useCallback(() => {
     const el = railRef.current;
@@ -75,12 +78,53 @@ function ThemeCarousel({ themes }: { themes: Theme[] }) {
     el.scrollBy({ left: dir * step, behavior: "smooth" });
   };
 
+  // ── 마우스로 잡아끌기 ──
+  // 터치는 브라우저가 알아서 스와이프해주므로 마우스일 때만 붙인다(둘 다 걸면 서로 싸움).
+  // 끄는 동안엔 스냅·부드러운스크롤을 잠시 꺼야 손가락(커서)에 착 붙는다 → .dragging 클래스.
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el || e.pointerType !== "mouse" || e.button !== 0) return;
+    drag.current = { on: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0 };
+    el.classList.add("dragging");
+  };
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el || !drag.current.on) return;
+    const dx = e.clientX - drag.current.startX;
+    drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
+    el.scrollLeft = drag.current.startLeft - dx;
+  };
+  const endDrag = () => {
+    const el = railRef.current;
+    if (!el || !drag.current.on) return;
+    drag.current.on = false;
+    el.classList.remove("dragging");
+  };
+  // 끌고 나서 손을 떼면 카드가 링크라 페이지가 열려버린다 → 5px 이상 움직였으면 클릭을 막는다.
+  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (drag.current.moved > 5) { e.preventDefault(); e.stopPropagation(); }
+    drag.current.moved = 0;
+  };
+
   return (
     <div className="theme-carousel reveal rv-focus">
       <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
-      <div className="theme-rail" ref={railRef}>
+      <div
+        className="theme-rail"
+        ref={railRef}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+        onDragStart={(e) => e.preventDefault()}  /* 카드 안 이미지가 브라우저 기본 드래그로 끌려가는 것 방지 */
+      >
         {themes.map((t, i) => (
           <ThemeCard key={t.id} t={t} no={i + 1} />
+        ))}
+        {soon.map((t, i) => (
+          <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
         ))}
       </div>
       <button type="button" className="tc-arrow next" aria-label="다음 테마" disabled={!canNext} onClick={() => move(1)}>›</button>
@@ -88,13 +132,20 @@ function ThemeCarousel({ themes }: { themes: Theme[] }) {
   );
 }
 
-// 준비중 테마 — 하단 슬림 스트립(클릭 불가)
-function SoonCard({ t }: { t: Theme }) {
+// 준비중 테마 — 이제 아래 슬림 스트립이 아니라 캐러셀 안에 같이 들어간다(클릭 불가).
+// 포스터 이미지가 아직 없어서(data.ts 의 poster:"") 자리표시 카드로 그린다.
+function SoonRailCard({ t, no }: { t: Theme; no: number }) {
   return (
-    <div className="scard" data-cat={t.cat}>
-      <span className="stag">COMING SOON</span>
-      <span className="sname">{t.name}</span>
-      {t.soonGenres && t.soonGenres[0] && <span className="sgen">{t.soonGenres[0]}</span>}
+    <div className="tcard soon" data-cat={t.cat}>
+      <div className="thumb" role="img" aria-label={`${t.name} — 준비중`}>
+        <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
+        <span className="tsoon">COMING SOON</span>
+        <div className="tt">
+          <span className="store">{t.storeTag}</span>
+          <h3>{t.name}</h3>
+          <span className="tmeta">{(t.soonGenres && t.soonGenres[0]) || t.genres[0]}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -217,17 +268,8 @@ export default function Home() {
             <h2 className="title">당신이 만들어가는 이야기</h2>
             <p className="lead">테마 목록</p>
           </div>
-          <ThemeCarousel themes={THEMES} />
-          {SOON_THEMES.length > 0 && (
-            <div className="soon-strip reveal">
-              <span className="soon-label">준비중 콘텐츠</span>
-              <div className="soon-row">
-                {SOON_THEMES.map((t) => (
-                  <SoonCard key={t.id} t={t} />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* 준비중 테마도 같은 줄에 — 예전엔 아래 별도 스트립이라 눈에 안 띄었음 */}
+          <ThemeCarousel themes={THEMES} soon={SOON_THEMES} />
         </div>
       </section>
 
