@@ -129,6 +129,26 @@ function ReserveInner() {
   // 그 요일은 아예 예약을 안 받는 테마(휴무) 인지
   const noSlotsDay = useMemo(() => !!(themeId && date && activeSlots.length === 0), [themeId, date, activeSlots]);
 
+  // ── 단계별 열림 ──────────────────────────────────────────────────
+  // 손님이 한 번에 모든 걸 보고 헤매지 않도록, 앞 단계를 고르면 다음 단계가 나타난다.
+  //   ① 테마 → ② 날짜 → ③ 시간 → ④ 인원·예약자 정보
+  // 고른 것은 계속 보이고 다시 바꿀 수 있다(뒤로 갈 수 있어야 함).
+  const showDate = !!themeId;
+  const showTime = showDate && !!date && !notOpenSelected;
+  // 휴무·마감인 날은 시간을 고를 수 없으니 ④는 자연히 안 열린다
+  const showInfo = showTime && !!time;
+
+  // 테마를 바꾸면 고른 시간을 푼다 — 테마마다 시간표가 완전히 달라서(사자의 서 70분 간격 등)
+  // 그대로 두면 그 테마에 없는 시간이 골라진 채로 남는다. 날짜는 그대로 둔다(보통 같은 날을 원함).
+  function pickTheme(id: string) {
+    setThemeId(id);
+    setTime("");
+  }
+  function pickDate(d: string) {
+    setDate(d);
+    setTime("");
+  }
+
   // 예약 임박 차단 — 시간이 흐르면 임박한 칸이 실제로 잠기도록 30초마다 현재시각 갱신
   const leadMin = cfg.minLeadMinutes ?? 10;
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -249,9 +269,9 @@ function ReserveInner() {
       <h2 className="title" style={{ marginBottom: 22 }}>테마 예약</h2>
 
       <div className="card">
-        {/* 테마 선택 */}
+        {/* ① 테마 선택 — 여기서부터 시작. 고르면 아래 날짜가 나타난다. */}
         <div className="field">
-          <label>테마 선택</label>
+          <label>① 테마 선택</label>
           <div className="optrow">
             {THEMES.map((t) => (
               <button
@@ -259,47 +279,42 @@ function ReserveInner() {
                 type="button"
                 className={"opt" + (themeId === t.id ? " on" : "")}
                 aria-pressed={themeId === t.id}
-                onClick={() => setThemeId(t.id)}
+                onClick={() => pickTheme(t.id)}
               >
                 {t.name}
                 <span style={{ display: "block", fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{t.storeTag}</span>
               </button>
             ))}
           </div>
+          {!showDate && <div className="hint">테마를 선택하면 날짜를 고를 수 있어요.</div>}
         </div>
 
-        {/* 날짜 — 상시 인라인 달력 */}
-        <div className="field">
-          <label>날짜</label>
-          <Calendar value={date} onChange={setDate} />
-          {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
-          {date && notOpenSelected && (
-            <div className="rcal-sel" style={{ marginTop: 4 }}>
-              예약창 오픈 날짜: <b>{openDateLabel(date)} 저녁 9시</b>
-            </div>
-          )}
-        </div>
+        {/* ② 날짜 — 테마를 골라야 나타남 */}
+        {showDate && (
+          <div className="field rstep">
+            <label>② 날짜</label>
+            <Calendar value={date} onChange={pickDate} />
+            {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
+            {date && notOpenSelected && (
+              <div className="rcal-sel" style={{ marginTop: 4 }}>
+                예약창 오픈 날짜: <b>{openDateLabel(date)} 저녁 9시</b>
+              </div>
+            )}
+            {!date && <div className="hint">날짜를 선택하면 시간을 고를 수 있어요.</div>}
+          </div>
+        )}
 
-        {/* 오픈 전 날짜: 예약 단계 대신 안내만 */}
-        {notOpenSelected ? (
-          <div className="notice warn">
+        {/* 오픈 전 날짜: 다음 단계로 넘어가지 않고 안내만 */}
+        {showDate && date && notOpenSelected && (
+          <div className="notice warn rstep">
             이 날짜는 아직 예약 오픈 전이에요. <b>{openDateLabel(date)} 저녁 9시</b>부터 예약 가능합니다.
           </div>
-        ) : (
-        <>
-        {/* 인원 */}
-        <div className="field">
-          <label>인원</label>
-          <select value={people} onChange={(e) => setPeople(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <option key={n} value={n}>{n}명</option>
-            ))}
-          </select>
-        </div>
+        )}
 
-        {/* 시간 */}
-        <div className="field">
-          <label>시간</label>
+        {/* ③ 시간 — 날짜를 골라야 나타남 */}
+        {showTime && (
+        <div className="field rstep">
+          <label>③ 시간</label>
           {dayClosed || noSlotsDay ? (
             <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
           ) : (
@@ -326,10 +341,28 @@ function ReserveInner() {
               })}
             </div>
           )}
-          <div className="hint">
-            ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
-            {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
-          </div>
+          {!(dayClosed || noSlotsDay) && (
+            <div className="hint">
+              ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
+              {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
+            </div>
+          )}
+          {!time && !(dayClosed || noSlotsDay) && (
+            <div className="hint">시간을 선택하면 예약자 정보를 입력할 수 있어요.</div>
+          )}
+        </div>
+        )}
+
+        {/* ④ 인원·예약자 정보 — 시간을 골라야 나타남 */}
+        {showInfo && (
+        <div className="rstep">
+        <div className="field">
+          <label>④ 인원</label>
+          <select value={people} onChange={(e) => setPeople(Number(e.target.value))}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <option key={n} value={n}>{n}명</option>
+            ))}
+          </select>
         </div>
 
         {/* 예약자 정보 */}
@@ -379,7 +412,7 @@ function ReserveInner() {
         <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
           {loading ? "접수 중…" : "예약 신청하기"}
         </button>
-        </>
+        </div>
         )}
       </div>
 

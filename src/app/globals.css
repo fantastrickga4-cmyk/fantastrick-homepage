@@ -480,6 +480,11 @@ footer ul li{padding:3px 0}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan)}
 .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}
 .field .hint{font-size:var(--fs-xs);color:var(--muted);margin-top:5px}
+/* 예약 단계별 열림 — 앞 단계를 고르면 다음 단계가 살짝 올라오며 나타난다.
+   한 번에 다 펼쳐두면 손님이 어디부터 봐야 할지 헤매서, 고른 만큼만 보여준다.
+   히어로에서 쓰는 htUp 을 그대로 재사용해 사이트 전체 움직임을 통일. */
+.rstep{animation:htUp .32s ease both}
+@media(prefers-reduced-motion:reduce){.rstep{animation:none}}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:480px){.grid2{grid-template-columns:1fr}}
 .optrow{display:flex;gap:8px;flex-wrap:wrap}
