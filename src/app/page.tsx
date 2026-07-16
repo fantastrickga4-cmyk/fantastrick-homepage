@@ -214,8 +214,6 @@ function SoonRailCard({ t, no }: { t: Theme; no: number }) {
 }
 
 export default function Home() {
-  const heroBgRef = useRef<HTMLDivElement>(null);
-
   // 실제 승인 후기 (마운트 시 로드)
   const [reviews, setReviews] = useState<HomeReview[] | null>(null);
   useEffect(() => {
@@ -240,57 +238,9 @@ export default function Home() {
     return () => io.disconnect();
   }, []);
 
-  // 히어로 패럴랙스: 스크롤(세로 시차) + 마우스 이동(입체 깊이감). 모션 최소화/터치 시 비활성
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    const bg = heroBgRef.current;
-    if (!bg) return;
-
-    const AMP = 16;                 // 마우스 이동 최대 진폭(px)
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    let sy = 0;                     // 스크롤 오프셋
-    let tmx = 0, tmy = 0;           // 목표 마우스 오프셋
-    let mx = 0, my = 0;             // 현재(부드럽게 따라감)
-    let raf = 0;
-
-    const apply = () => {
-      bg.style.transform = `translate3d(${mx.toFixed(2)}px, ${(sy + my).toFixed(2)}px, 0)`;
-    };
-    const loop = () => {
-      mx += (tmx - mx) * 0.08;
-      my += (tmy - my) * 0.08;
-      apply();
-      if (Math.abs(tmx - mx) > 0.08 || Math.abs(tmy - my) > 0.08) {
-        raf = requestAnimationFrame(loop);
-      } else { mx = tmx; my = tmy; apply(); raf = 0; }
-    };
-    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
-
-    const onScroll = () => { sy = Math.min(window.scrollY, 900) * 0.18; apply(); };
-    const onMove = (e: PointerEvent) => {
-      const nx = e.clientX / window.innerWidth - 0.5;
-      const ny = e.clientY / window.innerHeight - 0.5;
-      tmx = -nx * AMP * 2;         // 마우스 반대로 이동 → 깊이감
-      tmy = -ny * AMP * 2;
-      kick();
-    };
-    const onLeave = () => { tmx = 0; tmy = 0; kick(); };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    if (fine) {
-      window.addEventListener("pointermove", onMove, { passive: true });
-      document.addEventListener("mouseleave", onLeave);
-    }
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointermove", onMove);
-      document.removeEventListener("mouseleave", onLeave);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
+  // (2026-07-16) 옛 히어로 패럴랙스 코드 60줄 삭제 — heroBgRef 가 화면 어느 요소에도 안 붙어 있어
+  // 첫 줄에서 항상 return 되던 죽은 코드였음(0% 동작). 지금 히어로가 움직이는 건 배경 그라디언트(htMesh 30s)와
+  // 스크롤 이별 연출(globals.css .ht-stack) 이고, 둘 다 CSS 라 JS 가 필요 없음.
 
   return (
     <>
