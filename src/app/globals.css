@@ -145,35 +145,9 @@ nav.main a:hover{color:var(--text)}
   background-size:180px 180px}
 
 /* ---------- HERO ---------- */
-.hero{min-height:100vh;display:flex;align-items:center;overflow:hidden}
-.hero .bg{position:absolute;inset:-40px;z-index:0;will-change:transform}
-.hero .bg img{width:100%;height:100%;object-fit:cover;opacity:.9;transform-origin:70% 40%}
-/* 히어로 배경 영상 — 사진 위에 덮여 재생(파일 없으면 onError로 숨김→사진 노출).
-   z-index 없이 DOM 순서로 사진<영상<::after(밝은 워시) 쌓임 유지 → 글자 가독성 보존 */
-.hero .bg .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
-/* Ken Burns 초저속 줌 + 진입 스태거는 모션 허용 시에만 */
-@media (prefers-reduced-motion:no-preference){
-  .hero .bg img{animation:kenburns 24s ease-out both}
-  .hero .wrap>*{opacity:0;transform:translateY(20px);animation:heroIn .8s cubic-bezier(.2,.7,.2,1) forwards}
-  .hero .wrap>.eyebrow{animation-delay:.12s}
-  .hero .wrap>h1{animation-delay:.26s}
-  .hero .wrap>p.sub{animation-delay:.44s}
-  .hero .wrap>.cta{animation-delay:.62s}
-  .hero .wrap>.meta{animation-delay:.8s}
-}
-@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.08)}}
-@keyframes heroIn{to{opacity:1;transform:none}}
-.hero .bg::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(244,246,249,.95) 8%,rgba(244,246,249,.64) 52%,rgba(244,246,249,.42)),
-            radial-gradient(900px 520px at 74% 28%,rgba(47,111,224,.12),transparent 60%),
-            radial-gradient(760px 520px at 22% 88%,rgba(122,59,184,.10),transparent 62%)}
-.hero .wrap{position:relative;z-index:2;padding-top:90px;padding-bottom:60px}
-.hero h1{font-family:var(--font-display);font-size:clamp(34px,6vw,68px);font-weight:800;line-height:1.12;letter-spacing:-.005em;margin:18px 0 14px}
-.hero h1 .accent{color:var(--cyan);text-shadow:0 1px 12px rgba(47,111,224,.22)}
-.hero p.sub{font-size:clamp(15px,2vw,19px);color:var(--muted);max-width:560px}
-.hero .cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
-.hero .meta{display:flex;gap:22px;margin-top:34px;flex-wrap:wrap;color:var(--muted);font-size:13.5px}
-.hero .meta b{color:var(--text);font-size:20px;font-weight:800;display:block;font-feature-settings:"tnum"}
+/* (2026-07-16) 옛 사진 히어로(.hero — Ken Burns 줌·배경영상·heroIn 스태거) 30줄 삭제.
+   메인은 .hero-t(타이포), 비즈니스는 .biz-hero 를 쓰므로 아무 데서도 안 쓰던 죽은 CSS.
+   아래 .scrollcue 는 살아있는 코드(page.tsx 의 SCROLL ↓)라 남김. */
 .scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;color:var(--muted);font-size:11px;letter-spacing:.2em;text-align:center;animation:bob 2s infinite}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
 
@@ -304,28 +278,8 @@ nav.main a:hover{color:var(--text)}
   /* 모바일은 가로 폭이 좁아 좌우 슬라이드가 답답하다 → 기본(위로)으로 되돌림 */
   .js .reveal.rv-left,.js .reveal.rv-right{transform:translateY(26px)}
 }
-
-/* ---------- ABOUT ---------- */
-.about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:54px;align-items:start}
-@media(max-width:860px){.about-grid{grid-template-columns:1fr;gap:34px}}
-.pillars{display:grid;gap:14px}
-.pillar{display:flex;gap:14px;padding:18px;border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,#ffffff,#f0f2f6)}
-.pillar .pn{flex:0 0 42px;height:42px;border-radius:var(--r-sm);display:grid;place-items:center;font-size:20px;
-  background:rgba(47,111,224,.1);color:var(--cyan);border:1px solid rgba(47,111,224,.25)}
-.pillar h4{margin:0 0 2px;font-size:16px}
-.pillar p{margin:0;font-size:13.5px;color:var(--muted)}
-/* 스티키 핀 연출(데스크톱): 포스터가 고정된 채 좌측 텍스트가 흐른다(Apple식). 모바일 폴백=정적 */
-.about-visual{position:relative}
-@media(min-width:861px){.about-visual{position:sticky;top:100px}}
-.about-frame{position:relative;width:100%;aspect-ratio:4/5;border-radius:var(--r-lg);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
-.about-frame img{object-fit:cover}
-.about-visual .stamp{position:absolute;left:-14px;bottom:24px;background:var(--surface2);border:1px solid var(--line);
-  border-radius:var(--r);padding:12px 16px;box-shadow:var(--shadow)}
-.about-visual .stamp b{color:var(--cyan);font-size:22px}
-.about-visual .stamp span{display:block;font-size:12px;color:var(--muted)}
-.worldtags{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
-.worldtags span{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:var(--r-full);padding:5px 13px}
-.worldtags b{color:var(--cyan)}
+/* (2026-07-16) 옛 ABOUT 섹션 CSS(.about-grid/.pillar/.about-visual/.worldtags) 22줄 삭제 —
+   히어로 통계·SINCE2015 스탬프와 함께 화면에서 없어진 섹션이라 아무 데서도 안 씀. */
 
 /* ---------- THEMES (가로 슬라이드 캐러셀 · PC/모바일 동일 구성) ---------- */
 .theme-carousel{position:relative}
@@ -446,7 +400,6 @@ nav.main a:hover{color:var(--text)}
 .rev-summary .s-stars{color:#e0930c;font-size:18px;letter-spacing:3px;align-self:center}
 .rev-summary .rs-meta{text-align:right}
 .rev-summary .s-src{color:var(--muted);font-size:13px;margin-bottom:6px}
-.rev-summary .rs-links{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap}
 .tlink{color:var(--cyan);font-size:13.5px;font-weight:600;text-decoration:none;transition:.2s;white-space:nowrap}
 .tlink:hover{opacity:.65}
 /* 후기 카드: 3열, 큰 따옴표·본문 2줄 클램프·이니셜 아바타 */
@@ -462,7 +415,6 @@ nav.main a:hover{color:var(--text)}
 .rev-quote .rq-who{width:26px;height:26px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--muted)}
 .rev-more{text-align:center;margin-top:20px}
 .rev-empty{text-align:center;padding:44px 20px}
-.rev-empty .re-big{font-family:"Bodoni Moda",serif;font-size:64px;color:var(--faint);line-height:1}
 .rev-empty p{color:var(--muted);margin:12px 0 18px}
 
 /* ---------- BUSINESS / B2B ---------- */
@@ -488,8 +440,6 @@ nav.main a:hover{color:var(--text)}
 /* CTA: 한 줄 + 버튼 슬림 */
 .biz-cta{margin-top:34px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
   border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);padding:20px 26px;background:rgba(122,59,184,.05)}
-.biz-cta .bt-line{margin:0;flex:1;min-width:240px;font-size:14px;color:var(--muted)}
-.biz-cta .bt-line b{color:var(--text);font-weight:700;font-feature-settings:"tnum"}
 .biz-cta .bt-actions{display:flex;gap:10px;flex-wrap:wrap}
 
 /* ---------- RESERVE BAND ---------- */
