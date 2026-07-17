@@ -29,9 +29,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" className="js">
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        {/* 본문 폰트 — variable + dynamic-subset.
+            전에는 static/pretendard.css 를 썼는데, 굵기 4종을 각각 750KB 통짜로 받아
+            **홈 전송량 3.6MB 중 3.3MB(92%)가 글꼴**이었다(3G 로딩 19초 실측, 2026-07-17).
+            이 버전은 글자 대역별로 92조각으로 쪼개져 있어 **화면에 실제로 쓰는 글자만** 받고,
+            굵기도 한 파일(45~920)로 다 해결한다.
+            ⚠️ 글꼴 이름이 'Pretendard Variable' 이라 globals.css 의 font-family 도 같이 바꿔야 한다
+               (이름만 두면 폰트가 통째로 안 먹고 시스템 글꼴로 떨어진다). */}
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
         {/* 제목 전용 디스플레이 폰트: 나눔명조 ExtraBold(세리프) — 큰 제목만. 한글 글리프는 unicode-range split 서빙(CWV 안전). */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

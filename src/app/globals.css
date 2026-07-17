@@ -57,12 +57,12 @@
   --shadow:0 20px 60px rgba(20,22,42,.12);
 
   /* ---- 역할별 폰트 ---- 제목=나눔명조 ExtraBold(세리프), 본문/버튼/숫자/라벨=Pretendard ---- */
-  --font-display:"Nanum Myeongjo","Pretendard",serif;
+  --font-display:"Nanum Myeongjo","Pretendard Variable","Pretendard",serif;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);
-  font-family:"Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-family:"Pretendard Variable","Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
@@ -71,7 +71,7 @@ section{position:relative}
 
 /* 디스플레이 폰트(큰 제목 전용) — --font-display=나눔명조 ExtraBold(세리프). eyebrow/숫자/버튼은 Pretendard 유지 */
 /* eyebrow: 라틴 트래킹 라벨 → 산세리프 유지(.3em 트래킹) */
-.eyebrow{font-family:"Pretendard",system-ui,sans-serif;letter-spacing:.3em;font-size:var(--fs-xs);font-weight:800;color:var(--cyan);text-transform:uppercase}
+.eyebrow{font-family:"Pretendard Variable","Pretendard",system-ui,sans-serif;letter-spacing:.3em;font-size:var(--fs-xs);font-weight:800;color:var(--cyan);text-transform:uppercase}
 .eyebrow.gold{color:var(--gold)}
 /* 세리프 제목: 산세리프용 음수 자간을 완화(-.005em)해 삐침 겹침 방지 */
 h2.title{font-family:var(--font-display);font-size:var(--fs-2xl);font-weight:800;letter-spacing:-.005em;margin:.3em 0 .15em}
@@ -207,7 +207,7 @@ nav.main a:hover{color:var(--text)}
 .hero-t .ht-eyebrow{color:var(--brand);font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;opacity:0;animation:htUp .6s cubic-bezier(.16,1,.3,1) .1s both}
 /* 슬로건은 헤더 메뉴(콘텐츠·리뷰·자주 묻는 질문)와 같은 서체 = 본문 Pretendard.
    예전엔 나눔명조(세리프)라 헤더와 따로 놀았음 */
-.hero-t .ht-slogan{font-family:"Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+.hero-t .ht-slogan{font-family:"Pretendard Variable","Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   font-weight:700;color:var(--text);font-size:clamp(18px,3vw,30px);letter-spacing:-.01em;display:flex;flex-wrap:wrap;justify-content:center;gap:.4em}
 .hero-t .ht-slogan span{display:inline-block;opacity:0;animation:htSg .7s cubic-bezier(.16,1,.3,1) both}
 .hero-t .ht-slogan span:nth-child(1){animation-delay:.35s}
@@ -219,7 +219,7 @@ nav.main a:hover{color:var(--text)}
 .hero-t .ht-fantasy{color:var(--brand-bright);opacity:0;animation:htWinL 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
 .hero-t .ht-trick{color:var(--blood);opacity:0;animation:htWinR 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
 .hero-t .ht-y{display:inline-block;overflow:hidden;color:var(--brand-bright);animation:htDy .7s cubic-bezier(.16,1,.3,1) 2.4s both}
-.hero-t .ht-plus{display:inline-block;overflow:hidden;color:var(--muted);font-weight:700;font-family:"Pretendard",sans-serif;font-size:.5em;transform:translateY(-.12em);
+.hero-t .ht-plus{display:inline-block;overflow:hidden;color:var(--muted);font-weight:700;font-family:"Pretendard Variable","Pretendard",sans-serif;font-size:.5em;transform:translateY(-.12em);
   opacity:0;max-width:0;margin:0;animation:htPl 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
 .hero-t .ht-shine{position:absolute;inset:0;display:flex;align-items:baseline;justify-content:center;pointer-events:none;opacity:0;
   font-family:var(--font-logo);text-transform:uppercase;letter-spacing:0;
@@ -400,7 +400,7 @@ nav.main a:hover{color:var(--text)}
 /* 평점 요약: 좌(큰 숫자 세리프) / 우(출처+텍스트 링크) */
 .rev-summary{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:32px;padding-bottom:22px;border-bottom:1px solid var(--line)}
 .rev-summary .rs-score{display:flex;align-items:baseline;gap:10px}
-.rev-summary .score{font-family:"Bodoni Moda","Pretendard",serif;font-size:clamp(52px,7vw,84px);font-weight:600;line-height:.9;color:var(--text);font-feature-settings:"tnum"}
+.rev-summary .score{font-family:"Bodoni Moda","Pretendard Variable","Pretendard",serif;font-size:clamp(52px,7vw,84px);font-weight:600;line-height:.9;color:var(--text);font-feature-settings:"tnum"}
 .rev-summary .of{color:var(--faint);font-size:15px;font-weight:600}
 .rev-summary .s-stars{color:#e0930c;font-size:18px;letter-spacing:3px;align-self:center}
 .rev-summary .rs-meta{text-align:right}
