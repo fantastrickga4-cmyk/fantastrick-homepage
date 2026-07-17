@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { formatDate, formatPhone } from "@/lib/util";
 import { STORES } from "@/lib/data";
-import { refundRateFor } from "@/lib/money";
+import { refundRateFor, hasStarted } from "@/lib/money";
 
 type Reservation = {
   id: string;
@@ -205,8 +205,11 @@ export default function ReservationLookup() {
                       <div className="r"><span>예약자</span><b>{r.name} ({formatPhone(phone)})</b></div>
                       <div className="r"><span>예약금</span><b>{r.deposit.toLocaleString()}원 {r.deposit_paid ? "(결제완료)" : "(미결제)"}</b></div>
                     </div>
-                    {!cancelled && (
-                      <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
+                    {/* 이미 이용이 끝난 예약은 취소할 게 없다(환불 0%). 버튼을 두면 손님이
+                        "취소하면 환불되나?" 하고 눌러보게 되고, 쓸데없는 취소 기록만 남는다. */}
+                    {!cancelled && (hasStarted(r.date, r.time)
+                      ? <div className="hint">이용이 끝난 예약이에요. 문의는 매장으로 연락 주세요.</div>
+                      : <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
                     )}
                   </div>
                 );

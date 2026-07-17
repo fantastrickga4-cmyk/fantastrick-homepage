@@ -23,6 +23,19 @@ export function refundAmount(r: Pick<MoneyRow, "deposit" | "refund_rate">): numb
 }
 
 /**
+ * 이미 시작한(=지난) 예약인가. 지난 예약은 취소할 것이 없다.
+ *   · 환불도 0% 라 손님이 얻을 게 없고
+ *   · 취소 팝업이 "오늘 이용하시는 예약이라…" 라고 엉뚱한 말을 하게 되고
+ *   · 쓸데없는 취소 기록만 남는다
+ * 그래서 화면에서 [예약 취소] 버튼을 숨기고, 서버도 한 번 더 막는다.
+ */
+export function hasStarted(date: string, time: string, nowMs: number = Date.now()): boolean {
+  const startKST = new Date(`${date}T${time}:00+09:00`).getTime();
+  if (Number.isNaN(startKST)) return false; // 날짜가 이상하면 막지 않는다(다른 검증이 잡음)
+  return startKST <= nowMs;
+}
+
+/**
  * 취소 시 환불율(%) — 손님에게 안내하는 규정(theme-content.ts 의 BOOKING_INFO.refund)과 같은 기준.
  *
  *   · 시작까지 24시간 보다 많이 남음   → 100%
@@ -40,6 +53,13 @@ export function refundRateFor(date: string, time: string, nowMs: number = Date.n
   if (Number.isNaN(startKST)) return 0;
   const hours = (startKST - nowMs) / 3_600_000;
   if (hours >= 24) return 100;
+
+  // 🔴 이미 시작했거나 끝난 예약 → 환불 없음.
+  //    이 줄이 없으면 지난 예약이 아래 80% 로 떨어진다. 규정에는 "24시간 초과 / 전날 / 당일"
+  //    세 칸밖에 없어서, 어제·지난주 예약이 "당일도 아니고 24시간도 안 남음"이 되어
+  //    80% 분기가 과거를 통째로 흡수했다 → **이미 플레이를 마친 손님이 80% 를 돌려받을 수 있었다.**
+  //    (2026-07-17 RPA 점검에서 발견. 지난 날짜 예약을 실제로 취소해 refund_rate=80 저장 확인)
+  if (hours <= 0) return 0;
 
   // 방문일이 오늘(한국 날짜)이면 당일 취소 → 환불 없음.
   // 서버가 UTC 로 돌아도 한국 날짜로 판정해야 새벽 시간대에 하루가 어긋나지 않는다.

@@ -3,7 +3,7 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, sanitizeText } from "@/lib/util";
 import { sendReservationSms } from "@/lib/sms";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
-import { refundRateFor } from "@/lib/money";
+import { refundRateFor, hasStarted } from "@/lib/money";
 
 // 환불율은 lib/money.ts 의 refundRateFor 하나만 쓴다 (손님 화면과 같은 계산을 쓰기 위함)
 
@@ -64,6 +64,12 @@ export async function POST(req: NextRequest) {
   }
   if (found.status === "cancelled") {
     return NextResponse.json({ error: "이미 취소된 예약입니다." }, { status: 409 });
+  }
+  // 이미 이용이 끝난 예약은 취소 대상이 아니다. 화면에서도 버튼을 숨기지만, API 를 직접
+  // 부르면 뚫리므로 여기서도 막는다. (환불은 어차피 0% 라 돈이 나가진 않지만, 쓸데없는
+  // 취소 기록이 쌓이고 "이용했는데 취소됨" 같은 이상한 상태가 만들어진다)
+  if (hasStarted(found.date, found.time)) {
+    return NextResponse.json({ error: "이미 이용하신 예약은 취소할 수 없습니다. 매장으로 문의해 주세요." }, { status: 409 });
   }
 
   const refundRate = refundRateFor(found.date, found.time);

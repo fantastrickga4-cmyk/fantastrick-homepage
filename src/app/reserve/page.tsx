@@ -4,8 +4,12 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
+import { depositOf } from "@/lib/settings";
 
-type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number };
+type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number;
+  // 사장님이 관리자에서 바꾼 테마별 예약금. 이걸 안 쓰면 화면만 옛 금액이 남아
+  // 손님이 틀린 금액을 입금하고 자동매칭(금액 정확일치)이 실패해 30분 뒤 자동취소된다.
+  themeDeposits?: Record<string, number> };
 
 // 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
 function openDateLabel(dateStr: string): string {
@@ -109,6 +113,7 @@ function ReserveInner() {
   const [done, setDone] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false); // 접수 후 예약금 안내 팝업
   const [depositAck, setDepositAck] = useState(false);    // "확인했습니다" 체크 여부
+  const [paidDeposit, setPaidDeposit] = useState<number | null>(null); // 서버가 실제로 저장한 예약금
 
   // 시간표 기본값은 서버(settings.ts 의 DEFAULT_CONFIG)와 똑같은 값으로 시작한다.
   //   전에는 timeSlots(전 매장 공통 fallback)만 갖고 시작해서, /api/config 가 도착하기 전에는
@@ -128,7 +133,10 @@ function ReserveInner() {
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
-  const deposit = theme?.deposit ?? 0;
+  // 서버(예약 저장·안내문자)는 관리자 설정값을 쓴다 → 화면도 같은 값을 써야 손님이 맞는 금액을 넣는다.
+  // 접수 후에는 서버가 실제로 저장한 금액(paidDeposit)을 우선한다(설정이 그 사이 바뀌었을 수도).
+  const cfgDeposit = depositOf({ themeDeposits: cfg.themeDeposits ?? {} }, themeId, theme?.deposit ?? 0);
+  const deposit = paidDeposit ?? cfgDeposit;
 
   // 선택한 날짜가 아직 예약 오픈 전인지 (오픈 전이면 시간·인원·신청 숨김)
   const notOpenSelected = useMemo(() => (date ? reservationDateState(date) === "not_open" : false), [date]);
@@ -230,6 +238,7 @@ function ReserveInner() {
       if (!res.ok) {
         setErr(j.error || "예약에 실패했습니다.");
       } else {
+        if (typeof j.deposit === "number") setPaidDeposit(j.deposit); // 화면 추정치 말고 서버가 저장한 값으로
         setDone(true);
         setShowDeposit(true);
       }
