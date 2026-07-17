@@ -65,12 +65,29 @@
   --shadow:0 20px 60px rgba(20,22,42,.12);
 
   /* ---- 역할별 폰트 ---- 제목=나눔명조 ExtraBold(세리프), 본문/버튼/숫자/라벨=Pretendard ---- */
-  --font-display:"Nanum Myeongjo","Pretendard Variable","Pretendard",serif;
+  --font-display:"Nanum Myeongjo","Pretendard Variable","Pretendard","Pretendard 임시",serif;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+/* 글꼴 도착 전에 쓸 "대역폭 맞춘 임시 글꼴".
+   문제: 본문 글꼴(Pretendard)이 느린 인터넷에선 6초쯤 뒤에 온다. 그때까지는 폰에 기본으로 깔린
+         글꼴(맑은 고딕·애플 고딕 등)로 그려지는데, 그게 **한글 기준 Pretendard 보다 17% 넓다**.
+         그래서 글꼴이 도착하는 순간 모든 문단의 줄 수가 줄며 화면이 통째로 움직인다
+         (실측: /business 폰에서 화면 튐 0.24 — 제목 자리만 잡아둬도 문단들이 또 움직였다).
+   해결: 임시로 쓰는 그 시스템 글꼴을 **미리 85.4% 로 줄여서** Pretendard 와 폭을 맞춘다.
+         그러면 진짜 글꼴이 도착해도 글자 폭이 그대로라 줄 수가 안 변하고, 화면도 안 움직인다.
+   숫자 근거(실측, 같은 문장 폭 비교): 한글 본문 0.8541 · 한글 제목 0.8549 → 85.4%.
+   ※ 영문은 원래 폭이 거의 같아서(1.01) 잠깐 영문이 살짝 좁아 보이지만, 이 사이트 글은 대부분 한글이다.
+   ※ local() 은 손님 기기에 이미 깔린 글꼴을 가리킨다 — 새로 받는 게 없어 느려지지 않는다. */
+@font-face{
+  font-family:"Pretendard 임시";
+  src:local("Apple SD Gothic Neo"), local("Noto Sans KR"), local("Noto Sans CJK KR"), local("Malgun Gothic");
+  size-adjust:85.4%;
+  font-weight:100 900;
+  font-display:swap;
+}
 body{margin:0;background:var(--bg);color:var(--text);
-  font-family:"Pretendard Variable","Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-family:"Pretendard Variable","Pretendard","Pretendard 임시",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
