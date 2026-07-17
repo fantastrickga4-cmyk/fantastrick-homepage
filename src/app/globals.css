@@ -84,7 +84,12 @@ h2.title{font-family:var(--font-display);font-size:var(--fs-2xl);font-weight:800
 /* ---- 접근성: 포커스 링(전역) ---- */
 :focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px;border-radius:3px}
 
+/* font-family:inherit 이 반드시 있어야 한다 — <button> 은 폰트를 상속하지 않고 브라우저 기본
+   (Arial)로 그린다. <a class="btn"> 은 앵커라 상속돼서 멀쩡했고 <button class="btn"> 만
+   혼자 다른 글꼴이었다("후기 쓰기"·"문의 보내기"·☰·✕ 등, 같은 글자가 17px 더 넓게 나옴).
+   .chip·.field input·.rcal-cell 엔 이미 있는데 .btn 에만 빠져 있었다. (2026-07-17 2차 RPA 점검) */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:800;font-size:14px;padding:13px 22px;
+  font-family:inherit;
   border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:.18s;white-space:nowrap;min-height:44px}
 .btn:active{transform:scale(.98)}
 .btn.primary{background:var(--grad);color:#fff;box-shadow:0 4px 16px rgba(4,60,178,.35)}

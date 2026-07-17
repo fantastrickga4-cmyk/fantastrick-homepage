@@ -225,6 +225,14 @@ export default function Home() {
   const topReviews = (reviews || []).slice().sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   // 스크롤 등장 애니메이션
+  // 🔴 deps 에 reviews 가 반드시 있어야 한다.
+  //    .js .reveal 은 기본이 opacity:0 이고, 화면에 들어올 때 .in 이 붙어야 보인다.
+  //    전에는 deps 가 [] 라 **마운트 순간에 있던 요소만** 관찰했는데, 후기 인용 카드
+  //    (.rev-quote.reveal)는 /api/reviews 응답이 온 뒤에 새로 생기는 노드라 관찰 대상에서
+  //    빠졌다 → .in 이 영영 안 붙어 **투명한 채로 남는다**.
+  //    지금은 승인 후기가 0건이라 안 보이지만, 사장님이 첫 후기를 승인하는 순간
+  //    홈에 빈 카드 3장이 뜬다. (2026-07-17 2차 RPA 점검에서 발견 — 잠복 상태로 잡음)
+  //    reviews 가 바뀌면 다시 훑어서 새로 생긴 카드도 관찰한다(이미 .in 인 건 건드릴 게 없음).
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) =>
@@ -236,9 +244,9 @@ export default function Home() {
         }),
       { threshold: 0.14 }
     );
-    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    document.querySelectorAll(".reveal:not(.in)").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [reviews]);
 
   // (2026-07-16) 옛 히어로 패럴랙스 코드 60줄 삭제 — heroBgRef 가 화면 어느 요소에도 안 붙어 있어
   // 첫 줄에서 항상 return 되던 죽은 코드였음(0% 동작). 지금 히어로가 움직이는 건 배경 그라디언트(htMesh 30s)와
