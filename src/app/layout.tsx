@@ -42,18 +42,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* 제목 전용 디스플레이 폰트: 나눔명조 ExtraBold(세리프) — 큰 제목만. 한글 글리프는 unicode-range split 서빙(CWV 안전).
 
-            display=swap → block 로 바꿈 (2026-07-17).
-              swap 은 "글꼴 오기 전엔 기본 글꼴로 보여주고, 오면 바꿔치기" 라서 글자 크기가 확 바뀌며
-              화면이 밀린다 (2차 점검 실측: 폰에서 /business 제목이 3줄→2줄로 줄며 아래 전체가 38px
-              점프, 화면 튐 0.2362 — 기준 0.1).
-              block 은 "글꼴 올 때까지(최대 3초) 제목을 잠깐 안 보여주고, 오면 한 번에 그린다" 라서
-              바꿔치기가 없어 튀지 않는다. 실측상 이 글꼴은 느린 3G에서도 1.5~2.0초에 도착해 3초 안에 들어온다.
-              (로고 글꼴도 같은 이유로 block 을 쓰고 있다 — globals.css 13줄) */}
+            display=swap → optional 로 바꿈 (2026-07-17). ⚠️ 이 한 단어가 화면 튐을 좌우한다.
+
+            문제: swap 은 "글꼴 오기 전엔 기본 글꼴로 보여주고, 오면 바꿔치기" 다. 나눔명조는 기본 글꼴보다
+                  가로가 좁아서, 바꿔치는 순간 제목이 3줄 → 2줄로 줄고 그 아래 내용 전체가 38px 위로
+                  확 올라간다 (2차 점검 실측: 폰 /business 화면 튐 0.2362 — 기준 0.1).
+                  손님이 버튼을 누르려는 순간 화면이 움직이면 엉뚱한 걸 누른다.
+
+            block 은 왜 안 됐나: "글꼴 올 때까지 글자를 안 보여준다" 지만 **자리는 여전히 기본 글꼴 크기로
+                  잡아둔다**. 그래서 안 보이는 채로 3줄을 차지하다가 글꼴이 오면 똑같이 튄다.
+                  실제로 block 으로 바꿔봤더니 0.2357 로 그대로였다(글꼴 도착 6.2초 — 3초 제한도 초과).
+
+            optional 은: 글꼴이 아주 빨리(0.1초 안에) 준비돼 있으면 쓰고, 아니면 **그 방문에선 아예 안 쓴다**.
+                  바꿔치기 자체가 없으니 튀지 않는다. 글꼴은 뒤에서 받아 저장해 두므로 **다음 방문부터는
+                  나눔명조로 보인다**.
+                  ⇒ 대가: 처음 방문한 손님, 특히 인터넷이 느린 곳에서는 제목이 세리프가 아니라
+                     본문 글꼴(Pretendard)로 보인다. "제목 글꼴이 항상 세리프로 나와야 한다" 면
+                     이 값을 swap 으로 되돌리면 되는데, 그러면 화면 튐이 같이 돌아온다. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..900&family=Nanum+Myeongjo:wght@800&display=block"
+          href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..900&family=Nanum+Myeongjo:wght@800&display=optional"
         />
       </head>
       <body>
