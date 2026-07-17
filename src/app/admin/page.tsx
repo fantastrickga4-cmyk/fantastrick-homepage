@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { isRefundPending, refundAmount, cancelledBy } from "@/lib/money";
+import { isActiveSmsType } from "@/lib/sms-templates";
 import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
 import { formatDate, formatPhone, formatStamp, formatStampShort, formatStampTime, kstDateOf } from "@/lib/util";
 
@@ -1833,9 +1834,14 @@ function SmsTab() {
                 <span style={{ color: "var(--faint)" }}>{formatStampShort(l.created_at)}</span>
                 {l.status !== "sent" && (
                   <span className="rt">
-                    <button className="btn sm ghost" disabled={resend === l.id} onClick={() => resendSms(l.id)}>
-                      {resend === l.id ? "보내는 중…" : "↻ 다시 보내기"}
-                    </button>
+                    {isActiveSmsType(l.type) ? (
+                      <button className="btn sm ghost" disabled={resend === l.id} onClick={() => resendSms(l.id)}>
+                        {resend === l.id ? "보내는 중…" : "↻ 다시 보내기"}
+                      </button>
+                    ) : (
+                      // 이제 안 쓰는 종류(방문 전날 자동안내)의 옛 기록 — 눌러도 안 나가므로 버튼을 안 보여준다.
+                      <span style={{ color: "var(--faint)", fontSize: 11 }}>지금은 안 쓰는 안내</span>
+                    )}
                   </span>
                 )}
               </div>

@@ -19,6 +19,15 @@
 // 2026-07-17 사장님 지시로 "reminder"(방문 전날 자동문자) 제거 — 그 기능을 안 쓰기로 함.
 export type SmsType = "reservation" | "payment" | "cancel" | "admin_cancel" | "confirm";
 
+// 지금 쓰는 문자 종류. 발송 내역에는 **이제 안 쓰는 종류**(reminder 92건)의 옛 기록이 남아 있어서,
+// 그 기록에 [다시 보내기] 를 눌러도 나가지 않게 막는 데 쓴다.
+export const ACTIVE_SMS_TYPES: readonly SmsType[] = [
+  "reservation", "payment", "cancel", "admin_cancel", "confirm",
+];
+export function isActiveSmsType(t: string): t is SmsType {
+  return (ACTIVE_SMS_TYPES as readonly string[]).includes(t);
+}
+
 // 발신번호 — 기존 사이트가 테마별로 다르게 쓰고 있음(사자의 서만 2호점 번호).
 // ALIGO_SENDER 환경변수가 없을 때의 참고값이 아니라, 기존 운영값 기록용.
 export const THEME_CALLBACK: Record<string, string> = {

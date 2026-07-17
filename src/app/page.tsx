@@ -268,12 +268,12 @@ export default function Home() {
             <span>기술로써</span>
             <span>현실에 구현한다.</span>
           </div>
-          <div className="ht-wm">
+          <h1 className="ht-wm">
             <span className="ht-w ht-fantasy">FANTAS<span className="ht-y">Y</span></span>
             <span className="ht-plus">+</span>
             <span className="ht-w ht-trick">TRICK</span>
             <span className="ht-shine" aria-hidden="true">FANTASTRICK</span>
-          </div>
+          </h1>
           <div className="ht-rule" aria-hidden="true" />
           <div className="cta">
             <Link href="/reserve" className="btn primary">테마 예약하기 →</Link>

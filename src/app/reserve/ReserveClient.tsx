@@ -311,7 +311,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
   return (
     <div className="formwrap">
       <div className="page-top" />
-      <h2 className="title" style={{ marginBottom: 22 }}>테마 예약</h2>
+      <h1 className="title" style={{ marginBottom: 22 }}>테마 예약</h1>
 
       <div className="card">
         {/* ① 테마 선택 — 여기서부터 시작. 고르면 아래 날짜가 나타난다. */}

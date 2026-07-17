@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { DEFAULT_TEMPLATES, kakaoConfigured, sendSms } from "@/lib/sms";
-import { THEME_TEMPLATES } from "@/lib/sms-templates";
+import { THEME_TEMPLATES, isActiveSmsType } from "@/lib/sms-templates";
 import { THEMES } from "@/lib/data";
 import { normalizePhone } from "@/lib/util";
 
@@ -88,6 +88,10 @@ export async function POST(req: NextRequest) {
   const { data: row } = await db.from("sms_log").select("phone, body, type, status").eq("id", id).single();
   if (!row) return NextResponse.json({ error: "발송 내역을 찾을 수 없습니다." }, { status: 404 });
   if (row.status === "sent") return NextResponse.json({ error: "이미 발송된 문자예요. 다시 보낼 필요가 없습니다." }, { status: 400 });
+  // 이제 안 쓰는 종류(reminder = 방문 전날 자동문자)의 옛 기록은 다시 보낼 수 없다.
+  if (!isActiveSmsType(String(row.type))) {
+    return NextResponse.json({ error: "지금은 쓰지 않는 종류의 문자예요(방문 전날 자동안내). 다시 보낼 수 없습니다." }, { status: 400 });
+  }
 
   const res = await sendSms(row.phone as string, row.body as string, row.type as string);
   if (res.skipped) return NextResponse.json({ error: "문자 발송 키(알리고)가 아직 없어서 실제로 나가지 않았어요. 기록만 남았습니다." }, { status: 400 });

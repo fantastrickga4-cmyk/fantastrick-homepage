@@ -23,7 +23,7 @@ export default async function FaqPage() {
   return (
     <div className="formwrap" style={{ maxWidth: 760 }}>
       <div className="page-top" />
-      <h2 className="title" style={{ margin: 0 }}>자주 묻는 질문</h2>
+      <h1 className="title" style={{ margin: 0 }}>자주 묻는 질문</h1>
       <p className="lead" style={{ margin: "6px 0 22px" }}>예약 전에 많이 물어보시는 것들을 모았어요.</p>
 
       {/* 가격 */}

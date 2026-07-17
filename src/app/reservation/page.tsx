@@ -136,7 +136,7 @@ export default function ReservationLookup() {
   return (
     <div className="formwrap">
       <div className="page-top" />
-      <h2 className="title" style={{ marginBottom: 4 }}>예약 조회 · 취소</h2>
+      <h1 className="title" style={{ marginBottom: 4 }}>예약 조회 · 취소</h1>
       <p className="lead" style={{ marginBottom: 22 }}>본인 확인을 위해 <b style={{ color: "var(--text)" }}>예약자 이름</b> · <b style={{ color: "var(--text)" }}>전화번호</b> · <b style={{ color: "var(--text)" }}>비밀번호</b>를 모두 입력해 주세요.</p>
 
       <div className="card">
