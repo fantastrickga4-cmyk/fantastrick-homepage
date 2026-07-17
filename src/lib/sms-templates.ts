@@ -16,7 +16,8 @@
 //   cancel       예약 취소 확인 (손님이 직접 취소)
 //   admin_cancel 관리자 취소 안내
 
-export type SmsType = "reservation" | "payment" | "cancel" | "admin_cancel" | "confirm" | "reminder";
+// 2026-07-17 사장님 지시로 "reminder"(방문 전날 자동문자) 제거 — 그 기능을 안 쓰기로 함.
+export type SmsType = "reservation" | "payment" | "cancel" | "admin_cancel" | "confirm";
 
 // 발신번호 — 기존 사이트가 테마별로 다르게 쓰고 있음(사자의 서만 2호점 번호).
 // ALIGO_SENDER 환경변수가 없을 때의 참고값이 아니라, 기존 운영값 기록용.

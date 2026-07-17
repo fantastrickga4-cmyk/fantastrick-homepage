@@ -7,7 +7,6 @@ import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
 // (010-0000-XXXX)으로 바꿔서 넣는다. 실제 손님 번호가 아니다.
 //
 // 왜 코드로까지 막나:
-//   이 사이트는 매일 아침 "내일 예약" 확정 건에 리마인더 문자를 자동 발송하고,
 //   관리자가 입금확인·취소 버튼을 눌러도 문자가 나간다. 연습 데이터에 진짜 번호가
 //   섞이면 아무 잘못 없는 손님에게 문자가 가버린다. 번호를 가짜로 바꾸는 것만으로도
 //   막히지만, 그 한 겹이 뚫렸을 때(예: 실수로 진짜 번호를 넣었을 때) 대비해
@@ -27,8 +26,6 @@ export const DEFAULT_TEMPLATES: Record<string, string> = {
   ...TYPE_FALLBACK,
   confirm:
     "[판타스트릭] {이름}님, 예약이 확정되었습니다.\n{테마} / {날짜} {시간} / {인원}명\n방문 감사합니다!",
-  reminder:
-    "[판타스트릭] {이름}님, 내일 예약 안내드립니다.\n{테마} / {날짜} {시간} / {인원}명\n늦지 않게 방문해 주세요!",
 };
 
 type Vars = { name?: string; theme?: string; date?: string; time?: string; people?: number; refundRate?: number };
@@ -114,7 +111,6 @@ export async function sendSms(phone: string, body: string, type: string): Promis
 const KAKAO_TPL: Record<string, string | undefined> = {
   confirm: process.env.ALIGO_KAKAO_TPL_CONFIRM,
   cancel: process.env.ALIGO_KAKAO_TPL_CANCEL,
-  reminder: process.env.ALIGO_KAKAO_TPL_REMINDER,
 };
 export function kakaoConfigured(type?: string): boolean {
   const base = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER && process.env.ALIGO_KAKAO_SENDERKEY);

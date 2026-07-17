@@ -14,7 +14,6 @@ const SMS_TYPES = [
   { type: "cancel", label: "취소 문자 (손님이 직접 취소)", perTheme: false },
   { type: "admin_cancel", label: "관리자 취소 안내", perTheme: false },
   { type: "confirm", label: "예약확정 문자 (입금 없이 확정 시)", perTheme: false },
-  { type: "reminder", label: "방문 리마인더", perTheme: false },
 ] as const;
 const TYPE_KEYS = SMS_TYPES.map((t) => t.type) as readonly string[];
 const THEME_IDS = new Set(THEMES.map((t) => t.id));
@@ -71,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   const aligoReady = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER);
   const kakaoReady = kakaoConfigured();
-  const kakaoTemplates = { confirm: kakaoConfigured("confirm"), cancel: kakaoConfigured("cancel"), reminder: kakaoConfigured("reminder") };
+  const kakaoTemplates = { confirm: kakaoConfigured("confirm"), cancel: kakaoConfigured("cancel") };
   return NextResponse.json({ ok: true, templates, log: log || [], aligoReady, kakaoReady, kakaoTemplates });
 }
 
