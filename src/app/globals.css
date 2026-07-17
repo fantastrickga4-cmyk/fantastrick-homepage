@@ -857,7 +857,15 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .rm-syn p{margin:2px 0;font-size:15.5px;line-height:1.85;color:var(--text)}
 .rm-notices{list-style:none;padding:14px 16px;margin:18px 0 0;border-radius:var(--r-sm);
   background:rgba(181,137,31,.08);border:1px solid rgba(181,137,31,.28)}
-.rm-notices li{font-size:13.5px;line-height:1.75;color:#8a6512;font-weight:600}
+/* word-break:keep-all — 한글은 기본값이면 "게임 테마입 / 니다." 처럼 단어 한가운데서 잘린다.
+   띄어쓰기에서만 줄이 바뀌도록 해서 읽기 편하게. (주의사항은 손님이 꼭 읽어야 하는 문장이다) */
+.rm-notices li{font-size:13.5px;line-height:1.75;color:#8a6512;font-weight:600;word-break:keep-all}
+/* "※ 머더룸 — …" 처럼 라벨이 붙은 주의사항.
+   라벨을 따로 떼어 두면 본문이 여러 줄이 돼도 전부 첫 줄 본문과 왼쪽이 맞는다
+   (라벨 밑으로 파고들지 않음). 본문의 \n 은 pre-line 으로 줄바꿈이 된다. */
+.rm-notices li.rm-tag{display:flex;gap:.35em;align-items:baseline}
+.rm-notices li.rm-tag .rm-tag-l{flex:0 0 auto}
+.rm-notices li.rm-tag .rm-tag-b{white-space:pre-line}
 @media(max-width:640px){.rm-poster{flex:0 0 60%;margin:0 auto}}
 
 .rm-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin-bottom:16px}

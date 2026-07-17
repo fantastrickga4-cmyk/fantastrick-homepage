@@ -75,7 +75,19 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
           <div className="rm-syn">
             {content.synopsis.map((line, i) => <p key={i}>{line}</p>)}
             <ul className="rm-notices">
-              {content.notices.map((n, i) => <li key={i}>※ {n}</li>)}
+              {content.notices.map((n, i) => {
+                // "머더룸 — 본문" 처럼 앞에 라벨이 붙은 줄은 라벨과 본문을 나눠 배치한다.
+                // 그냥 한 줄로 두면 본문이 길어질 때 라벨 아래까지 파고들어 읽기 어렵다
+                // (모바일에서 "…게임 테마입 / 니다. (방탈출 테마가…" 처럼 잘렸음).
+                const sep = n.indexOf(" — ");
+                if (sep === -1) return <li key={i}>※ {n}</li>;
+                return (
+                  <li key={i} className="rm-tag">
+                    <span className="rm-tag-l">※ {n.slice(0, sep)} —</span>
+                    <span className="rm-tag-b">{n.slice(sep + 3)}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </section>
