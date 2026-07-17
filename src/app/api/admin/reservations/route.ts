@@ -3,7 +3,7 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
 import { themeById, isSlotTime } from "@/lib/data";
-import { isRefundPending, refundAmount } from "@/lib/money";
+import { isRefundPending, refundAmount, refundRateFor } from "@/lib/money";
 import { getConfig, depositOf } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations } from "@/lib/expire";
@@ -207,6 +207,18 @@ export async function PATCH(req: NextRequest) {
   if (nowRefunded) patch.refunded_at = now;
   if (patch.refunded === false && before.refunded) patch.refunded_at = null;
 
+  // 🔴 사장님이 '입금완료' 예약을 취소하면 돌려줘야 할 돈이 생긴다.
+  //    전에는 refund_rate 가 null 로 남아 환불 대기 큐에도, 예약 상세에도 아무 표시가 없어서
+  //    "받은 돈이 남아있다" 는 신호가 화면 어디에도 없었다(입출금 '실수령'엔 그대로 잡힌 채).
+  //    → 손님이 직접 취소할 때와 같은 규정으로 환불율을 기록해 둔다.
+  //    ⚠️ 환불 대기 큐(isRefundPending)는 '환불 계좌'까지 있어야 뜬다. 사장님이 취소한 건은
+  //       손님 계좌를 모르므로 큐에는 안 뜬다 — 계좌를 받아 [환불 처리]에서 입력해야 한다.
+  //       (2026-07-17 RPA 점검에서 발견)
+  const nowCancelled = patch.status === "cancelled" && before.status !== "cancelled";
+  if (nowCancelled && before.deposit_paid && before.refund_rate == null) {
+    patch.refund_rate = refundRateFor(before.date, before.time);
+  }
+
   const { error } = await db.from("reservations").update(patch).eq("id", id);
   if (error) return NextResponse.json({ error: "수정 중 오류가 발생했습니다." }, { status: 500 });
 
@@ -215,6 +227,17 @@ export async function PATCH(req: NextRequest) {
   if (nowPaid) logs.push({ reservation_id: id, action: "입금확인", detail: `${(before.deposit || 0).toLocaleString()}원${body.deposit_payer ? ` · 입금자 ${body.deposit_payer}` : ""}` });
   if (nowUnpaid) logs.push({ reservation_id: id, action: "입금확인 취소", detail: null });
   if (nowRefunded) logs.push({ reservation_id: id, action: "환불완료", detail: `${refundAmount({ deposit: before.deposit, refund_rate: before.refund_rate }).toLocaleString()}원` });
+  // 입금완료 예약을 취소했으면 "얼마를 돌려줘야 하는지" 를 이력에 남긴다.
+  // 계좌를 모르면 환불 대기 큐에 안 뜨므로, 최소한 여기라도 흔적이 있어야 잊지 않는다.
+  if (nowCancelled && before.deposit_paid && patch.refund_rate != null) {
+    const amt = refundAmount({ deposit: before.deposit, refund_rate: patch.refund_rate as number });
+    logs.push({
+      reservation_id: id, action: "환불 필요",
+      detail: amt > 0
+        ? `${amt.toLocaleString()}원 (환불율 ${patch.refund_rate}%) · 손님 계좌를 받아 [환불 처리]에서 입력하세요`
+        : `환불 대상 아님 (당일/지난 예약 → 환불율 0%)`,
+    });
+  }
   if (patch.status && patch.status !== before.status) {
     logs.push({ reservation_id: id, action: String(patch.status === "confirmed" ? "확정" : patch.status === "cancelled" ? "취소" : patch.status === "noshow" ? "노쇼" : "대기로 되돌림"), detail: `${ST_KO[before.status] || before.status} → ${ST_KO[String(patch.status)] || patch.status}` });
   }

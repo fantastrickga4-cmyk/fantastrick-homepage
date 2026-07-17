@@ -613,8 +613,12 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
   if (!rows) return null;
   const me = rows.find((x) => x.id === currentId);
   const past = rows.filter((x) => x.id !== currentId);
-  const visited = rows.filter((x) => x.status === "confirmed" || x.status === "noshow");
-  const noshow = rows.filter((x) => x.status === "noshow").length;
+  // 🔴 '지금 보고 있는 예약'을 빼고 세야 한다.
+  //    전에는 rows(현재 건 포함)로 세고 +1 을 해서, 예약이 1건뿐인 첫 방문 손님이
+  //    "2번째 방문" 으로 떴다. 지금 예약한 테마도 '이미 해본 테마'로 잡혀서
+  //    "아직 안 한 테마" 추천에서 빠졌다(아직 안 했는데). (2026-07-17 RPA 점검에서 발견)
+  const visited = past.filter((x) => x.status === "confirmed" || x.status === "noshow");
+  const noshow = past.filter((x) => x.status === "noshow").length;
   const doneThemes = new Set(visited.map((x) => x.theme_id));
   const notYet = THEMES.filter((t) => !doneThemes.has(t.id));
   const nth = visited.length + 1;

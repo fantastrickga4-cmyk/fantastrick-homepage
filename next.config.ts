@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // 정적 이미지는 public/ 아래에서 직접 서빙 (외부 도메인 없음)
   reactStrictMode: true,
+  // 최적화된 이미지(포스터 등)를 오래 캐시한다. 기본값이면 Cache-Control: max-age=0,
+  // must-revalidate 라 재방문 때마다 서버에 "안 바뀌었죠?" 를 물어본다(느린 폰에서 왕복 비용).
+  // 포스터는 자주 바뀌지 않고, 바뀌면 파일 이름/쿼리가 달라져 새로 받으므로 길게 잡아도 안전하다.
+  images: { minimumCacheTTL: 60 * 60 * 24 * 30 },
   // 상위 폴더(D:\test3)의 다른 lockfile 을 루트로 잘못 잡지 않도록 이 프로젝트로 고정
   outputFileTracingRoot: import.meta.dirname,
   // 태블릿 앱(BankNotify)이 보내는 주소를 받아준다.

@@ -21,7 +21,11 @@
   /* ---- 표면/텍스트 (라이트: 쿨 갤러리 — 미술관 같은 모던 화이트) ---- */
   --bg:#f4f6f9; --bg2:#e9ecf1; --surface:#ffffff; --surface2:#f0f2f6;
   --text:#131620; --muted:#535a69;
-  --faint:#8b93a3;            /* 옅은 텍스트도 AA 근접 */
+  /* 작은 라벨용 회색(난이도·인원·1호점·관리자 등 11~15px).
+     전 #8b93a3 은 대비가 흰배경 3.09 / 페이지 2.85 / 푸터 2.61 로 AA(4.5) 에 한참 못 미쳤다
+     — "AA 근접"이라고 적혀 있었지만 실제로 재보니 아니었다(2026-07-17 RPA 점검).
+     계산으로 필요한 만큼만 어둡게: 흰배경 5.51 / 페이지 5.09 / 푸터 4.66 → 세 배경 모두 통과. */
+  --faint:#636975;
   --line:rgba(20,22,42,.12); --line2:rgba(20,22,42,.20);
 
   /* ---- 공식 브랜드 3색 정본화(시맨틱 토큰) ---- */
@@ -498,6 +502,18 @@ footer ul li{padding:3px 0}
 .opt.on{border-color:var(--brand-bright);color:var(--brand);background:#eef3ff;font-weight:700}
 .opt:hover:not(:disabled){border-color:var(--brand-bright)}
 .opt.soon,.opt:disabled{opacity:.45;cursor:not-allowed}
+
+/* 후기 테마 필터 — 2026-07-17 추가.
+   .filters / .chip 은 마크업만 있고 CSS 가 아예 없어서, 시네마틱한 사이트에 브라우저 기본
+   회색 버튼(43x24px, 각진 모서리)이 그대로 박혀 있었다. 게다가 `.chip.on` 스타일도 없어서
+   **어느 테마를 고른 건지 화면에 표시가 안 됐다.** (RPA 점검에서 터치타겟 24px 로 잡힘)
+   예약창의 .opt 과 같은 생김새로 맞춘다 — 같은 일(고르기)을 하는 버튼은 같아 보여야 한다. */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{min-height:44px;padding:10px 14px;border:1px solid #dfe3ec;border-radius:var(--r-full);
+  background:#fff;color:var(--text);font-size:13.5px;font-family:inherit;cursor:pointer;transition:.15s}
+.chip.on{border-color:var(--brand-bright);color:var(--brand);background:#eef3ff;font-weight:700}
+.chip:hover{border-color:var(--brand-bright)}
+.chip:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}
 
 /* ---------- 예약 상시 인라인 달력 ---------- */
 .rcal{border:1px solid #dfe3ec;border-radius:var(--r);background:#fff;padding:12px 12px 14px}

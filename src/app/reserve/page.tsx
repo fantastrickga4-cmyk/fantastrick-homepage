@@ -25,7 +25,11 @@ function pad2(n: number) {
 
 // 상시 표시되는 인라인 월 달력 (클릭 팝업 없이 항상 떠 있음)
 function Calendar({ value, onChange }: { value: string; onChange: (d: string) => void }) {
-  const now = new Date();
+  // 달력의 '오늘'은 브라우저가 있는 곳이 아니라 **한국 날짜** 여야 한다. 매장이 한국에 있고
+  // 서버 판정(reservationDateState)도 KST 고정이라, 로컬시각을 쓰면 해외에서 화면과 서버가
+  // 서로 다른 날을 가리킨다. (2026-07-17 RPA 점검에서 발견)
+  const kst = new Date(Date.now() + 9 * 3600 * 1000);
+  const now = new Date(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const todayS = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   const firstDow = new Date(view.y, view.m, 1).getDay();
@@ -59,11 +63,14 @@ function Calendar({ value, onChange }: { value: string; onChange: (d: string) =>
         {cells.map((d, i) => {
           if (d === null) return <div key={`e${i}`} className="rcal-cell empty" aria-hidden="true" />;
           const ds = `${view.y}-${pad2(view.m + 1)}-${pad2(d)}`;
-          const past = ds < todayS;
-          // 예약 오픈 규칙: 이용일 1주일 전 저녁 9시(21:00)에 오픈
-          const openAt = new Date(view.y, view.m, d - 7, 21, 0, 0, 0);
-          const notOpen = !past && now < openAt;
-          const openHint = `${openAt.getMonth() + 1}월 ${openAt.getDate()}일 저녁 9시 오픈`;
+          // 🔴 지남·오픈전 판정은 서버와 '같은 함수'(reservationDateState)를 쓴다.
+          //    전에는 여기서 new Date(...) 로 브라우저 로컬시각을 따로 계산했는데, 서버는 KST 고정이라
+          //    해외(예: UTC+14)에서 보면 자물쇠가 안 붙어 예약 가능해 보이다가 눌러야 "오픈 전"이라고
+          //    나왔다 — 화면과 서버가 서로 다른 말을 했다. (2026-07-17 RPA 점검에서 발견)
+          const state = reservationDateState(ds);
+          const past = state === "past";
+          const notOpen = state === "not_open";
+          const openHint = `${openDateLabel(ds)} 저녁 9시 오픈`;
           const dow = new Date(view.y, view.m, d).getDay();
           return (
             <button
