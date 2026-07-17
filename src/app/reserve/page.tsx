@@ -403,8 +403,8 @@ function ReserveInner() {
         {showInfo && (
         <div className="rstep">
         <div className="field">
-          <label>④ 인원</label>
-          <select value={people} onChange={(e) => setPeople(Number(e.target.value))}>
+          <label htmlFor="rv-people">④ 인원</label>
+          <select id="rv-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>{n}명</option>
             ))}
@@ -414,12 +414,13 @@ function ReserveInner() {
         {/* 예약자 정보 */}
         <div className="grid2">
           <div className="field">
-            <label>예약자 이름</label>
-            <input type="text" value={name} placeholder="홍길동" onChange={(e) => setName(e.target.value)} />
+            <label htmlFor="rv-name">예약자 이름</label>
+            <input id="rv-name" type="text" value={name} placeholder="홍길동" onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="field">
-            <label>전화번호</label>
+            <label htmlFor="rv-phone">전화번호</label>
             <input
+              id="rv-phone"
               type="tel"
               inputMode="numeric"
               value={phone}
@@ -436,8 +437,9 @@ function ReserveInner() {
 
         {/* 예약 비밀번호 — 조회·취소 시 본인 확인용 */}
         <div className="field">
-          <label>예약 비밀번호 (숫자 4자리)</label>
+          <label htmlFor="rv-pin">예약 비밀번호 (숫자 4자리)</label>
           <input
+            id="rv-pin"
             type="password"
             inputMode="numeric"
             maxLength={4}
@@ -469,9 +471,16 @@ function ReserveInner() {
   );
 }
 
+// 🔴 껍데기(fallback)가 실제 내용만큼 자리를 잡아줘야 한다.
+//    이 페이지는 주소창의 ?theme= 을 읽어야 해서(useSearchParams) 껍데기를 먼저 그리고
+//    내용을 나중에 채우는데, 껍데기가 비어 있으면 내용이 들어오는 순간 **푸터가 500px 넘게
+//    밀린다**(CLS 0.35 — 손님이 버튼을 누르려는 순간 화면이 움직여 오조작). 다른 페이지는
+//    전부 0.01 이하인데 여기만 나빴다. (2026-07-17 RPA 점검에서 발견)
+//    실측 첫 화면 높이: PC 518px / 폰 554px → 560px 로 잡아두면 밀림이 사라진다.
+//    내용이 더 길어지면 자연히 늘어나므로 손해가 없다.
 export default function ReservePage() {
   return (
-    <Suspense fallback={<div className="formwrap"><div className="page-top" /></div>}>
+    <Suspense fallback={<div className="formwrap" style={{ minHeight: 560 }}><div className="page-top" /></div>}>
       <ReserveInner />
     </Suspense>
   );

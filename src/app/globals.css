@@ -649,7 +649,7 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .admin-top .sp,.admin-wrap .sp{flex:1}
 .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
 .stat-row.dash4{grid-template-columns:repeat(4,1fr)}
-@media(max-width:760px){.stat-row{grid-template-columns:repeat(2,1fr)}}
+/* 모바일 규칙은 아래 .sub3 선언까지 끝난 뒤에 한 번에 둔다 — 이유는 그 아래 주석 참고 */
 .stat{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:13px 15px}
 /* 통계 숫자엔 색을 쓰지 않는다. 예외는 딱 하나 — 앰버 = "사장님이 처리해야 함" */
 .stat b{display:block;font-size:22px;font-weight:800;color:var(--text);font-feature-settings:"tnum"}
@@ -659,6 +659,19 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .stat-row.sub3 .stat{padding:9px 12px}
 .stat-row.sub3 .stat b{font-size:16px}
 .stat span{font-size:12px;color:var(--muted)}
+
+/* 🔴 통계 줄의 모바일 규칙 — 반드시 위의 .dash4·.sub3 선언보다 '뒤에', 같은 우선순위로 둘 것.
+   전에는 `@media{.stat-row{2칸}}` 하나뿐이라 우선순위(0,1,0)가 `.stat-row.dash4`(0,2,0)에게
+   져서 폰에서도 4칸이 그대로 유지됐다 → 390px 화면이 466px 로 벌어지고 "입금 대기 · 0원" 이
+   한 글자씩 세로로 쪼개지고 4번째 카드가 화면 밖으로 잘렸다(2026-07-17 RPA 점검에서 발견).
+   .sub3 는 미디어쿼리보다 아래에 선언돼 있어서 우선순위가 같아도 뒤라서 이기고 있었다.
+   → 세 개를 다 적어주고, 위치도 맨 뒤로 옮겨 확실히 이기게 한다. */
+@media(max-width:760px){
+  .stat-row,
+  .stat-row.dash4{grid-template-columns:repeat(2,1fr)}
+  /* sub3(작은 보조 통계 3개)는 폰에서도 3칸이 들어간다 — 다만 '우연히' 가 아니라 정한 값이다 */
+  .stat-row.sub3{grid-template-columns:repeat(3,1fr)}
+}
 .admin-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .admin-tools select,.admin-tools input{background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit}
 .admin-tools input[type=search]{min-width:160px}

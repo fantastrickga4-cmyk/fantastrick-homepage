@@ -108,8 +108,8 @@ export default function ReviewsPage() {
         <div className="card" style={{ marginBottom: 22 }}>
           {ok && <div className="notice ok">✅ 후기가 접수됐어요. 관리자 확인 후 게시됩니다. 감사합니다!</div>}
           <div className="field">
-            <label>테마</label>
-            <select value={themeId} onChange={(e) => setThemeId(e.target.value)}>
+            <label htmlFor="rw-theme">테마</label>
+            <select id="rw-theme" value={themeId} onChange={(e) => setThemeId(e.target.value)}>
               <option value="">테마 선택</option>
               {THEMES.map((t) => (
                 <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>
@@ -118,12 +118,12 @@ export default function ReviewsPage() {
           </div>
           <div className="grid2">
             <div className="field">
-              <label>이름 / 닉네임</label>
-              <input type="text" value={name} placeholder="홍길동" onChange={(e) => setName(e.target.value)} />
+              <label htmlFor="rw-name">이름 / 닉네임</label>
+              <input id="rw-name" type="text" value={name} placeholder="홍길동" onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="field">
-              <label>전화번호 (예약 확인용)</label>
-              <input type="tel" value={phone} placeholder="010-1234-5678" onChange={(e) => setPhone(e.target.value)} />
+              <label htmlFor="rw-phone">전화번호 (예약 확인용)</label>
+              <input id="rw-phone" type="tel" value={phone} placeholder="010-1234-5678" onChange={(e) => setPhone(e.target.value)} />
             </div>
           </div>
           <div className="field">
@@ -131,8 +131,8 @@ export default function ReviewsPage() {
             <Stars n={rating} onPick={setRating} />
           </div>
           <div className="field">
-            <label>후기</label>
-            <textarea rows={4} value={body} placeholder="플레이 경험을 들려주세요 (5자 이상)" onChange={(e) => setBody(e.target.value)} />
+            <label htmlFor="rw-body">후기</label>
+            <textarea id="rw-body" rows={4} value={body} placeholder="플레이 경험을 들려주세요 (5자 이상)" onChange={(e) => setBody(e.target.value)} />
           </div>
           <div className="hint" style={{ marginBottom: 12 }}>
             ※ 해당 전화번호로 그 테마를 예약한 기록이 있어야 후기를 남길 수 있어요. 작성한 후기는 <b>관리자 확인 후 게시</b>됩니다. 전화번호는 가운데 자리를 가려 표시됩니다.

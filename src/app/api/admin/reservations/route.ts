@@ -184,6 +184,18 @@ export async function PATCH(req: NextRequest) {
     patch.status = "confirmed";
     patch.confirmed_at = now;
   }
+  // 🔴 입금확인을 되돌리면 확정도 같이 되돌린다 (위 승격의 짝).
+  //    이게 없으면 "돈 안 냈는데 확정" 상태가 만들어지고, 그 예약은 어디에서도 안 보인다:
+  //      · [입금·환불] 의 입금 대기 큐 — status=pending 인 것만 봄 → 안 뜸
+  //      · 30분 미입금 자동취소(expire.ts) — status=pending 인 것만 봄 → 안 걸림
+  //      · 이번 달 확정 예약금 합계 — deposit_paid 를 안 봄 → 돈을 안 냈는데 매출로 잡힘
+  //    즉 사장님이 입금확인을 잘못 눌렀다 되돌리면 그 예약이 영영 방치된다.
+  //    (2026-07-17 RPA 점검에서 발견)
+  //    ※ 관리자가 같은 요청에서 상태를 직접 지정했으면(patch.status) 그 뜻을 존중해 건드리지 않는다.
+  if (nowUnpaid && before.status === "confirmed" && patch.status == null) {
+    patch.status = "pending";
+    patch.confirmed_at = null;
+  }
   // 돈이 실제로 움직인 시각 기록 — 이게 있어야 입출금 내역이 "예약일"이 아니라 "돈 들어온 날" 기준이 됨
   if (nowPaid) patch.paid_at = now;
   if (nowUnpaid) patch.paid_at = null;      // 입금확인을 잘못 눌러 되돌리는 경우

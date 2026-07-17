@@ -141,8 +141,9 @@ export default function ReservationLookup() {
 
       <div className="card">
         <div className="field">
-          <label>예약자 이름</label>
+          <label htmlFor="lk-name">예약자 이름</label>
           <input
+            id="lk-name"
             type="text"
             value={lookupName}
             placeholder="예약 때 입력한 이름"
@@ -151,8 +152,9 @@ export default function ReservationLookup() {
           />
         </div>
         <div className="field">
-          <label>전화번호</label>
+          <label htmlFor="lk-phone">전화번호</label>
           <input
+            id="lk-phone"
             type="tel"
             value={phone}
             placeholder="010-1234-5678"
@@ -161,8 +163,9 @@ export default function ReservationLookup() {
           />
         </div>
         <div className="field" style={{ marginBottom: 12 }}>
-          <label>예약 비밀번호 (숫자 4자리)</label>
+          <label htmlFor="lk-pin">예약 비밀번호 (숫자 4자리)</label>
           <input
+            id="lk-pin"
             type="password"
             inputMode="numeric"
             maxLength={4}
@@ -242,16 +245,16 @@ export default function ReservationLookup() {
             </div>
 
             <div className="field">
-              <label>은행</label>
-              <input type="text" value={bank} placeholder="예: 카카오뱅크" onChange={(e) => setBank(e.target.value)} />
+              <label htmlFor="rf-bank">은행</label>
+              <input id="rf-bank" type="text" value={bank} placeholder="예: 카카오뱅크" onChange={(e) => setBank(e.target.value)} />
             </div>
             <div className="field">
-              <label>계좌번호</label>
-              <input type="text" inputMode="numeric" value={account} placeholder="'-' 없이 숫자만" onChange={(e) => setAccount(e.target.value)} />
+              <label htmlFor="rf-acct">계좌번호</label>
+              <input id="rf-acct" type="text" inputMode="numeric" value={account} placeholder="'-' 없이 숫자만" onChange={(e) => setAccount(e.target.value)} />
             </div>
             <div className="field">
-              <label>예금주</label>
-              <input type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
+              <label htmlFor="rf-holder">예금주</label>
+              <input id="rf-holder" type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
             </div>
 
             {modalErr && <div className="msg-err">⚠️ {modalErr}</div>}
