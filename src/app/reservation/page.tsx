@@ -43,12 +43,17 @@ export default function ReservationLookup() {
   const [loading, setLoading] = useState(false);
 
   // 취소 모달 상태
+  //   step = 'policy' : 환불 규정 안내(80%/100%/0%)를 **먼저** 보여주는 단계
+  //          'account': 동의 후 환불 계좌를 입력하는 단계
+  //   왜 이 순서인가: 전에는 계좌 입력창이 먼저 떠서 손님이 "80%만 환불된다"는 안내를
+  //   못 보고 지나쳤다("취소 눌렀는데 80% 안내가 안 뜬다"). 규정을 먼저 알리고 동의를 받은 뒤
+  //   계좌를 받도록 순서를 뒤집었다.
   const [target, setTarget] = useState<Reservation | null>(null); // 취소하려는 예약
+  const [step, setStep] = useState<"policy" | "account">("policy");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
   const [holder, setHolder] = useState("");
   const [modalErr, setModalErr] = useState("");
-  const [showPolicy, setShowPolicy] = useState(false);
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
@@ -76,21 +81,20 @@ export default function ReservationLookup() {
   function openCancel(r: Reservation) {
     setTarget(r);
     setBank(""); setAccount(""); setHolder("");
-    setModalErr(""); setShowPolicy(false); setAgree(false);
+    setModalErr(""); setStep("policy"); setAgree(false); // 규정 안내부터
   }
   function closeModal() {
-    setTarget(null); setShowPolicy(false); setSubmitting(false); setAgree(false);
+    setTarget(null); setStep("policy"); setSubmitting(false); setAgree(false);
   }
 
-  // 완료 버튼 → 환불 정보 검증 후 정책 확인창 표시
-  function onComplete() {
+  // 계좌 입력 단계의 [취소 확정] → 계좌 검증 후 실제 취소
+  function submitAccount() {
     setModalErr("");
     if (!bank.trim() || !account.trim() || !holder.trim()) {
       setModalErr("은행 · 계좌번호 · 예금주를 모두 입력해 주세요.");
       return;
     }
-    setAgree(false);
-    setShowPolicy(true);
+    confirmCancel();
   }
 
   // 정책 확인창 "예" → 실제 취소 진행
@@ -113,7 +117,6 @@ export default function ReservationLookup() {
       });
       const j = await res.json();
       if (!res.ok) {
-        setShowPolicy(false);
         setModalErr(j.error || "취소에 실패했습니다.");
         setSubmitting(false);
         return;
@@ -128,7 +131,6 @@ export default function ReservationLookup() {
       );
       closeModal();
     } catch {
-      setShowPolicy(false);
       setModalErr("네트워크 오류가 발생했습니다.");
       setSubmitting(false);
     }
@@ -227,99 +229,100 @@ export default function ReservationLookup() {
         <Link href="/reserve" style={{ color: "var(--muted)" }}>← 새 예약하기</Link>
       </p>
 
-      {/* 취소 모달 — 환불 계좌 입력 */}
-      {target && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal(); }}>
-          <div className="modal">
-            <button className="close-x" onClick={closeModal} aria-label="닫기"><IconClose /></button>
-            <h3>예약 취소</h3>
-
-            {/* 자동으로 채워지는 예약 정보 */}
-            <div className="res-summary" style={{ marginTop: 0, marginBottom: 18 }}>
-              <div className="r"><span>테마</span><b>{target.theme_name}</b></div>
-              <div className="r"><span>날짜</span><b>{formatDate(target.date)}</b></div>
-              <div className="r"><span>시간</span><b>{target.time}</b></div>
-            </div>
-
-            <div className="notice info" style={{ marginBottom: 16 }}>
-              환불받으실 계좌 정보를 입력해 주세요.
-            </div>
-
-            <div className="field">
-              <label htmlFor="rf-bank">은행</label>
-              <input id="rf-bank" type="text" value={bank} placeholder="예: 카카오뱅크" onChange={(e) => setBank(e.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="rf-acct">계좌번호</label>
-              <input id="rf-acct" type="text" inputMode="numeric" value={account} placeholder="'-' 없이 숫자만" onChange={(e) => setAccount(e.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="rf-holder">예금주</label>
-              <input id="rf-holder" type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
-            </div>
-
-            {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
-
-            <div className="modal-btns" style={{ marginTop: 18 }}>
-              <button className="btn ghost" onClick={closeModal}>닫기</button>
-              <button className="btn primary" onClick={onComplete}>완료</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 환불 규정 확인 팝업 — 환불액 자동 계산 + (전액 환불이 아닐 때) 동의 체크 필수 */}
-      {target && showPolicy && (() => {
+      {/* 취소 흐름 — ① 환불 규정 안내(먼저!) → ② 환불 계좌 입력.
+          손님이 [예약 취소]를 누르면 80%/100%/0% 안내가 제일 먼저 뜨고, 동의해야 계좌 입력으로 넘어간다. */}
+      {target && (() => {
         const ri = refundInfo(target.date, target.time, target.deposit);
         const need = ri.rate < 100; // 100% 가 아니면(80%·0%) 동의 체크 필요
         return (
-          <div className="modal-overlay" style={{ zIndex: 310 }}>
-            <div className="modal" style={{ maxWidth: 440 }}>
-              <h3>환불 규정 안내</h3>
-              {ri.rate === 0 ? (
-                // 당일 취소 — 돌려받는 돈이 0원이라 가장 강하게 알려준다.
-                // (전에는 이 경우가 없어서 "80% 환불" 이라고 잘못 안내했다)
-                <p className="modal-policy">
-                  <b>오늘 이용하시는 예약</b>이라, 환불 규정에 따라{" "}
-                  <b style={{ color: "var(--danger)" }}>예약금이 환불되지 않습니다.</b>
-                  <br />그래도 취소하시겠어요?
-                </p>
-              ) : need ? (
-                <p className="modal-policy">
-                  테마 시작까지 <b>24시간 미만</b>이 남아, 환불 규정에 따라{" "}
-                  <b style={{ color: "var(--danger)" }}>총 예약금의 80%</b>만 환불됩니다.
-                </p>
-              ) : (
-                <p className="modal-policy">
-                  테마 시작 <b>24시간 보다 많이</b> 남아{" "}
-                  <b style={{ color: "var(--ok)" }}>전액(100%) 환불</b>됩니다.
-                </p>
-              )}
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal(); }}>
+            {step === "policy" ? (
+              /* ① 환불 규정 안내 */
+              <div className="modal" style={{ maxWidth: 440 }}>
+                <button className="close-x" onClick={closeModal} aria-label="닫기"><IconClose /></button>
+                <h3>예약 취소 · 환불 안내</h3>
 
-              <div className="refund-box">
-                <div className="r"><span>총 예약금</span><b>{target.deposit.toLocaleString()}원</b></div>
-                <div className="r"><span>환불율</span><b>{ri.rate}%</b></div>
-                <div className="r total"><span>환불 예정액</span><b>{ri.amount.toLocaleString()}원</b></div>
+                <div className="res-summary" style={{ marginTop: 0, marginBottom: 14 }}>
+                  <div className="r"><span>테마</span><b>{target.theme_name}</b></div>
+                  <div className="r"><span>일시</span><b>{formatDate(target.date)} {target.time}</b></div>
+                </div>
+
+                {ri.rate === 0 ? (
+                  // 당일 취소 — 돌려받는 돈이 0원이라 가장 강하게 알려준다.
+                  <p className="modal-policy">
+                    <b>오늘 이용하시는 예약</b>이라, 환불 규정에 따라{" "}
+                    <b style={{ color: "var(--danger)" }}>예약금이 환불되지 않습니다.</b>
+                    <br />그래도 취소하시겠어요?
+                  </p>
+                ) : need ? (
+                  <p className="modal-policy">
+                    테마 시작까지 <b>24시간 미만</b>이 남아, 환불 규정에 따라{" "}
+                    <b style={{ color: "var(--danger)" }}>총 예약금의 80%</b>만 환불됩니다.
+                  </p>
+                ) : (
+                  <p className="modal-policy">
+                    테마 시작 <b>24시간 보다 많이</b> 남아{" "}
+                    <b style={{ color: "var(--ok)" }}>전액(100%) 환불</b>됩니다.
+                  </p>
+                )}
+
+                <div className="refund-box">
+                  <div className="r"><span>총 예약금</span><b>{target.deposit.toLocaleString()}원</b></div>
+                  <div className="r"><span>환불율</span><b>{ri.rate}%</b></div>
+                  <div className="r total"><span>환불 예정액</span><b>{ri.amount.toLocaleString()}원</b></div>
+                </div>
+
+                {need && (
+                  <label className="agree-row">
+                    <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+                    <span>
+                      위 <b>{ri.rate === 0 ? "환불 불가" : "80% 환불"} 규정</b>에 동의합니다.
+                    </span>
+                  </label>
+                )}
+
+                <div className="modal-btns" style={{ marginTop: 16 }}>
+                  <button className="btn ghost" onClick={closeModal} disabled={submitting}>닫기</button>
+                  <button className="btn primary" onClick={() => { setModalErr(""); setStep("account"); }} disabled={need && !agree}>
+                    {ri.rate === 0 ? "취소 진행 →" : "동의 · 환불 계좌 입력 →"}
+                  </button>
+                </div>
               </div>
+            ) : (
+              /* ② 환불 계좌 입력 */
+              <div className="modal">
+                <button className="close-x" onClick={closeModal} aria-label="닫기"><IconClose /></button>
+                <h3>환불 계좌 입력</h3>
 
-              {need && (
-                <label className="agree-row">
-                  <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-                  <span>
-                    위 <b>{ri.rate === 0 ? "환불 불가" : "80% 환불"} 규정</b>에 동의합니다.
-                  </span>
-                </label>
-              )}
+                <div className="notice info" style={{ marginBottom: 16 }}>
+                  {ri.rate === 0
+                    ? <>당일 취소라 환불 금액은 <b>0원</b>이에요. 확인을 위해 계좌 정보를 남겨 주세요.</>
+                    : <>환불 예정액 <b>{ri.amount.toLocaleString()}원</b>(예약금의 {ri.rate}%)을 받으실 계좌를 입력해 주세요.</>}
+                </div>
 
-              {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
+                <div className="field">
+                  <label htmlFor="rf-bank">은행</label>
+                  <input id="rf-bank" type="text" value={bank} placeholder="예: 카카오뱅크" onChange={(e) => setBank(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="rf-acct">계좌번호</label>
+                  <input id="rf-acct" type="text" inputMode="numeric" value={account} placeholder="'-' 없이 숫자만" onChange={(e) => setAccount(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="rf-holder">예금주</label>
+                  <input id="rf-holder" type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
+                </div>
 
-              <div className="modal-btns" style={{ marginTop: 16 }}>
-                <button className="btn ghost" onClick={() => { setShowPolicy(false); setAgree(false); }} disabled={submitting}>돌아가기</button>
-                <button className="btn danger" onClick={confirmCancel} disabled={submitting || (need && !agree)}>
-                  {submitting ? "처리 중…" : "확인 · 취소 진행"}
-                </button>
+                {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
+
+                <div className="modal-btns" style={{ marginTop: 18 }}>
+                  <button className="btn ghost" onClick={() => { setModalErr(""); setStep("policy"); }} disabled={submitting}>돌아가기</button>
+                  <button className="btn danger" onClick={submitAccount} disabled={submitting}>
+                    {submitting ? "처리 중…" : "취소 확정"}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })()}
