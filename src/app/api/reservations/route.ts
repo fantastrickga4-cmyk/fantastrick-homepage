@@ -160,5 +160,19 @@ export async function GET(req: NextRequest) {
     .limit(50);
 
   if (error) return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500 });
-  return NextResponse.json({ ok: true, reservations: data });
+
+  // 각 예약이 손님이 이미 시간변경을 썼는지 표시 (변경은 1건당 1회만 — 화면에서 버튼을 미리 감춤).
+  //   이력에 '손님 시간변경' 기록이 있으면 changed=true.
+  const ids = (data || []).map((r) => r.id);
+  const changedSet = new Set<string>();
+  if (ids.length) {
+    const { data: logs } = await db
+      .from("reservation_logs")
+      .select("reservation_id")
+      .in("reservation_id", ids)
+      .eq("action", "손님 시간변경");
+    (logs || []).forEach((l: { reservation_id: string }) => changedSet.add(l.reservation_id));
+  }
+  const reservations = (data || []).map((r) => ({ ...r, changed: changedSet.has(r.id) }));
+  return NextResponse.json({ ok: true, reservations });
 }

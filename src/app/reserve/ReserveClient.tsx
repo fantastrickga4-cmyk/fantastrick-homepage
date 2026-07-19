@@ -4,105 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 import { depositOf } from "@/lib/settings";
-import { IconLock, IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
+import { IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
+import { ReserveCalendar, openDateLabel } from "@/components/ReserveCalendar";
 
 type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number;
   // 사장님이 관리자에서 바꾼 테마별 예약금. 이걸 안 쓰면 화면만 옛 금액이 남아
   // 손님이 틀린 금액을 입금하고 자동매칭(금액 정확일치)이 실패해 30분 뒤 자동취소된다.
   themeDeposits?: Record<string, number> };
-
-// 선택한 이용일의 예약창 오픈일(이용일 - 7일) 을 "M월 D일" 로 반환
-function openDateLabel(dateStr: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
-  if (!m) return "";
-  const o = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 7);
-  return `${o.getMonth() + 1}월 ${o.getDate()}일`;
-}
-
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-// 상시 표시되는 인라인 월 달력 (클릭 팝업 없이 항상 떠 있음)
-function Calendar({ value, onChange }: { value: string; onChange: (d: string) => void }) {
-  // 달력의 '오늘'은 브라우저가 있는 곳이 아니라 **한국 날짜** 여야 한다. 매장이 한국에 있고
-  // 서버 판정(reservationDateState)도 KST 고정이라, 로컬시각을 쓰면 해외에서 화면과 서버가
-  // 서로 다른 날을 가리킨다. (2026-07-17 RPA 점검에서 발견)
-  const kst = new Date(Date.now() + 9 * 3600 * 1000);
-  const now = new Date(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
-  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
-  const todayS = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-  const firstDow = new Date(view.y, view.m, 1).getDay();
-  const days = new Date(view.y, view.m + 1, 0).getDate();
-  const atMin = view.y < now.getFullYear() || (view.y === now.getFullYear() && view.m <= now.getMonth());
-
-  function move(delta: number) {
-    let y = view.y;
-    let m = view.m + delta;
-    if (m < 0) { m = 11; y -= 1; }
-    if (m > 11) { m = 0; y += 1; }
-    setView({ y, m });
-  }
-
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < firstDow; i += 1) cells.push(null);
-  for (let d = 1; d <= days; d += 1) cells.push(d);
-  const dows = ["일", "월", "화", "수", "목", "금", "토"];
-
-  return (
-    <div className="rcal">
-      <div className="rcal-head">
-        <button type="button" className="rcal-nav" onClick={() => move(-1)} disabled={atMin} aria-label="이전 달">‹</button>
-        <b>{view.y}년 {view.m + 1}월</b>
-        <button type="button" className="rcal-nav" onClick={() => move(1)} aria-label="다음 달">›</button>
-      </div>
-      <div className="rcal-grid">
-        {dows.map((d, i) => (
-          <div key={d} className={"rcal-dow" + (i === 0 ? " sun" : i === 6 ? " sat" : "")}>{d}</div>
-        ))}
-        {cells.map((d, i) => {
-          if (d === null) return <div key={`e${i}`} className="rcal-cell empty" aria-hidden="true" />;
-          const ds = `${view.y}-${pad2(view.m + 1)}-${pad2(d)}`;
-          // 🔴 지남·오픈전 판정은 서버와 '같은 함수'(reservationDateState)를 쓴다.
-          //    전에는 여기서 new Date(...) 로 브라우저 로컬시각을 따로 계산했는데, 서버는 KST 고정이라
-          //    해외(예: UTC+14)에서 보면 자물쇠가 안 붙어 예약 가능해 보이다가 눌러야 "오픈 전"이라고
-          //    나왔다 — 화면과 서버가 서로 다른 말을 했다. (2026-07-17 RPA 점검에서 발견)
-          const state = reservationDateState(ds);
-          const past = state === "past";
-          const notOpen = state === "not_open";
-          const openHint = `${openDateLabel(ds)} 저녁 9시 오픈`;
-          const dow = new Date(view.y, view.m, d).getDay();
-          return (
-            <button
-              key={ds}
-              type="button"
-              className={
-                "rcal-cell" +
-                (value === ds ? " on" : "") +
-                (ds === todayS ? " today" : "") +
-                (past ? " past" : "") +
-                (notOpen ? " locked" : "") +
-                (dow === 0 ? " sun" : dow === 6 ? " sat" : "")
-              }
-              disabled={past}
-              aria-pressed={value === ds}
-              aria-label={notOpen ? `${view.m + 1}월 ${d}일 · ${openHint}` : `${view.m + 1}월 ${d}일`}
-              title={notOpen ? openHint : undefined}
-              onClick={() => { if (!past) onChange(ds); }}
-            >
-              <span className="rcal-d">{d}</span>
-              {notOpen && <span className="rcal-lk" aria-hidden="true"><IconLock /></span>}
-            </button>
-          );
-        })}
-      </div>
-      <div className="rcal-legend">
-        <span><span className="lk"><IconLock /></span> 아직 예약 오픈 전</span>
-        <span>예약은 이용일 <b>일주일 전 저녁 9시</b>에 열립니다</span>
-      </div>
-    </div>
-  );
-}
 
 export default function ReserveClient({ preset }: { preset: string }) {
 
@@ -339,7 +247,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
         {showDate && (
           <div className="field rstep">
             <label>② 날짜</label>
-            <Calendar value={date} onChange={pickDate} />
+            <ReserveCalendar value={date} onChange={pickDate} />
             {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
             {date && notOpenSelected && (
               <div className="rcal-sel" style={{ marginTop: 4 }}>

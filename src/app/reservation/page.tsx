@@ -5,10 +5,12 @@ import { formatDate, formatPhone } from "@/lib/util";
 import { STORES } from "@/lib/data";
 import { refundRateFor, hasStarted } from "@/lib/money";
 import { IconWarn, IconCheck, IconClose } from "@/components/Icon";
+import ChangeModal from "./ChangeModal";
 
 type Reservation = {
   id: string;
   store_id: string;
+  theme_id: string;
   theme_name: string;
   date: string;
   time: string;
@@ -17,6 +19,7 @@ type Reservation = {
   deposit: number;
   deposit_paid: boolean;
   status: string;
+  changed?: boolean; // 손님이 이미 시간변경을 1회 썼는지 (조회 API 가 채워줌)
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -41,6 +44,9 @@ export default function ReservationLookup() {
   const [list, setList] = useState<Reservation[] | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 시간 변경 대상 예약 (팝업 열림 여부)
+  const [changeTarget, setChangeTarget] = useState<Reservation | null>(null);
 
   // 취소 모달 상태
   //   step = 'policy' : 환불 규정 안내(80%/100%/0%)를 **먼저** 보여주는 단계
@@ -215,7 +221,23 @@ export default function ReservationLookup() {
                         "취소하면 환불되나?" 하고 눌러보게 되고, 쓸데없는 취소 기록만 남는다. */}
                     {!cancelled && (hasStarted(r.date, r.time)
                       ? <div className="hint">이용이 끝난 예약이에요. 문의는 매장으로 연락 주세요.</div>
-                      : <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
+                      : (() => {
+                          // 시간 변경은 ①시작 24시간 넘게 남고(=취소 100% 조건) ②아직 안 바꿨을 때만.
+                          const canChange = refundRateFor(r.date, r.time) === 100 && !r.changed;
+                          return (
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              {canChange && <button className="btn sm" onClick={() => setChangeTarget(r)}>시간 변경</button>}
+                              <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
+                              {!canChange && (
+                                <span className="hint" style={{ margin: 0 }}>
+                                  {r.changed
+                                    ? "시간 변경은 한 번만 가능해 이미 사용하셨어요."
+                                    : "시간 변경은 시작 24시간 전까지 가능해요."}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()
                     )}
                   </div>
                 );
@@ -326,6 +348,22 @@ export default function ReservationLookup() {
           </div>
         );
       })()}
+
+      {/* 시간 변경 팝업 — 같은 테마 안에서 날짜·시간만 옮김(예약금 유지) */}
+      {changeTarget && (
+        <ChangeModal
+          target={changeTarget}
+          phone={phone}
+          name={lookupName.trim()}
+          pin={pin}
+          onClose={() => setChangeTarget(null)}
+          onDone={(id, d, t) => {
+            setList((prev) => prev?.map((x) => (x.id === id ? { ...x, date: d, time: t, changed: true } : x)) || null);
+            setChangeTarget(null);
+            setDoneMsg(`예약을 ${formatDate(d)} ${t} 으로 변경했어요. 예약금은 그대로 유지됩니다.`);
+          }}
+        />
+      )}
     </div>
   );
 }
