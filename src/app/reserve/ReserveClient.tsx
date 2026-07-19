@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 import { depositOf } from "@/lib/settings";
+import { IconLock, IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
 
 type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number;
   // 사장님이 관리자에서 바꾼 테마별 예약금. 이걸 안 쓰면 화면만 옛 금액이 남아
@@ -90,13 +91,13 @@ function Calendar({ value, onChange }: { value: string; onChange: (d: string) =>
               onClick={() => { if (!past) onChange(ds); }}
             >
               <span className="rcal-d">{d}</span>
-              {notOpen && <span className="rcal-lk" aria-hidden="true">🔒</span>}
+              {notOpen && <span className="rcal-lk" aria-hidden="true"><IconLock /></span>}
             </button>
           );
         })}
       </div>
       <div className="rcal-legend">
-        <span><span className="lk">🔒</span> 아직 예약 오픈 전</span>
+        <span><span className="lk"><IconLock /></span> 아직 예약 오픈 전</span>
         <span>예약은 이용일 <b>일주일 전 저녁 9시</b>에 열립니다</span>
       </div>
     </div>
@@ -258,7 +259,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
       <div className="formwrap">
         <div className="page-top" />
         <div className="card">
-          <div className="notice ok">✅ 예약 신청이 접수되었습니다!</div>
+          <div className="notice ok"><IconCheck /> 예약 신청이 접수되었습니다!</div>
           <div className="res-summary">
             <div className="r"><span>테마</span><b>{theme?.name}</b></div>
             <div className="r"><span>매장</span><b>{store?.name}</b></div>
@@ -384,7 +385,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
                     onClick={() => { if (!off) setTime(tm); }}
                     title={slotsLoading ? "확인 중" : isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
                   >
-                    {tm}{slotsLoading ? "" : isBlocked ? " 🚫" : soon ? " ⏱" : ""}
+                    {tm}{!slotsLoading && (isBlocked ? <>{" "}<IconBan /></> : soon ? <>{" "}<IconClock /></> : null)}
                   </button>
                 );
               })}
@@ -393,8 +394,8 @@ export default function ReserveClient({ preset }: { preset: string }) {
           {(slotsLoading || !cfgLoaded) && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
           {!slotsLoading && cfgLoaded && !(dayClosed || noSlotsDay) && (
             <div className="hint">
-              ※ 🚫 표시는 마감(예약 불가)된 시간입니다.
-              {leadMin > 0 && <> ⏱ 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
+              ※ <IconBan /> 표시는 마감(예약 불가)된 시간입니다.
+              {leadMin > 0 && <> <IconClock /> 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
             </div>
           )}
           {!slotsLoading && cfgLoaded && !time && !(dayClosed || noSlotsDay) && (
@@ -459,7 +460,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
           예약 조회·취소할 때 <b>비밀번호</b>가 필요해요. 잊지 않게 기억해 주세요.
         </div>
 
-        {err && <div className="msg-err">⚠️ {err}</div>}
+        {err && <div className="msg-err"><IconWarn /> {err}</div>}
 
         <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
           {loading ? "접수 중…" : "예약 신청하기"}

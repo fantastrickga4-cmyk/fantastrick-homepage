@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState, type CSSProperties } from "react";
+import { IconPencil, IconPlan, IconGear } from "@/components/Icon";
 
 export default function BusinessPage() {
   const [sent, setSent] = useState(false);
@@ -51,17 +52,17 @@ export default function BusinessPage() {
           </div>
           <div className="cap3">
             <div className="cap reveal">
-              <div className="ci">✎</div><div className="en">Contents</div><h3>콘텐츠 제작</h3>
+              <div className="ci"><IconPencil /></div><div className="en">Contents</div><h3>콘텐츠 제작</h3>
               <p>이야기와 게임 설계. 방탈출·머더미스터리·브랜드 체험 콘텐츠를 기획합니다.</p>
               <ul><li>세계관·시나리오 기획</li><li>퍼즐·장치 게임 설계</li><li>연출·사운드 디렉팅</li><li>운영 매뉴얼·GM 교육</li></ul>
             </div>
             <div className="cap reveal">
-              <div className="ci">▦</div><div className="en">Space</div><h3>공간 디자인</h3>
+              <div className="ci"><IconPlan /></div><div className="en">Space</div><h3>공간 디자인</h3>
               <p>이야기에 맞춘 몰입형 공간을 직접 디자인하고 시공합니다.</p>
               <ul><li>컨셉·세트 디자인</li><li>인테리어 시공·마감</li><li>동선·조명 설계</li><li>현장 연출 셋업</li></ul>
             </div>
             <div className="cap reveal">
-              <div className="ci">⚙</div><div className="en">Tech · Device</div><h3>기술 · 장치</h3>
+              <div className="ci"><IconGear /></div><div className="en">Tech · Device</div><h3>기술 · 장치</h3>
               <p>이머시브를 만드는 장치를 제작·납품·판매하고 유지보수합니다.</p>
               <ul><li>잠금/해제 장치(RFID·전자석·기계식)</li><li>연출 제어(조명·음향·영상·기믹)</li><li>센서 트리거(동작·압력·자기)</li><li>통합 제어 시스템·유지보수</li></ul>
             </div>

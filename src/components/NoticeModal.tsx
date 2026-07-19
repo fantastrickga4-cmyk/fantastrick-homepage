@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { Notice } from "@/lib/settings";
+import { IconClose } from "@/components/Icon";
 
 // 팝업 공지 (기존 fantastrick.co.kr 의 modal-window 이식 — 같은 동작)
 //   · 페이지 열자마자 표시 · 모든 페이지
@@ -86,7 +87,7 @@ export default function NoticeModal() {
   return (
     <div className="modal-overlay nt-overlay" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div className="modal nt-modal" role="dialog" aria-modal="true" aria-label={notice.title || "공지사항"}>
-        <button className="close-x" onClick={close} aria-label="닫기">✕</button>
+        <button className="close-x" onClick={close} aria-label="닫기"><IconClose /></button>
         {notice.linkUrl ? (
           <a href={notice.linkUrl} className="nt-link" target="_blank" rel="noopener noreferrer">{inner}</a>
         ) : (

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { THEMES, STORES, themeById } from "@/lib/data";
 import { THEME_CONTENT, BOOKING_INFO, BIZ_INFO } from "@/lib/theme-content";
 import { getConfig, depositOf } from "@/lib/settings";
+import { IconLock } from "@/components/Icon";
 
 // 테마 상세 — 기존 fantastrick.co.kr/rooms/{id}/ 를 옮긴 화면.
 // 손님이 "고르고 결제하기 전에 알아야 할 것"(가격·인원·주의사항·오시는 길)이 여기 다 있어야 한다.
@@ -56,8 +57,9 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         <div className="rm-spec">
           <div className="sp-i">
             <span className="sp-l">난이도</span>
-            <b className="sp-v" aria-label={`5단계 중 ${theme.difficulty}단계`}>
-              {"🔒".repeat(theme.difficulty)}<span className="sp-off">{"🔒".repeat(Math.max(0, 5 - theme.difficulty))}</span>
+            <b className="sp-v diff-locks" aria-label={`5단계 중 ${theme.difficulty}단계`}>
+              {Array.from({ length: theme.difficulty }, (_, i) => <IconLock key={i} />)}
+              <span className="sp-off">{Array.from({ length: Math.max(0, 5 - theme.difficulty) }, (_, i) => <IconLock key={i} />)}</span>
             </b>
           </div>
           <div className="sp-i"><span className="sp-l">인원</span><b className="sp-v">{content.players}</b></div>

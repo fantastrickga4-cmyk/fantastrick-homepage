@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { IconMenu, IconClose } from "@/components/Icon";
 
 // 공통 헤더 — 스크롤하면 배경이 생기는 시네마틱 헤더 + 모바일 드로어 메뉴
 const MENU = [
@@ -64,7 +65,7 @@ export default function Header() {
           aria-expanded={open}
           aria-controls="mobile-drawer"
         >
-          ☰
+          <IconMenu />
         </button>
       </div>
 
@@ -75,7 +76,7 @@ export default function Header() {
           <div className="drawer-head">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="logo-img" src="/images/logo-blue.png" alt="FANTASTRICK" />
-            <button className="drawer-close" onClick={() => setOpen(false)} aria-label="메뉴 닫기">✕</button>
+            <button className="drawer-close" onClick={() => setOpen(false)} aria-label="메뉴 닫기"><IconClose /></button>
           </div>
           {MENU.map((m, i) => (
             <Link

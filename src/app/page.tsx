@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
+import { IconStar } from "@/components/Icon";
 
 // 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
 type HomeReview = {
@@ -307,7 +308,7 @@ export default function Home() {
             <div className="rs-score">
               <span className="score">{revAvg ?? "—"}</span>
               <span className="of">/ 5.0</span>
-              <div className="s-stars" aria-hidden="true">★★★★★</div>
+              <div className="s-stars" aria-hidden="true">{Array.from({ length: 5 }, (_, i) => <IconStar key={i} />)}</div>
             </div>
             <div className="rs-meta">
               <div className="s-src">
@@ -327,7 +328,7 @@ export default function Home() {
                 {topReviews.map((r, i) => (
                   <div key={r.id} className="rev-quote reveal" style={{ "--i": i } as CSSProperties}>
                     <div className="rq-mark" aria-hidden="true">“</div>
-                    <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>{"★".repeat(r.rating)}</div>
+                    <div className="rq-stars" aria-label={`별점 ${r.rating}점`}>{Array.from({ length: r.rating }, (_, i) => <IconStar key={i} />)}</div>
                     <p className="rq-body">{r.body}</p>
                     <div className="rq-foot">
                       <span className="rq-theme">{r.theme_name}</span>

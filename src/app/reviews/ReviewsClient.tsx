@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { THEMES } from "@/lib/data";
 import { formatDate } from "@/lib/util";
 import type { Review } from "./types";
+import { IconStar, IconCheck, IconWarn } from "@/components/Icon";
 
 function Stars({ n, onPick }: { n: number; onPick?: (v: number) => void }) {
   return (
@@ -14,7 +15,7 @@ function Stars({ n, onPick }: { n: number; onPick?: (v: number) => void }) {
           onClick={onPick ? () => onPick(i) : undefined}
           style={{ cursor: onPick ? "pointer" : "default" }}
         >
-          ★
+          <IconStar />
         </span>
       ))}
     </span>
@@ -99,7 +100,7 @@ export default function ReviewsClient({ initialReviews }: { initialReviews: Revi
       {/* 작성 폼 */}
       {showForm && (
         <div className="card" style={{ marginBottom: 22 }}>
-          {ok && <div className="notice ok">✅ 후기가 접수됐어요. 관리자 확인 후 게시됩니다. 감사합니다!</div>}
+          {ok && <div className="notice ok"><IconCheck /> 후기가 접수됐어요. 관리자 확인 후 게시됩니다. 감사합니다!</div>}
           <div className="field">
             <label htmlFor="rw-theme">테마</label>
             <select id="rw-theme" value={themeId} onChange={(e) => setThemeId(e.target.value)}>
@@ -130,7 +131,7 @@ export default function ReviewsClient({ initialReviews }: { initialReviews: Revi
           <div className="hint" style={{ marginBottom: 12 }}>
             ※ 해당 전화번호로 그 테마를 예약한 기록이 있어야 후기를 남길 수 있어요. 작성한 후기는 <b>관리자 확인 후 게시</b>됩니다. 전화번호는 가운데 자리를 가려 표시됩니다.
           </div>
-          {err && <div className="msg-err">⚠️ {err}</div>}
+          {err && <div className="msg-err"><IconWarn /> {err}</div>}
           <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
             {loading ? "등록 중…" : "후기 등록"}
           </button>
@@ -173,7 +174,10 @@ export default function ReviewsClient({ initialReviews }: { initialReviews: Revi
               <div className="rev-h">
                 <span className="who">{r.name} <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>{r.phone}</span></span>
                 <span className="rev-stars" aria-label={`5점 만점에 ${r.rating}점`}>
-                  <span aria-hidden="true">{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
+                  <span aria-hidden="true">
+                    {Array.from({ length: r.rating }, (_, i) => <IconStar key={i} />)}
+                    <span style={{ color: "var(--faint)" }}>{Array.from({ length: 5 - r.rating }, (_, i) => <IconStar key={i} />)}</span>
+                  </span>
                 </span>
               </div>
               <div className="rev-body">{r.body}</div>

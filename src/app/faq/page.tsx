@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { THEMES } from "@/lib/data";
 import { THEME_CONTENT, BOOKING_INFO } from "@/lib/theme-content";
 import { getConfig, depositOf } from "@/lib/settings";
+import { IconMoney, IconCalendar, IconMask, IconSubway, IconLock } from "@/components/Icon";
 
 // 자주 묻는 질문.
 // ⚠️ 내용은 지어내지 않았다 — 전부 실제 운영 규정에서 가져온 것:
@@ -27,7 +28,7 @@ export default async function FaqPage() {
       <p className="lead" style={{ margin: "6px 0 22px" }}>예약 전에 많이 물어보시는 것들을 모았어요.</p>
 
       {/* 가격 */}
-      <h3 className="faq-h">💰 가격 · 결제</h3>
+      <h3 className="faq-h"><IconMoney /> 가격 · 결제</h3>
 
       <details className="faq" open>
         <summary>이용 금액이 얼마인가요?</summary>
@@ -87,12 +88,12 @@ export default async function FaqPage() {
       </details>
 
       {/* 예약 */}
-      <h3 className="faq-h">📅 예약 · 취소</h3>
+      <h3 className="faq-h"><IconCalendar /> 예약 · 취소</h3>
 
       <details className="faq">
         <summary>예약은 언제부터 할 수 있나요?</summary>
         <div className="faq-b">
-          <p>예약은 <b>이용일 일주일 전 저녁 9시</b>에 열립니다. 그 전에는 달력에 자물쇠(🔒)로 표시돼요.</p>
+          <p>예약은 <b>이용일 일주일 전 저녁 9시</b>에 열립니다. 그 전에는 달력에 자물쇠(<IconLock aria-hidden="true" />)로 표시돼요.</p>
           {lead > 0 && <p>또한 <b>시작 {lead}분 전부터는</b> 온라인 예약이 닫힙니다. 임박한 시간은 매장으로 전화 주세요.</p>}
         </div>
       </details>
@@ -124,7 +125,7 @@ export default async function FaqPage() {
       </details>
 
       {/* 이용 */}
-      <h3 className="faq-h">🎭 이용 안내</h3>
+      <h3 className="faq-h"><IconMask /> 이용 안내</h3>
 
       <details className="faq">
         <summary>몇 명까지 할 수 있나요?</summary>
@@ -157,7 +158,7 @@ export default async function FaqPage() {
       </details>
 
       {/* 오시는 길 */}
-      <h3 className="faq-h">🚇 오시는 길</h3>
+      <h3 className="faq-h"><IconSubway /> 오시는 길</h3>
 
       <details className="faq">
         <summary>주차 되나요?</summary>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatDate, formatPhone } from "@/lib/util";
 import { STORES } from "@/lib/data";
 import { refundRateFor, hasStarted } from "@/lib/money";
+import { IconWarn, IconCheck, IconClose } from "@/components/Icon";
 
 type Reservation = {
   id: string;
@@ -179,10 +180,10 @@ export default function ReservationLookup() {
         <button className="btn primary" style={{ width: "100%", justifyContent: "center" }} onClick={lookup} disabled={loading}>
           {loading ? "조회 중…" : "예약 조회"}
         </button>
-        {err && <div className="msg-err">⚠️ {err}</div>}
+        {err && <div className="msg-err"><IconWarn /> {err}</div>}
       </div>
 
-      {doneMsg && <div className="notice ok" style={{ marginTop: 16 }}>✅ {doneMsg}</div>}
+      {doneMsg && <div className="notice ok" style={{ marginTop: 16 }}><IconCheck /> {doneMsg}</div>}
 
       {list && (
         <div style={{ marginTop: 20 }}>
@@ -230,7 +231,7 @@ export default function ReservationLookup() {
       {target && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal(); }}>
           <div className="modal">
-            <button className="close-x" onClick={closeModal} aria-label="닫기">✕</button>
+            <button className="close-x" onClick={closeModal} aria-label="닫기"><IconClose /></button>
             <h3>예약 취소</h3>
 
             {/* 자동으로 채워지는 예약 정보 */}
@@ -257,7 +258,7 @@ export default function ReservationLookup() {
               <input id="rf-holder" type="text" value={holder} placeholder="홍길동" onChange={(e) => setHolder(e.target.value)} />
             </div>
 
-            {modalErr && <div className="msg-err">⚠️ {modalErr}</div>}
+            {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
 
             <div className="modal-btns" style={{ marginTop: 18 }}>
               <button className="btn ghost" onClick={closeModal}>닫기</button>
@@ -310,7 +311,7 @@ export default function ReservationLookup() {
                 </label>
               )}
 
-              {modalErr && <div className="msg-err">⚠️ {modalErr}</div>}
+              {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
 
               <div className="modal-btns" style={{ marginTop: 16 }}>
                 <button className="btn ghost" onClick={() => { setShowPolicy(false); setAgree(false); }} disabled={submitting}>돌아가기</button>
