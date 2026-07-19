@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { isRefundPending, refundAmount, cancelledBy } from "@/lib/money";
+import { IconChat, IconWarn, IconMask, IconMoney, IconClock, IconCalendar, IconList, IconMegaphone, IconBan, IconMail, IconBell, IconDownload, IconChart, IconBolt, IconCheck, IconPencil, IconUser, IconChevronUp, IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconCard, IconBook, IconEye, IconStar, IconPlus, IconRefresh } from "@/components/Icon";
 import { isActiveSmsType } from "@/lib/sms-templates";
 import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
 import { formatDate, formatPhone, formatStamp, formatStampShort, formatStampTime, kstDateOf } from "@/lib/util";
@@ -32,7 +33,7 @@ function Phone({ v }: { v: string }) {
   return (
     <span className="ph">
       <a href={`tel:${raw}`} title="전화 걸기">{formatPhone(v)}</a>
-      <a href={`sms:${raw}`} className="ph-sms" title="문자 보내기" aria-label="문자 보내기">💬</a>
+      <a href={`sms:${raw}`} className="ph-sms" title="문자 보내기" aria-label="문자 보내기"><IconChat /></a>
     </span>
   );
 }
@@ -87,7 +88,7 @@ export default function AdminPage() {
           <div className="field"><label>비밀번호</label>
             <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} autoComplete="current-password" />
           </div>
-          {loginErr && <div className="msg-err">⚠️ {loginErr}</div>}
+          {loginErr && <div className="msg-err"><IconWarn /> {loginErr}</div>}
           <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={doLogin}>로그인</button>
         </div>
       </div>
@@ -97,7 +98,7 @@ export default function AdminPage() {
   return (
     <div className="admin-wrap">
       <div className="admin-top">
-        <h2>🎭 판타스트릭 관리자</h2>
+        <h2><IconMask /> 판타스트릭 관리자</h2>
         <div className="sp" />
         <button className="btn sm" onClick={logout}>로그아웃</button>
       </div>
@@ -174,7 +175,7 @@ function HomeTab({ onGo }: { onGo: (tab: string) => void }) {
       {/* 돈으로 처리할 일 — 있을 때만 (0건이면 앰버가 거짓 경보가 됨) */}
       {todo > 0 && (
         <div className="notice warn" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <b>💰 처리할 일 {todo}건</b>
+          <b><IconMoney /> 처리할 일 {todo}건</b>
           <span style={{ color: "var(--muted)", fontSize: 13.5 }}>
             {nPay > 0 && `입금 확인 ${nPay}건`}{nPay > 0 && nRef > 0 && " · "}{nRef > 0 && `환불 ${nRef}건`}
           </span>
@@ -204,7 +205,7 @@ function HomeTab({ onGo }: { onGo: (tab: string) => void }) {
           const past = r.time < nowHm;
           return (
             <div key={r.id} className={"slotrow" + (past ? " blocked" : "")}>
-              <span className="s-time">🕘 {r.time}</span>
+              <span className="s-time"><IconClock /> {r.time}</span>
               <span className="who"><b>{r.name}</b> · {r.people}명</span>
               <span className="tname">{r.theme_name} <span style={{ color: "var(--faint)", fontSize: 12 }}>{STORES.find((s) => s.id === r.store_id)?.tag || ""}</span></span>
               <Phone v={r.phone} />
@@ -231,8 +232,8 @@ function ReservationsTab() {
   return (
     <>
       <div className="viewtoggle">
-        <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>📅 날짜별</button>
-        <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>📋 목록·검색</button>
+        <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}><IconCalendar /> 날짜별</button>
+        <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}><IconList /> 목록·검색</button>
       </div>
       {view === "day" ? <DayView /> : <ListView />}
     </>
@@ -246,7 +247,7 @@ function ContentTab() {
     <>
       <div className="viewtoggle">
         <button className={v === "rev" ? "on" : ""} onClick={() => setV("rev")}>후기</button>
-        <button className={v === "notice" ? "on" : ""} onClick={() => setV("notice")}>📢 팝업 공지</button>
+        <button className={v === "notice" ? "on" : ""} onClick={() => setV("notice")}><IconMegaphone /> 팝업 공지</button>
       </div>
       {v === "rev" ? <ReviewsAdminTab /> : <NoticeTab />}
     </>
@@ -260,8 +261,8 @@ function SettingsHub() {
     <>
       <div className="viewtoggle">
         <button className={v === "gen" ? "on" : ""} onClick={() => setV("gen")}>예약 규칙·시간표</button>
-        <button className={v === "block" ? "on" : ""} onClick={() => setV("block")}>🚫 휴무·마감</button>
-        <button className={v === "sms" ? "on" : ""} onClick={() => setV("sms")}>📨 문자 문구</button>
+        <button className={v === "block" ? "on" : ""} onClick={() => setV("block")}><IconBan /> 휴무·마감</button>
+        <button className={v === "sms" ? "on" : ""} onClick={() => setV("sms")}><IconMail /> 문자 문구</button>
       </div>
       {v === "gen" ? <SettingsTab /> : v === "block" ? <SlotsTab /> : <SmsTab />}
     </>
@@ -334,10 +335,10 @@ function ListView() {
     <>
       <div className="admin-top" style={{ marginBottom: 14 }}>
         {/* 💰 입금대기 필터는 [입금·환불] 탭으로 옮김 — 돈 처리 입구는 한 곳 */}
-        {newAlert > 0 && <button className="btn primary sm" onClick={() => { setNewAlert(0); setFStatus("pending"); }}>🔔 새 예약 {newAlert}건</button>}
+        {newAlert > 0 && <button className="btn primary sm" onClick={() => { setNewAlert(0); setFStatus("pending"); }}><IconBell /> 새 예약 {newAlert}건</button>}
         <div className="sp" />
         <button className="btn ghost sm" onClick={() => load()}>새로고침</button>
-        <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
+        <button className="btn ghost sm" onClick={exportCsv}><IconDownload /> CSV 내보내기</button>
         <button className="btn primary sm" onClick={() => setShowAdd(true)}>+ 수동 예약 등록</button>
       </div>
       {stats && (
@@ -353,7 +354,7 @@ function ListView() {
           </div>
           {stats.themes.length > 0 && (
             <div className="admin-card">
-              <div style={{ fontWeight: 800, marginBottom: 10, fontSize: 14 }}>📊 테마별 인기 (취소 제외)</div>
+              <div style={{ fontWeight: 800, marginBottom: 10, fontSize: 14 }}><IconChart /> 테마별 인기 (취소 제외)</div>
               <div className="theme-pop">
                 {stats.themes.map((t) => (
                   <div key={t.name} className="tp">
@@ -401,7 +402,7 @@ function ListView() {
                 <div className="r">
                   <span>입금 확인</span>
                   <b>{formatStamp(r.paid_at)}
-                    {r.paid_source && <span style={{ color: "var(--muted)", fontWeight: 400 }}> · {r.paid_source === "auto" ? "🤖 자동매칭" : "✋ 사장님이 직접"}</span>}
+                    {r.paid_source && <span style={{ color: "var(--muted)", fontWeight: 400 }}> · {r.paid_source === "auto" ? <><IconBolt /> 자동매칭</> : <>사장님이 직접</>}</span>}
                   </b>
                 </div>
               )}
@@ -417,12 +418,12 @@ function ListView() {
                 (입구가 두 곳이면 "여기서 했나 저기서 했나" 혼동) */}
             {isRefundPending(r) && (
               <div className="refbox">
-                💸 <b>환불 대기 {refundAmount(r).toLocaleString()}원</b> (환불율 {r.refund_rate}%) —
+                <IconMoney /> <b>환불 대기 {refundAmount(r).toLocaleString()}원</b> (환불율 {r.refund_rate}%) —
                 <b> [입금·환불 › 환불 처리]</b> 탭에서 계좌 복사하고 보내주세요.
               </div>
             )}
             {r.status === "cancelled" && r.refunded && (
-              <div className="refbox"><span style={{ color: "var(--muted)" }}>✓ 환불 완료된 예약이에요 ({refundAmount(r).toLocaleString()}원)</span></div>
+              <div className="refbox"><span style={{ color: "var(--muted)" }}><IconCheck /> 환불 완료된 예약이에요 ({refundAmount(r).toLocaleString()}원)</span></div>
             )}
             <div className="field" style={{ marginTop: 12, marginBottom: 8 }}>
               <label>메모</label><textarea rows={2} defaultValue={r.memo || ""} id={`memo-${r.id}`} placeholder="관리자 메모" />
@@ -507,9 +508,9 @@ function DayView() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
-        <button className="btn sm" onClick={() => setYm((s) => (s.m === 0 ? { y: s.y - 1, m: 11 } : { y: s.y, m: s.m - 1 }))}>◀</button>
+        <button className="btn sm" onClick={() => setYm((s) => (s.m === 0 ? { y: s.y - 1, m: 11 } : { y: s.y, m: s.m - 1 }))}><IconChevronLeft /></button>
         <b style={{ fontSize: 17 }}>{ym.y}년 {ym.m + 1}월</b>
-        <button className="btn sm" onClick={() => setYm((s) => (s.m === 11 ? { y: s.y + 1, m: 0 } : { y: s.y, m: s.m + 1 }))}>▶</button>
+        <button className="btn sm" onClick={() => setYm((s) => (s.m === 11 ? { y: s.y + 1, m: 0 } : { y: s.y, m: s.m + 1 }))}><IconChevronRight /></button>
         <div className="sp" />
         <button className="btn ghost sm" onClick={() => { setYm({ y: Number(t0.slice(0, 4)), m: Number(t0.slice(5, 7)) - 1 }); setPick(t0); }}>오늘</button>
         <button className="btn ghost sm" onClick={reload}>새로고침</button>
@@ -555,11 +556,11 @@ function DayView() {
               // 테마 소요시간은 위 머리말에 한 번만 표시.
               return (
                 <div key={time} className={"slotrow" + (r ? " taken" : "") + (bk && !r ? " blocked" : "")}>
-                  <span className="s-time">🕘 {time}</span>
+                  <span className="s-time"><IconClock /> {time}</span>
                   {r ? (
                     <>
                       <button className="s-guest" onClick={() => setDetail(r)} title="눌러서 상세·처리">
-                        ✏️ {r.name} · {r.people}명
+                        <IconPencil /> {r.name} · {r.people}명
                       </button>
                       {/* 전화는 버튼 밖에 — 버튼 안에 링크를 넣을 수 없음 */}
                       <Phone v={r.phone} />
@@ -571,7 +572,7 @@ function DayView() {
                     </>
                   ) : bk ? (
                     <>
-                      <span className="s-state closed">🚫 마감됨{bk.reason ? ` · ${bk.reason}` : ""}</span>
+                      <span className="s-state closed"><IconBan /> 마감됨{bk.reason ? ` · ${bk.reason}` : ""}</span>
                       <span className="rt">
                         <button className="btn sm ghost" onClick={() => unblock(bk.id)}>열기</button>
                       </span>
@@ -641,15 +642,15 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
   return (
     <div className="gcard">
       <div className="gc-top">
-        <b>👤 손님 이력</b>
+        <b><IconUser /> 손님 이력</b>
         {visited.length > 0 ? <span className="badge-st st-confirmed">{nth}번째 방문</span> : <span className="badge-st st-pending">첫 방문</span>}
-        {noshow > 0 && <span className="badge-st st-noshow">⚠️ 노쇼 {noshow}회</span>}
+        {noshow > 0 && <span className="badge-st st-noshow"><IconWarn /> 노쇼 {noshow}회</span>}
         <span className="sp" />
-        <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? "접기 ▲" : `자세히 (예약 ${rows.length}건) ▼`}</button>
+        <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? <>접기 <IconChevronUp /></> : <>자세히 (예약 {rows.length}건) <IconChevronDown /></>}</button>
       </div>
 
       {warns.map((w, i) => (
-        <div key={i} className="gc-warn">⚠️ {w}</div>
+        <div key={i} className="gc-warn"><IconWarn /> {w}</div>
       ))}
 
       {notYet.length > 0 && visited.length > 0 && (
@@ -725,7 +726,7 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal">
-        <button className="close-x" onClick={onClose}>✕</button>
+        <button className="close-x" onClick={onClose}><IconClose /></button>
         <h3>{r.theme_name} · {formatDate(r.date)} {r.time}</h3>
         <div className="res-summary">
           <div className="r"><span>이름</span><b>{r.name}</b></div>
@@ -741,7 +742,7 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
         {r.status !== "cancelled" && (
           <div className="mvbox">
             {!move ? (
-              <button className="btn sm ghost" onClick={() => setMove(true)}>🕘 시간·날짜 옮기기</button>
+              <button className="btn sm ghost" onClick={() => setMove(true)}><IconClock /> 시간·날짜 옮기기</button>
             ) : (
               <>
                 <div className="gc-h">예약 옮기기 — 취소하지 않고 그대로 옮겨요 (입금·환불 상태 유지)</div>
@@ -806,7 +807,7 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal">
-        <button className="close-x" onClick={onClose}>✕</button>
+        <button className="close-x" onClick={onClose}><IconClose /></button>
         <h3>수동 예약 등록 (전화 예약)</h3>
         <div className="field"><label>테마</label><select value={themeId} onChange={(e) => setThemeId(e.target.value)}>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>)}</select></div>
         <div className="grid2">
@@ -819,7 +820,7 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
         </div>
         <div className="field"><label>전화번호</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" /></div>
         <div className="field"><label>메모 (선택)</label><input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="요청사항 등" /></div>
-        {err && <div className="msg-err">⚠️ {err}</div>}
+        {err && <div className="msg-err"><IconWarn /> {err}</div>}
         <div className="modal-btns" style={{ marginTop: 14 }}><button className="btn ghost" onClick={onClose}>닫기</button><button className="btn primary" onClick={submit} disabled={busy}>{busy ? "등록 중…" : "등록"}</button></div>
       </div>
     </div>
@@ -847,7 +848,7 @@ function SlotsTab() {
   return (
     <div>
       <div className="admin-card">
-        <b>🚫 휴무일 추가</b>
+        <b><IconBan /> 휴무일 추가</b>
         <p className="hint" style={{ margin: "4px 0 12px" }}>
           고른 날짜를 <b>하루 종일 · 전 테마</b> 예약을 안 받습니다. (임시휴무·전세 등)
           <br />시간 하나만 막고 싶으면 <b>[예약 › 날짜별]</b>에서 그 시간의 <b>마감</b> 버튼을 누르세요.
@@ -857,7 +858,7 @@ function SlotsTab() {
           <input type="text" placeholder="사유(선택) 예: 내부 공사" value={reason} onChange={(e) => setReason(e.target.value)} />
           <button className="btn sm" onClick={add}>휴무일 추가</button>
         </div>
-        {err && <div className="msg-err">⚠️ {err}</div>}
+        {err && <div className="msg-err"><IconWarn /> {err}</div>}
       </div>
       {/* 날짜별 보기에서 만든 칸 단위 마감도 여기 다 보인다(어디서 막았는지 놓치지 않게) */}
       <div style={{ marginTop: 8 }}>
@@ -898,7 +899,7 @@ function MoneyTab() {
   return (
     <>
       <div className="notice info" style={{ marginBottom: 14 }}>
-        💳 예약금은 <b>전부 무통장입금</b>이에요 (카카오뱅크 3333-09-7175706 승현수).
+        <IconCard /> 예약금은 <b>전부 무통장입금</b>이에요 (카카오뱅크 3333-09-7175706 승현수).
         여기 버튼은 <b>사장님이 은행앱에서 직접 하신 일을 기록</b>하는 거예요 — 돈이 자동으로 오가지 않습니다.
       </div>
 
@@ -918,12 +919,12 @@ function MoneyTab() {
 
       <div className="viewtoggle">
         <button className={v === "pay" ? "on" : ""} onClick={() => setV("pay")}>
-          💰 입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
+          <IconMoney /> 입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
         </button>
         <button className={v === "refund" ? "on" : ""} onClick={() => setV("refund")}>
-          💸 환불 처리{nRef > 0 && <span className="vt-badge">{nRef}</span>}
+          <IconMoney /> 환불 처리{nRef > 0 && <span className="vt-badge">{nRef}</span>}
         </button>
-        <button className={v === "ledger" ? "on" : ""} onClick={() => setV("ledger")}>📒 입출금 내역</button>
+        <button className={v === "ledger" ? "on" : ""} onClick={() => setV("ledger")}><IconBook /> 입출금 내역</button>
       </div>
 
       {v === "pay" ? <PayQueue onDone={done} /> : v === "refund" ? <RefundQueue onDone={done} /> : <Ledger />}
@@ -1004,14 +1005,14 @@ function PayQueue({ onDone }: { onDone: () => void }) {
       </div>
 
       {list.length === 0 ? (
-        <div className="notice ok">✅ 입금 대기 없음 — 다 처리하셨어요.</div>
+        <div className="notice ok"><IconCheck /> 입금 대기 없음 — 다 처리하셨어요.</div>
       ) : list.map((r) => {
         const { min: m, grace } = remainInfo(r.created_at);
         return (
           <div key={r.id} className="rrow">
             <div className="head" style={{ cursor: "default" }}>
               <span className={"when" + (m <= 5 ? " urgent" : "")}>
-                ⏳ {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
+                <IconClock /> {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
                 {grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}
               </span>
               {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
@@ -1040,7 +1041,7 @@ function PayQueue({ onDone }: { onDone: () => void }) {
       {expired.length > 0 && (
         <div className={"rrow" + (openExp ? " open" : "")} style={{ marginTop: 16 }}>
           <div className="head" onClick={() => setOpenExp(!openExp)}>
-            <span className="tname">⏱ 오늘 시간초과로 자동취소된 예약 {expired.length}건 {openExp ? "▲" : "▼"}</span>
+            <span className="tname"><IconClock /> 오늘 시간초과로 자동취소된 예약 {expired.length}건 {openExp ? <IconChevronUp /> : <IconChevronDown />}</span>
             <span className="rt"><span className="badge-st st-cancelled">지난 일</span></span>
           </div>
           <div className="detail">
@@ -1118,7 +1119,7 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
       </div>
 
       {todo.length === 0 ? (
-        <div className="notice ok">✅ 보내드릴 환불 없음 — 다 처리하셨어요.</div>
+        <div className="notice ok"><IconCheck /> 보내드릴 환불 없음 — 다 처리하셨어요.</div>
       ) : todo.map((r) => (
         <div key={r.id} className="rrow open">
           <div className="head" style={{ cursor: "default" }}>
@@ -1136,18 +1137,18 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
               <span style={{ color: "var(--muted)" }}>예금주 {r.refund_holder || "-"}</span>
               <span className="sp" />
               <button className="btn sm ghost" onClick={() => copyAcct(r)}>
-                {copied === r.id ? "복사됨 ✓" : "📋 계좌 복사"}
+                {copied === r.id ? <>복사됨 <IconCheck /></> : <><IconList /> 계좌 복사</>}
               </button>
             </div>
             <p className="hint" style={{ margin: "2px 0 0" }}>
               예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
               {" · "}취소 {formatStamp(r.cancelled_at)} ({cancelledBy(r)})
-              {r.refund_holder && r.refund_holder !== r.name && <> · ⚠️ 예금주가 예약자({r.name})와 달라요</>}
+              {r.refund_holder && r.refund_holder !== r.name && <> · <IconWarn /> 예금주가 예약자({r.name})와 달라요</>}
             </p>
             <div className="act-row">
               {/* 금액을 버튼 라벨에 박아 오송금 방지 */}
               <button className="btn sm primary" disabled={busy === r.id} onClick={() => markRefunded(r)}>
-                {busy === r.id ? "처리 중…" : `✓ ${refundAmount(r).toLocaleString()}원 환불 완료`}
+                {busy === r.id ? "처리 중…" : <><IconCheck /> {refundAmount(r).toLocaleString()}원 환불 완료</>}
               </button>
             </div>
           </div>
@@ -1249,7 +1250,7 @@ function Ledger() {
         </select>
         <button className="btn sm" onClick={load}>조회</button>
         <div className="sp" />
-        <button className="btn ghost sm" onClick={exportCsv}>⬇ CSV 내보내기</button>
+        <button className="btn ghost sm" onClick={exportCsv}><IconDownload /> CSV 내보내기</button>
       </div>
 
       <div className="stat-row sub3">
@@ -1275,8 +1276,8 @@ function Ledger() {
                 </span>
                 <span className="rt">
                   {/* 입금을 자동매칭이 잡았는지 사장님이 직접 눌렀는지 — 자동매칭 붙이기 전 기록은 표시 없음 */}
-                  {t.kind === "in" && t.r.paid_source === "auto" && <span className="src-tag" title="자동매칭 프로그램이 처리">🤖 자동</span>}
-                  {t.kind === "in" && t.r.paid_source === "manual" && <span className="src-tag" title="관리자 화면에서 입금 확인 버튼을 눌러 처리">✋ 수동</span>}
+                  {t.kind === "in" && t.r.paid_source === "auto" && <span className="src-tag" title="자동매칭 프로그램이 처리"><IconBolt /> 자동</span>}
+                  {t.kind === "in" && t.r.paid_source === "manual" && <span className="src-tag" title="관리자 화면에서 입금 확인 버튼을 눌러 처리">수동</span>}
                   {t.kind === "in"
                     ? <span className="badge-st st-confirmed">입금</span>
                     : <span className="badge-st st-cancelled">환불 {t.r.refund_rate}%</span>}
@@ -1323,7 +1324,7 @@ function NoticeTab() {
   return (
     <div>
       <div className="notice info" style={{ marginBottom: 14 }}>
-        📢 홈페이지에 들어오면 뜨는 <b>공지 팝업</b>이에요. 켜면 <b>모든 페이지</b>에서 뜨고,
+        <IconMegaphone /> 홈페이지에 들어오면 뜨는 <b>공지 팝업</b>이에요. 켜면 <b>모든 페이지</b>에서 뜨고,
         손님이 <b>&quot;{n.hideDays === 1 ? "오늘 하루" : `${n.hideDays}일 동안`} 보지 않기&quot;</b>를 누르면 그동안 안 떠요.
         공지 내용을 고치면 안 보기를 눌렀던 손님에게도 <b>다시 뜹니다.</b>
       </div>
@@ -1374,14 +1375,14 @@ function NoticeTab() {
         {msg && <div className={msg.startsWith("⚠️") ? "msg-err" : "notice ok"} style={{ marginTop: 4 }}>{msg}</div>}
         <div className="act-row">
           <button className="btn primary" onClick={save} disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
-          <button className="btn sm ghost" onClick={() => setPreview(true)}>👁 미리보기</button>
+          <button className="btn sm ghost" onClick={() => setPreview(true)}><IconEye /> 미리보기</button>
         </div>
       </div>
 
       {preview && (
         <div className="modal-overlay nt-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPreview(false); }}>
           <div className="modal nt-modal">
-            <button className="close-x" onClick={() => setPreview(false)}>✕</button>
+            <button className="close-x" onClick={() => setPreview(false)}><IconClose /></button>
             {n.imageUrl && <div className="nt-img">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={n.imageUrl} alt={n.title || "공지"} /></div>}
             {n.title && <h3 className="nt-title">{n.title}</h3>}
             {n.body && <p className="nt-body">{n.body}</p>}
@@ -1441,7 +1442,7 @@ function ReviewsAdminTab() {
             <div className="head" style={{ cursor: "default" }}>
               <span className="tname">{r.theme_name}</span>
               {/* --gold 는 보라(--violet)라 관리자 별만 보라였음 → 손님 후기 화면과 같은 #e0930c 로 통일 */}
-              <span className="rev-stars" style={{ color: "#e0930c" }}>{"★".repeat(r.rating)}<span style={{ color: "var(--faint)" }}>{"★".repeat(5 - r.rating)}</span></span>
+              <span className="rev-stars" style={{ color: "#b06f00" }}>{Array.from({ length: r.rating }, (_, i) => <IconStar key={i} />)}<span style={{ color: "var(--faint)" }}>{Array.from({ length: 5 - r.rating }, (_, i) => <IconStar key={i} />)}</span></span>
               <span className="who">{r.name}{r.phone ? ` · ${formatPhone(r.phone)}` : ""}</span>
               {r.source && <span className="src-tag">{r.source}</span>}
               <span className={`badge-st st-${r.status === "approved" ? "confirmed" : r.status === "rejected" ? "cancelled" : "pending"}`}>{REV_ST_LABEL[r.status] || r.status}</span>
@@ -1479,7 +1480,7 @@ function ReviewAdd({ onDone }: { onDone: () => void }) {
   }
   return (
     <div className="admin-card">
-      <b>➕ 외부 후기 직접 등록 (네이버·구글 등 · 즉시 게시)</b>
+      <b><IconPlus /> 외부 후기 직접 등록 (네이버·구글 등 · 즉시 게시)</b>
       <div className="admin-tools" style={{ marginTop: 12, marginBottom: 8 }}>
         <select value={themeId} onChange={(e) => setThemeId(e.target.value)}>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>)}</select>
         <input type="text" placeholder="닉네임" value={name} onChange={(e) => setName(e.target.value)} />
@@ -1488,7 +1489,7 @@ function ReviewAdd({ onDone }: { onDone: () => void }) {
         <datalist id="rev-src"><option value="네이버" /><option value="구글" /><option value="직접" /></datalist>
       </div>
       <textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="후기 본문 (5자 이상)" style={{ width: "100%", background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 9, color: "var(--text)", padding: 10, fontFamily: "inherit", fontSize: 13.5 }} />
-      {err && <div className="msg-err" style={{ marginTop: 8 }}>⚠️ {err}</div>}
+      {err && <div className="msg-err" style={{ marginTop: 8 }}><IconWarn /> {err}</div>}
       {msg && <div className="notice ok" style={{ marginTop: 8 }}>{msg}</div>}
       <button className="btn primary sm" style={{ marginTop: 10 }} onClick={submit} disabled={busy}>{busy ? "등록 중…" : "등록(즉시 게시)"}</button>
     </div>
@@ -1531,7 +1532,7 @@ function SettingsTab() {
       <div className="admin-card">
       <h3 className="card-h">예약 규칙</h3>
       <div className="field">
-        <label>⏱ 예약 임박 차단</label>
+        <label><IconClock /> 예약 임박 차단</label>
         <select value={leadMin} onChange={(e) => setLeadMin(e.target.value)}>
           <option value="0">제한 없음 (지난 시간만 막음)</option>
           <option value="10">시작 10분 전부터 예약 불가</option>
@@ -1551,7 +1552,7 @@ function SettingsTab() {
               <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 12px", fontSize: 13.5, borderTop: i ? "1px solid var(--line)" : "none" }}>
                 <span>{t.name} <span style={{ color: "var(--faint)", fontSize: 12 }}>({t.storeTag})</span></span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {changed && <span className="tpl-src edited" title={`원래 ${t.deposit.toLocaleString()}원`}>✎ 바꿈</span>}
+                  {changed && <span className="tpl-src edited" title={`원래 ${t.deposit.toLocaleString()}원`}><IconPencil /> 바꿈</span>}
                   <input type="number" min="0" step="1000" value={v}
                     onChange={(e) => setDeposits({ ...deposits, [t.id]: e.target.value })}
                     style={{ width: 108, textAlign: "right", fontFeatureSettings: '"tnum"', fontWeight: 700 }} />
@@ -1562,7 +1563,7 @@ function SettingsTab() {
           })}
         </div>
         <div className="hint">
-          ⚠️ 예약금을 바꾸면 <b>[설정 › 문자 문구]의 예약대기 안내</b>에 적힌 금액도 같이 고쳐주세요 —
+          <IconWarn /> 예약금을 바꾸면 <b>[설정 › 문자 문구]의 예약대기 안내</b>에 적힌 금액도 같이 고쳐주세요 —
           안 그러면 손님이 <b>문자에 적힌 옛 금액</b>을 입금합니다. (문자 문구는 테마별로 따로예요)
         </div>
       </div>
@@ -1573,7 +1574,7 @@ function SettingsTab() {
       <div className="field">
         <label>기본 예약 시간대 <span style={{ color: "var(--faint)", fontWeight: 400, fontSize: 12 }}>(아래 매장별 설정이 없는 매장에 적용)</span></label>
         <div className="optrow" style={{ marginBottom: 8 }}>
-          {slots.map((s) => <div key={s} className="opt on" style={{ minWidth: 64, flex: "0 0 auto" }} onClick={() => setSlots(slots.filter((x) => x !== s))}>{s} ✕</div>)}
+          {slots.map((s) => <div key={s} className="opt on" style={{ minWidth: 64, flex: "0 0 auto" }} onClick={() => setSlots(slots.filter((x) => x !== s))}>{s} <IconClose /></div>)}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <input type="time" value={slotInput} onChange={(e) => setSlotInput(e.target.value)} style={{ flex: 1 }} />
@@ -1590,13 +1591,13 @@ function SettingsTab() {
       </div>
 
       <div className="admin-card">
-        <h3 className="card-h">💾 전체 백업</h3>
+        <h3 className="card-h"><IconDownload /> 전체 백업</h3>
         <p className="hint" style={{ marginTop: 0 }}>
           예약·리뷰·설정·시간표·문자 문구·휴무를 <b>파일 하나로</b> 내려받아요.
           지금 쓰는 DB(무료 플랜)는 <b>실수로 지우면 되돌릴 방법이 없어서</b>, 가끔 받아두시면 안전해요.
-          <br />⚠️ 손님 이름·전화가 들어있으니 아무 데나 올리지 마세요. (손님 비밀번호는 일부러 뺐어요)
+          <br /><IconWarn /> 손님 이름·전화가 들어있으니 아무 데나 올리지 마세요. (손님 비밀번호는 일부러 뺐어요)
         </p>
-        <a className="btn sm" href="/api/admin/backup" download>⬇ 전체 백업 받기 (JSON)</a>
+        <a className="btn sm" href="/api/admin/backup" download><IconDownload /> 전체 백업 받기 (JSON)</a>
       </div>
 
       {/* 저장 버튼은 항상 손 닿는 곳에 (설정이 길어서 맨 아래까지 스크롤해야 했음) */}
@@ -1615,7 +1616,7 @@ function SlotChips({ list, onChange, emptyLabel }: { list: string[]; onChange: (
     <div>
       <div className="optrow" style={{ marginBottom: 6 }}>
         {list.length === 0 ? <span style={{ color: "var(--faint)", fontSize: 12.5, alignSelf: "center" }}>{emptyLabel || "시간 없음"}</span> :
-          list.map((s) => <div key={s} className="opt on" style={{ minWidth: 58, flex: "0 0 auto" }} onClick={() => onChange(list.filter((x) => x !== s))}>{s} ✕</div>)}
+          list.map((s) => <div key={s} className="opt on" style={{ minWidth: 58, flex: "0 0 auto" }} onClick={() => onChange(list.filter((x) => x !== s))}>{s} <IconClose /></div>)}
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <input type="time" value={inp} onChange={(e) => setInp(e.target.value)} style={{ flex: 1, maxWidth: 150 }} />
@@ -1751,7 +1752,7 @@ function SmsTab() {
   }
 
   if (!loaded) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
-  if (err) return <div className="msg-err">⚠️ {err}</div>;
+  if (err) return <div className="msg-err"><IconWarn /> {err}</div>;
 
   return (
     <div>
@@ -1763,7 +1764,7 @@ function SmsTab() {
           : "⚠️ 알리고/알림톡 키가 아직 없어요. 지금은 발송 내역만 기록되고 실제 발송은 안 나가요. (가입·키 등록 시 자동 발송)"}
       </div>
       <div className="notice info" style={{ marginBottom: 14 }}>
-        📝 <b>테마별</b> 딱지가 붙은 문자는 <b>테마마다 문구가 따로</b>예요(기존 사이트와 동일).
+        <IconPencil /> <b>테마별</b> 딱지가 붙은 문자는 <b>테마마다 문구가 따로</b>예요(기존 사이트와 동일).
         예약대기는 테마마다 예약금이 다르고(3만·2.5만·12만·6.3만), 입금확정은 사자의 서만 인스타·길안내가 더 붙어요.
         그래서 <b>테마를 고른 뒤 그 테마 문구만</b> 고칩니다. 한 번에 전부 바꾸는 기능은 일부러 없앴어요(예약금이 잘못 안내될 수 있어서).
         <br />아직 저장한 적 없는 문구는 <b>기존 사이트 문구</b>가 그대로 나갑니다.
@@ -1782,14 +1783,14 @@ function SmsTab() {
               <b>{g.label}</b>
               {g.perTheme && <span className="src-tag">테마별</span>}
               <span className="sp" />
-              <span className={"tpl-src " + (saved ? "edited" : "")}>{saved ? "✎ 직접 수정함" : "기존 사이트 문구"}</span>
+              <span className={"tpl-src " + (saved ? "edited" : "")}>{saved ? <><IconPencil /> 직접 수정함</> : "기존 사이트 문구"}</span>
             </div>
 
             {g.perTheme && (
               <div className="theme-tabs" style={{ margin: "12px 0 10px" }}>
                 {g.themes.map((t) => (
                   <button key={t.id} className={"tt-btn" + (cur === t.id ? " on" : "")} onClick={() => setPickTheme({ ...pickTheme, [g.type]: t.id })}>
-                    {t.name}{t.saved && <span className="tt-badge">✎</span>}
+                    {t.name}{t.saved && <span className="tt-badge"><IconPencil /></span>}
                   </button>
                 ))}
               </div>
@@ -1800,7 +1801,7 @@ function SmsTab() {
             <div className="act-row">
               {/* 저장 6개가 전부 파랬음 → 기본 버튼으로. 수정 여부는 위 .tpl-src 배지가 알려줌 */}
               <button className="btn sm" onClick={() => saveTpl(g.type, cur, label)}>저장</button>
-              {saved && <button className="btn sm ghost" onClick={() => resetTpl(g.type, cur, label)}>↩️ 기존 문구로 되돌리기</button>}
+              {saved && <button className="btn sm ghost" onClick={() => resetTpl(g.type, cur, label)}><IconRefresh /> 기존 문구로 되돌리기</button>}
               <span className="rt" style={{ fontSize: 12, color: "var(--faint)" }}>{body.length}자</span>
             </div>
           </div>
@@ -1809,7 +1810,7 @@ function SmsTab() {
       {msg && <div className={msg.startsWith("⚠️") ? "msg-err" : "notice ok"}>{msg}</div>}
       <div className="admin-card">
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <b>📨 발송 내역</b>
+          <b><IconMail /> 발송 내역</b>
           <span className="sp" />
           {/* "저 문자 못 받았어요" 전화가 오면 이름·전화로 바로 찾는다 (예전엔 50건을 눈으로 훑어야 했음) */}
           <input type="search" className="payer" style={{ width: 150 }} placeholder="이름·전화 검색"
@@ -1836,7 +1837,7 @@ function SmsTab() {
                   <span className="rt">
                     {isActiveSmsType(l.type) ? (
                       <button className="btn sm ghost" disabled={resend === l.id} onClick={() => resendSms(l.id)}>
-                        {resend === l.id ? "보내는 중…" : "↻ 다시 보내기"}
+                        {resend === l.id ? "보내는 중…" : <><IconRefresh /> 다시 보내기</>}
                       </button>
                     ) : (
                       // 이제 안 쓰는 종류(방문 전날 자동안내)의 옛 기록 — 눌러도 안 나가므로 버튼을 안 보여준다.
@@ -1845,7 +1846,7 @@ function SmsTab() {
                   </span>
                 )}
               </div>
-              {l.error && <div style={{ color: "var(--danger)", marginTop: 2, fontSize: 11.5 }}>⚠️ {l.error}</div>}
+              {l.error && <div style={{ color: "var(--danger)", marginTop: 2, fontSize: 11.5 }}><IconWarn /> {l.error}</div>}
               <div style={{ color: "var(--muted)", whiteSpace: "pre-wrap", marginTop: 2 }}>{l.body}</div>
             </div>
           ))}

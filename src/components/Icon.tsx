@@ -165,3 +165,89 @@ export const IconGear = (p: SVGProps<SVGSVGElement>) => (
     <path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.64 5.64l1.84 1.84M16.52 16.52l1.84 1.84M18.36 5.64l-1.84 1.84M7.48 16.52l-1.84 1.84" />
   </Svg>
 );
+
+/* ─── 관리자 화면 전용 아이콘 (2026-07-19 이모지 → SVG) ─────────────── */
+
+/* 말풍선 (문자 보내기) */
+export const IconChat = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M21 6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3v3.2L12.4 17H19a2 2 0 0 0 2-2z" /></Svg>
+);
+
+/* 종 (새 예약 알림) */
+export const IconBell = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 2 5.5 2 5.5H4s2-1 2-5.5z" /><path d="M10 19.5a2.2 2.2 0 0 0 4 0" /></Svg>
+);
+
+/* 아래로 내려받기 (CSV·백업) */
+export const IconDownload = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M12 3.5v11" /><path d="M7.5 10.5l4.5 4.5 4.5-4.5" /><path d="M4.5 20.5h15" /></Svg>
+);
+
+/* 막대 그래프 (통계) */
+export const IconChart = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M4 4v16h16" /><path d="M8.5 16.5V12M13 16.5V8M17.5 16.5V6" /></Svg>
+);
+
+/* 목록·클립보드 */
+export const IconList = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 3.2h6v3H9z" /><path d="M8.5 11h7M8.5 15h5" /></Svg>
+);
+
+/* 확성기 (공지) */
+export const IconMegaphone = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M4 10v4h3l8 4.5V5.5L7 10z" /><path d="M17.5 9.5a3.2 3.2 0 0 1 0 5" /></Svg>
+);
+
+/* 편지봉투 (문자 문구·발송 내역) */
+export const IconMail = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6.5l8.5 6 8.5-6" /></Svg>
+);
+
+/* 사람 (손님 이력) */
+export const IconUser = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><circle cx="12" cy="8" r="3.6" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" /></Svg>
+);
+
+/* 카드 (결제·무통장) */
+export const IconCard = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 9.5h19" /><path d="M6 15h4" /></Svg>
+);
+
+/* 장부 (입출금 내역) */
+export const IconBook = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 3v18" /><path d="M12 8h4M12 12h4" /></Svg>
+);
+
+/* 눈 (미리보기) */
+export const IconEye = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></Svg>
+);
+
+/* 더하기 (등록) */
+export const IconPlus = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M12 5v14M5 12h14" /></Svg>
+);
+
+/* 새로고침 (다시 보내기·되돌리기) */
+export const IconRefresh = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M20 11.5A8 8 0 0 0 6.3 6.3L3.5 9" /><path d="M3.5 4v5h5" /><path d="M4 12.5A8 8 0 0 0 17.7 17.7l2.8-2.7" /><path d="M20.5 20v-5h-5" /></Svg>
+);
+
+/* 자동 처리 (번개 — 자동매칭) */
+export const IconBolt = (p: SVGProps<SVGSVGElement>) => (
+  <Svg solid {...p}><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13z" /></Svg>
+);
+
+/* 방향 표시 (달력 이동·펼치기/접기) */
+export const IconChevronLeft = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M15 5.5l-6.5 6.5 6.5 6.5" /></Svg>
+);
+export const IconChevronRight = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M9 5.5l6.5 6.5L9 18.5" /></Svg>
+);
+export const IconChevronUp = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M5.5 15l6.5-6.5 6.5 6.5" /></Svg>
+);
+export const IconChevronDown = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}><path d="M5.5 9l6.5 6.5L18.5 9" /></Svg>
+);
