@@ -118,17 +118,6 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
           </Link>
         </section>
 
-        {/* 환불 규정 */}
-        <section className="rm-card">
-          <h2 className="rm-h">예약금 환불</h2>
-          <ul className="rm-list">
-            {BOOKING_INFO.refund.map((l, i) => <li key={i}>{l}</li>)}
-          </ul>
-          <p className="rm-note">
-            취소는 <Link href="/reservation" className="tlink">예약 조회·취소</Link> 에서 직접 하실 수 있어요. (환불 계좌를 함께 남겨주세요)
-          </p>
-        </section>
-
         {/* 오시는 길 */}
         <section className="rm-card">
           <h2 className="rm-h">오시는 길</h2>
