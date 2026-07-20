@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { slotsForThemeDate, isTooSoon, TIME_SLOTS, THEME_SLOTS, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, reservationDateState } from "@/lib/util";
 import { ReserveCalendar, openDateLabel } from "@/components/ReserveCalendar";
 import { IconClose, IconWarn, IconBan, IconClock } from "@/components/Icon";
@@ -36,7 +36,9 @@ export default function ChangeModal({
 }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [cfg, setCfg] = useState<Cfg>({ timeSlots: [] });
+  // 새 예약 화면과 똑같이 기본 시간표로 시작한다. 이걸 빈 배열로 두면 /api/config 가 실패했을 때
+  // 시간표가 텅 비어 "그 요일은 예약을 받지 않아요" 라고 잘못 안내된다(2026-07-20 자체 점검에서 발견).
+  const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, themeSlots: THEME_SLOTS });
   const [cfgLoaded, setCfgLoaded] = useState(false);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [dayClosed, setDayClosed] = useState(false);
