@@ -6,7 +6,7 @@ import { themeById, isSlotTime } from "@/lib/data";
 import { isRefundPending, refundAmount, refundRateFor } from "@/lib/money";
 import { getConfig, depositOf } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
-import { sweepExpiredReservations } from "@/lib/expire";
+import { sweepExpiredReservations, maybePurgeOldReservations } from "@/lib/expire";
 
 const COLS =
   "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
 
   // 만료 예약(30분 미입금) 자동 정리 — 실패해도 목록 조회는 진행
   await sweepExpiredReservations(db).catch(() => {});
+  await maybePurgeOldReservations(db).catch(() => {});
 
   const sp = req.nextUrl.searchParams;
   const status = sp.get("status"); // pending/confirmed/cancelled/noshow

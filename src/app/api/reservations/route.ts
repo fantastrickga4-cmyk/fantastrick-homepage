@@ -4,7 +4,7 @@ import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from
 import { themeById, slotsForThemeDate, isTooSoon } from "@/lib/data";
 import { getConfig, depositOf } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
-import { sweepExpiredReservations } from "@/lib/expire";
+import { sweepExpiredReservations, maybePurgeOldReservations, isHiddenFromLookup } from "@/lib/expire";
 
 const TOO_MANY = { error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." };
 
@@ -142,6 +142,8 @@ export async function GET(req: NextRequest) {
 
   // 만료 예약(30분 미입금) 자동 정리 — 실패해도 조회는 진행
   await sweepExpiredReservations(db).catch(() => {});
+  // 한 달 지난 예약 자동 삭제 (1시간에 한 번, 실패해도 조회는 진행)
+  await maybePurgeOldReservations(db).catch(() => {});
 
   const phone = normalizePhone(req.nextUrl.searchParams.get("phone") || "");
   const name = sanitizeText(req.nextUrl.searchParams.get("name") || "");
@@ -152,7 +154,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await db
     .from("reservations")
-    .select("id, store_id, theme_id, theme_name, date, time, people, name, deposit, deposit_paid, status, created_at")
+    .select("id, store_id, theme_id, theme_name, date, time, people, name, deposit, deposit_paid, status, created_at, cancelled_at")
     .eq("phone", phone)
     .eq("name", name)
     .eq("pin", pin)
@@ -161,9 +163,12 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500 });
 
+  // 끝난 지 일주일 넘은 예약(취소·이용완료)은 손님 조회 화면에서 숨긴다(DB엔 남음, 관리자는 봄).
+  const visible = (data || []).filter((r) => !isHiddenFromLookup(r));
+
   // 각 예약이 손님이 이미 시간변경을 썼는지 표시 (변경은 1건당 1회만 — 화면에서 버튼을 미리 감춤).
   //   이력에 '손님 시간변경' 기록이 있으면 changed=true.
-  const ids = (data || []).map((r) => r.id);
+  const ids = visible.map((r) => r.id);
   const changedSet = new Set<string>();
   if (ids.length) {
     const { data: logs } = await db
@@ -173,6 +178,6 @@ export async function GET(req: NextRequest) {
       .eq("action", "손님 시간변경");
     (logs || []).forEach((l: { reservation_id: string }) => changedSet.add(l.reservation_id));
   }
-  const reservations = (data || []).map((r) => ({ ...r, changed: changedSet.has(r.id) }));
+  const reservations = visible.map((r) => ({ ...r, changed: changedSet.has(r.id) }));
   return NextResponse.json({ ok: true, reservations });
 }

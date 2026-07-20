@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isRefundPending, type MoneyRow } from "@/lib/money";
 
 // 미입금 예약 자동취소 (지연 정리 방식) — 접속 시점에 청소한다.
 //
@@ -55,4 +56,62 @@ export async function sweepExpiredReservations(db: SupabaseClient): Promise<void
   }
 
   await q;
+}
+
+// ─── 기록 보관 정책 (2026-07-21 사장님 지시) ──────────────────────────
+//   · 이용/취소가 '일주일' 지나면 → 손님 조회 화면에서 숨김 (DB엔 남고, 관리자는 계속 봄)
+//   · 이용/취소가 '한 달' 지나면 → DB에서 완전 삭제 (딸린 이력은 cascade 삭제, 입금기록은 링크만 해제)
+//   ⚠️ 환불이 아직 안 끝난 취소건(돌려줄 돈 남음)은 한 달이 지나도 삭제하지 않는다 — 돈 기록이 사라지면 안 됨.
+export const HIDE_AFTER_DAYS = 7;
+export const DELETE_AFTER_DAYS = 30;
+
+// 오늘 기준 N일 전의 한국 날짜("YYYY-MM-DD"). 이용일(date) 비교용.
+function kstDateMinus(days: number, nowMs: number): string {
+  return new Date(nowMs + KST_OFFSET - days * 86400000).toISOString().slice(0, 10);
+}
+
+// 손님 조회 화면에서 숨길 예약인가 — '끝난 지 일주일 넘은' 취소·이용완료.
+//   · 취소건: 취소한 시각(cancelled_at) 기준
+//   · 그 외(이용완료·노쇼 등, 또는 취소인데 취소시각이 없는 옛 데이터): 이용일(date) 기준
+//   · 미래 예약·최근(일주일 내) 건은 그대로 보인다.
+export function isHiddenFromLookup(
+  r: { status: string; date: string; cancelled_at?: string | null },
+  nowMs: number = Date.now(),
+): boolean {
+  if (r.status === "cancelled" && r.cancelled_at) {
+    return Date.parse(r.cancelled_at) < nowMs - HIDE_AFTER_DAYS * 86400000;
+  }
+  return r.date < kstDateMinus(HIDE_AFTER_DAYS, nowMs);
+}
+
+// 한 달 지난 예약을 실제로 삭제. 삭제한 건수를 돌려준다.
+//   이력(reservation_logs)은 FK on delete cascade 로 자동 삭제되고,
+//   입금기록(deposits.matched_reservation_id)은 on delete set null 로 링크만 풀린다.
+export async function purgeOldReservations(db: SupabaseClient, nowMs: number = Date.now()): Promise<number> {
+  const cancelCutoff = new Date(nowMs - DELETE_AFTER_DAYS * 86400000).toISOString();
+  const dateCutoff = kstDateMinus(DELETE_AFTER_DAYS, nowMs);
+  // 후보: (취소된 지 한 달 넘음) 또는 (이용일이 한 달 넘게 지남)
+  const { data, error } = await db
+    .from("reservations")
+    .select("id, status, deposit, deposit_paid, refunded, refund_rate, refund_account")
+    .or(`and(status.eq.cancelled,cancelled_at.lt.${cancelCutoff}),date.lt.${dateCutoff}`);
+  if (error || !data || data.length === 0) return 0;
+  // 🔴 환불 안 끝난 취소건은 제외 — 돌려줄 돈이 남아있으면 절대 지우지 않는다.
+  const ids = data
+    .filter((r) => !isRefundPending(r as MoneyRow))
+    .map((r) => r.id as string);
+  if (ids.length === 0) return 0;
+  const { error: delErr } = await db.from("reservations").delete().in("id", ids);
+  if (delErr) { console.error("[보관정책 삭제 실패]", delErr.message); return 0; }
+  return ids.length;
+}
+
+// 삭제 sweep 을 너무 자주 돌리지 않게 인스턴스별 1시간에 한 번으로 제한.
+//   (삭제 자체는 여러 번 돌아도 무해하지만, 매 요청마다 조회+삭제는 낭비라 throttle)
+let lastPurgeMs = 0;
+export async function maybePurgeOldReservations(db: SupabaseClient): Promise<void> {
+  const now = Date.now();
+  if (now - lastPurgeMs < 3600_000) return;
+  lastPurgeMs = now;
+  await purgeOldReservations(db, now).catch(() => {});
 }
