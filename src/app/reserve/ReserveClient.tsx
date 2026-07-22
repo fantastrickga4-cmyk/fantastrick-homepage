@@ -1,11 +1,21 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 import { depositOf } from "@/lib/settings";
 import { IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
 import { ReserveCalendar, openDateLabel } from "@/components/ReserveCalendar";
+
+// 예약금 입금 계좌 (한 곳에서 관리 — 딥링크·복사·표시가 항상 같은 값을 쓰도록)
+const PAY_BANK = "카카오뱅크";
+const PAY_ACCT = "3333-09-7175706";   // 화면 표시용
+const PAY_ACCT_NO = "3333097175706";  // 복사·딥링크용(숫자만)
+const PAY_HOLDER = "승현수";
+// 토스 송금 딥링크 — 앱이 받는 계좌·금액을 미리 채운 송금화면으로 열린다(모바일 전용).
+const tossSendLink = (amount: number) =>
+  `supertoss://send?bank=${encodeURIComponent(PAY_BANK)}&accountNo=${PAY_ACCT_NO}&amount=${amount}&origin=link`;
 
 type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; themeSlots?: Record<string, SlotSchedule>; minLeadMinutes?: number;
   // 사장님이 관리자에서 바꾼 테마별 예약금. 이걸 안 쓰면 화면만 옛 금액이 남아
@@ -27,6 +37,9 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [showDeposit, setShowDeposit] = useState(false); // 접수 후 예약금 안내 팝업
   const [depositAck, setDepositAck] = useState(false);    // "확인했습니다" 체크 여부
   const [paidDeposit, setPaidDeposit] = useState<number | null>(null); // 서버가 실제로 저장한 예약금
+  const [copied, setCopied] = useState(false);   // 계좌번호 복사됨 표시
+  const [isMobile, setIsMobile] = useState(false); // 휴대폰이면 은행앱 딥링크, PC면 QR
+  const [qrUrl, setQrUrl] = useState("");          // PC용 토스 송금 QR 이미지(data URL)
 
   // 시간표 기본값은 서버(settings.ts 의 DEFAULT_CONFIG)와 똑같은 값으로 시작한다.
   //   전에는 timeSlots(전 매장 공통 fallback)만 갖고 시작해서, /api/config 가 도착하기 전에는
@@ -94,6 +107,32 @@ export default function ReserveClient({ preset }: { preset: string }) {
   useEffect(() => {
     if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
   }, [preset]);
+
+  // 손님 기기가 휴대폰인지 (휴대폰이면 은행앱 딥링크, PC면 QR 안내)
+  useEffect(() => {
+    setIsMobile(/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent));
+  }, []);
+
+  // PC에서 예약금 팝업이 뜨면 토스 송금 QR을 만들어 둔다(폰으로 스캔 → 토스 송금 열림)
+  useEffect(() => {
+    if (showDeposit && !isMobile && deposit > 0) {
+      QRCode.toDataURL(tossSendLink(deposit), { margin: 1, width: 220 })
+        .then(setQrUrl)
+        .catch(() => setQrUrl(""));
+    }
+  }, [showDeposit, isMobile, deposit]);
+
+  // 계좌번호를 복사한다(딥링크가 실패해도 손님이 붙여넣을 수 있게 항상 먼저 복사).
+  async function copyAcct() {
+    try { await navigator.clipboard.writeText(PAY_ACCT_NO); }
+    catch { prompt("계좌번호를 복사하세요", PAY_ACCT_NO); } // http·구형 브라우저 폴백
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  }
+  // 토스로 바로 송금 — 계좌·금액이 채워진 송금화면이 열린다. 안 열려도 계좌는 복사돼 있다.
+  function openToss() { copyAcct(); window.location.href = tossSendLink(deposit); }
+  // 카카오뱅크 앱 열기 — 앱만 열리므로 계좌를 미리 복사해 붙여넣게 한다.
+  function openKakaoBank() { copyAcct(); window.location.href = "kakaobank://"; }
 
   // 관리자 설정 불러오기 (예약금·시간대)
   // 실패해도 위 기본값(THEME_SLOTS)으로 동작하므로 finally 에서 반드시 열어준다 —
@@ -197,7 +236,16 @@ export default function ReserveClient({ preset }: { preset: string }) {
               <h3 id="deposit-title">예약금 입금 안내</h3>
               <div className="modal-policy">
                 <p>예약금은 <b>{deposit.toLocaleString()}원</b>입니다.</p>
-                <p>입금 계좌 : <b>카카오뱅크 3333-09-7175706</b> (승현수)</p>
+                <div className="pay-acct">
+                  <div className="pay-acct-info">
+                    <span className="pay-bank">{PAY_BANK}</span>
+                    <b>{PAY_ACCT}</b>
+                    <span className="pay-holder">{PAY_HOLDER}</span>
+                  </div>
+                  <button type="button" className="pay-copy" onClick={copyAcct}>
+                    {copied ? "복사됨" : "복사"}
+                  </button>
+                </div>
                 <p>예약금 입금이 확인되어야 비로소 예약이 확정 처리됩니다.</p>
                 <p>입금하실 때 <b>보내는 분(예금주)을 예약자 이름과 동일하게</b><br />해주셔야 정상 처리됩니다.</p>
                 <p><b>30분 내 예약금 미입금 시 예약은 자동 취소</b>됩니다.</p>
@@ -207,8 +255,36 @@ export default function ReserveClient({ preset }: { preset: string }) {
                 <input type="checkbox" checked={depositAck} onChange={(e) => setDepositAck(e.target.checked)} />
                 위 내용을 확인했습니다.
               </label>
-              <div className="modal-btns">
-                <button className="btn primary" disabled={!depositAck} onClick={() => setShowDeposit(false)}>확인</button>
+
+              {/* 체크하면 송금 방법이 열린다. 어떤 버튼을 눌러도 계좌번호는 항상 먼저 복사돼
+                  앱이 안 열려도 손님이 붙여넣을 수 있다(손해 없음). */}
+              {depositAck && (isMobile ? (
+                <div className="pay-actions">
+                  <button className="btn primary pay-toss" onClick={openToss}>
+                    토스로 바로 송금<span className="pay-sub">계좌·금액 자동</span>
+                  </button>
+                  <div className="pay-two">
+                    <button className="btn ghost" onClick={openKakaoBank}>카카오뱅크 앱</button>
+                    <button className="btn ghost" onClick={copyAcct}>{copied ? "복사됨" : "계좌 복사"}</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="pay-actions">
+                  {qrUrl && (
+                    <div className="pay-qr">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrUrl} alt="토스 송금 QR 코드" width={140} height={140} />
+                      <span>휴대폰으로 스캔하면 토스 송금이 열려요</span>
+                    </div>
+                  )}
+                  <button className="btn primary" onClick={copyAcct}>
+                    {copied ? "계좌번호 복사됨" : "계좌번호 복사"}
+                  </button>
+                </div>
+              ))}
+
+              <div className="modal-btns" style={{ marginTop: 10 }}>
+                <button className="btn ghost" onClick={() => setShowDeposit(false)}>닫기</button>
               </div>
             </div>
           </div>
