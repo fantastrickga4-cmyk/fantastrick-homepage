@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { refundRateFor, refundAmount, isRefundPending, hasStarted } from "../src/lib/money";
+import { refundRateFor, refundAmount, isRefundOwed, isRefundReady, hasStarted } from "../src/lib/money";
 
 // 손님 돈이 걸린 규정이라 테스트로 못 박아둔다.
 // 안내 문구(theme-content.ts 의 BOOKING_INFO.refund)와 반드시 같아야 한다:
@@ -79,19 +79,34 @@ describe("refundAmount — 실제 환불 금액", () => {
   });
 });
 
-describe("isRefundPending — 환불 대기 목록에 뜨는 조건", () => {
+describe("isRefundOwed — 돌려줄 돈이 남았나 (계좌 유무 무관)", () => {
   const base = { status: "cancelled", deposit: 30000, deposit_paid: true, refunded: false, refund_rate: 80, refund_account: "123-456" };
-  it("취소 + 입금했었음 + 아직 안 보냄 + 환불율>0 + 계좌 있음 → 대기", () => {
-    expect(isRefundPending(base)).toBe(true);
+  it("취소 + 입금했었음 + 아직 안 보냄 + 환불율>0 → 대기 (계좌 있든 없든)", () => {
+    expect(isRefundOwed(base)).toBe(true);
+    expect(isRefundOwed({ ...base, refund_account: null })).toBe(true);
   });
   it("당일취소(0%)는 보낼 돈이 없어 대기에 안 뜬다", () => {
-    expect(isRefundPending({ ...base, refund_rate: 0 })).toBe(false);
+    expect(isRefundOwed({ ...base, refund_rate: 0 })).toBe(false);
   });
   it("입금 안 한 자동취소는 대기에 안 뜬다", () => {
-    expect(isRefundPending({ ...base, deposit_paid: false, refund_rate: null })).toBe(false);
+    expect(isRefundOwed({ ...base, deposit_paid: false, refund_rate: null })).toBe(false);
   });
   it("이미 환불했으면 안 뜬다", () => {
-    expect(isRefundPending({ ...base, refunded: true })).toBe(false);
+    expect(isRefundOwed({ ...base, refunded: true })).toBe(false);
+  });
+});
+
+describe("isRefundReady — 바로 보낼 수 있나 (계좌까지 있음)", () => {
+  const base = { status: "cancelled", deposit: 30000, deposit_paid: true, refunded: false, refund_rate: 80, refund_account: "123-456" };
+  it("계좌가 있으면 바로 보낼 수 있음", () => {
+    expect(isRefundReady(base)).toBe(true);
+  });
+  // 🔴 이 케이스가 예전 버그의 핵심: 사장님이 취소한 건은 손님 계좌를 몰라 refund_account 가 비어 있다.
+  //    돈은 남았지만(isRefundOwed=true) 바로 보낼 순 없다(isRefundReady=false) → 먼저 계좌를 입력해야 한다.
+  it("★계좌가 없으면(사장님 취소건) 아직 못 보냄 — 돈은 남아있음", () => {
+    const noAcct = { ...base, refund_account: null };
+    expect(isRefundOwed(noAcct)).toBe(true);   // 환불 대기·자동삭제 보호에는 잡힌다
+    expect(isRefundReady(noAcct)).toBe(false); // 바로 보내기 큐에는 안 뜬다
   });
 });
 

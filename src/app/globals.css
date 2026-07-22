@@ -806,6 +806,10 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .acct .bank{color:var(--muted);font-weight:700;flex:0 0 auto}
 .acct b{font-size:15.5px;font-weight:800;font-feature-settings:"tnum";letter-spacing:.02em}
 
+/* 환불 계좌 입력 폼 — 은행·계좌번호·예금주 세 칸을 한 줄에(좁으면 자동 줄바꿈) */
+.acct-form{display:flex;gap:10px;flex-wrap:wrap}
+.acct-form .field{margin-bottom:0;flex:1 1 150px}
+
 /* 할 일 개수 뱃지 — 앰버(=내가 처리해야 함). .tt-badge 는 빨강이라 여기 못 씀(레드=되돌릴 수 없음 전용) */
 .vt-badge{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;margin-left:6px;
   border-radius:var(--r-full);font-size:11px;font-weight:800;font-feature-settings:"tnum";

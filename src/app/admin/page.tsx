@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
-import { isRefundPending, refundAmount, cancelledBy } from "@/lib/money";
+import { isRefundOwed, isRefundReady, refundAmount, cancelledBy } from "@/lib/money";
 import { IconChat, IconWarn, IconMask, IconMoney, IconClock, IconCalendar, IconList, IconMegaphone, IconBan, IconMail, IconBell, IconDownload, IconChart, IconBolt, IconCheck, IconPencil, IconUser, IconChevronUp, IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconCard, IconBook, IconEye, IconStar, IconPlus, IconRefresh } from "@/components/Icon";
 import { isActiveSmsType } from "@/lib/sms-templates";
 import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
@@ -416,10 +416,12 @@ function ListView() {
             </div>
             {/* 환불 처리는 [입금·환불 › 환불 처리] 탭이 유일한 입구 — 여기선 상태만 알려준다
                 (입구가 두 곳이면 "여기서 했나 저기서 했나" 혼동) */}
-            {isRefundPending(r) && (
+            {isRefundOwed(r) && (
               <div className="refbox">
                 <IconMoney /> <b>환불 대기 {refundAmount(r).toLocaleString()}원</b> (환불율 {r.refund_rate}%) —
-                <b> [입금·환불 › 환불 처리]</b> 탭에서 계좌 복사하고 보내주세요.
+                {isRefundReady(r)
+                  ? <><b> [입금·환불 › 환불 처리]</b> 탭에서 계좌 복사하고 보내주세요.</>
+                  : <><b> [입금·환불 › 환불 처리]</b> 탭에서 손님 계좌를 입력한 뒤 보내주세요. <span style={{ color: "var(--muted)" }}>(사장님이 취소한 건이라 계좌를 아직 몰라요)</span></>}
               </div>
             )}
             {r.status === "cancelled" && r.refunded && (
@@ -1086,8 +1088,12 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  // 서버 통계와 같은 기준을 써야 뱃지 수와 목록 수가 어긋나지 않는다
-  const todo = rows.filter(isRefundPending);
+  // 서버 통계(isRefundOwed)와 같은 기준을 써야 뱃지 수와 목록 수가 어긋나지 않는다.
+  //   · needAcct : 돈은 남았는데 손님 계좌를 모름 (사장님이 취소한 건) → 먼저 계좌 입력
+  //   · todo     : 계좌까지 있어 바로 보낼 수 있음
+  const owed = rows.filter(isRefundOwed);
+  const needAcct = owed.filter((r) => !isRefundReady(r));
+  const todo = owed.filter(isRefundReady);
   const done = rows.filter((r) => r.refunded).slice(0, 20);
 
   async function copyAcct(r: Reservation) {
@@ -1118,8 +1124,25 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
         <button className="btn ghost sm" onClick={load}>새로고침</button>
       </div>
 
+      {/* 🔴 사장님이 취소한 입금완료 건 — 돈은 돌려줘야 하는데 손님 계좌를 모른다.
+          손님에게 계좌를 받아 여기서 입력하면, 아래 "바로 보낼 수 있음" 칸으로 내려간다. */}
+      {needAcct.length > 0 && (
+        <>
+          <div className="notice warn" style={{ marginBottom: 10 }}>
+            <IconWarn /> <b>계좌 입력 필요 {needAcct.length}건</b> — 사장님이 취소한 예약이에요.
+            손님에게 환불 계좌를 물어봐서 아래에 입력하면 환불할 수 있어요.
+          </div>
+          {needAcct.map((r) => (
+            <NeedAcctRow key={r.id} r={r} onSaved={() => { load(); onDone(); }} />
+          ))}
+          <div className="card-h" style={{ marginTop: 22 }}>바로 보낼 수 있음</div>
+        </>
+      )}
+
       {todo.length === 0 ? (
-        <div className="notice ok"><IconCheck /> 보내드릴 환불 없음 — 다 처리하셨어요.</div>
+        needAcct.length === 0 && (
+          <div className="notice ok"><IconCheck /> 보내드릴 환불 없음 — 다 처리하셨어요.</div>
+        )
       ) : todo.map((r) => (
         <div key={r.id} className="rrow open">
           <div className="head" style={{ cursor: "default" }}>
@@ -1183,6 +1206,58 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
         </>
       )}
     </>
+  );
+}
+
+/* 🏦 계좌 입력 필요 한 줄 — 사장님이 취소한 입금완료 건.
+   손님에게 계좌를 받아 은행·계좌번호·예금주를 넣고 저장하면 환불 큐로 올라간다. */
+function NeedAcctRow({ r, onSaved }: { r: Reservation; onSaved: () => void }) {
+  const [bank, setBank] = useState(r.refund_bank || "");
+  const [acct, setAcct] = useState(r.refund_account || "");
+  const [holder, setHolder] = useState(r.refund_holder || r.name); // 기본 예금주 = 예약자
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    if (!bank.trim() || !acct.trim()) { alert("은행과 계좌번호를 입력해 주세요."); return; }
+    setBusy(true);
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: r.id, refund_bank: bank.trim(), refund_account: acct.trim(), refund_holder: holder.trim() || r.name }),
+    });
+    setBusy(false);
+    if (res.ok) onSaved(); else alert((await res.json()).error || "저장 실패");
+  }
+
+  return (
+    <div className="rrow open">
+      <div className="head" style={{ cursor: "default" }}>
+        <span className="when">{daysAgoLabel(r.cancelled_at)}</span>
+        <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
+        <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time}</span>
+        <span className="amt">{refundAmount(r).toLocaleString()}원</span>
+        <span className="rt"><span className="badge-st st-pending">환불 {r.refund_rate}%</span></span>
+      </div>
+      <div className="detail">
+        <p className="hint" style={{ margin: "0 0 8px" }}>
+          예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
+          {" · "}취소 {formatStamp(r.cancelled_at)} ({cancelledBy(r)})
+          {" · "}손님에게 환불 계좌를 물어봐 입력해 주세요.
+        </p>
+        <div className="acct-form">
+          <div className="field"><label>은행</label>
+            <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder="예: 카카오뱅크" maxLength={30} /></div>
+          <div className="field"><label>계좌번호</label>
+            <input value={acct} onChange={(e) => setAcct(e.target.value)} placeholder="숫자·하이픈" maxLength={40} inputMode="numeric" /></div>
+          <div className="field"><label>예금주</label>
+            <input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder={r.name} maxLength={30} /></div>
+        </div>
+        <div className="act-row">
+          <button className="btn sm primary" disabled={busy} onClick={save}>
+            {busy ? "저장 중…" : <><IconCheck /> 계좌 저장 → 환불 처리로</>}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

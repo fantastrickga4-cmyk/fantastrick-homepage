@@ -79,6 +79,11 @@ const CASES = [
     status: "cancelled", paid: true, created: minsAgo(4300), paid_at: minsAgo(4200),
     cancelled_at: minsAgo(120), refund: { rate: 100, bank: "카카오뱅크", acct: "3333-01-1234567", holder: "송하람" } },
 
+  { 설명: "취소 · 사장님이 취소함 → 손님 계좌 몰라 계좌 입력 필요 (24시간 전 → 100%)",
+    theme: "time", date: day(5), time: "20:00", people: 3, name: "강해린", phone: "0012",
+    status: "cancelled", paid: true, created: minsAgo(6000), paid_at: minsAgo(5900),
+    cancelled_at: minsAgo(90), refund: { rate: 100, bank: null, acct: null, holder: null } },
+
   { 설명: "취소 · 환불 이미 보냄 (하루 전 자정까지 취소 → 80%)",
     theme: "firstfoundbride", date: day(4), time: "16:40", people: 3, name: "오세훈", phone: "0008",
     status: "cancelled", paid: true, created: minsAgo(7000), paid_at: minsAgo(6900),

@@ -10,11 +10,20 @@ export type MoneyRow = {
   refund_account: string | null;
 };
 
-// 환불 대기 = 취소됨 + 입금했었음 + 아직 안 보냄 + 환불율>0 + 계좌 있음
+// 돌려줄 돈이 남아 있는가 — 계좌 유무와 상관없는 "환불 대기"의 본질.
+//   취소됨 + 입금했었음 + 아직 안 보냄 + 환불율>0
 //   · 30분 미입금 자동취소(expire.ts)는 deposit_paid=false·refund_rate=null 이라 자동 제외
 //   · 당일취소(환불율 0%)는 보낼 돈이 없어 제외
-export function isRefundPending(r: MoneyRow): boolean {
-  return r.status === "cancelled" && r.deposit_paid && !r.refunded && (r.refund_rate ?? 0) > 0 && !!r.refund_account;
+//   ⚠️ 사장님이 취소한 건은 손님 계좌를 모른다. 그래도 "돈은 남아있다" → 여기선 포함된다.
+//      (계좌를 몰라도 환불 대기 건수·금액에 잡히고, 자동삭제에서도 보호돼야 함)
+export function isRefundOwed(r: MoneyRow): boolean {
+  return r.status === "cancelled" && r.deposit_paid && !r.refunded && (r.refund_rate ?? 0) > 0;
+}
+
+// 바로 보낼 수 있는가 — 돌려줄 돈이 있고 + 손님 계좌까지 확보됨.
+//   계좌가 없으면(사장님 취소건) 먼저 계좌를 입력받아야 여기에 들어온다.
+export function isRefundReady(r: MoneyRow): boolean {
+  return isRefundOwed(r) && !!r.refund_account;
 }
 
 // 실제로 보낼 환불 금액 (예상이 아니라 확정 금액)

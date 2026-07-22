@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isRefundPending, type MoneyRow } from "@/lib/money";
+import { isRefundOwed, type MoneyRow } from "@/lib/money";
 
 // 미입금 예약 자동취소 (지연 정리 방식) — 접속 시점에 청소한다.
 //
@@ -97,8 +97,10 @@ export async function purgeOldReservations(db: SupabaseClient, nowMs: number = D
     .or(`and(status.eq.cancelled,cancelled_at.lt.${cancelCutoff}),date.lt.${dateCutoff}`);
   if (error || !data || data.length === 0) return 0;
   // 🔴 환불 안 끝난 취소건은 제외 — 돌려줄 돈이 남아있으면 절대 지우지 않는다.
+  //    isRefundOwed(계좌 유무 무관)로 봐야, 사장님이 취소해 계좌를 아직 못 받은 건도 지켜진다.
+  //    (예전 isRefundReady 기준은 계좌 없는 환불 대기건을 한 달 뒤 삭제해 돈+기록이 사라졌다)
   const ids = data
-    .filter((r) => !isRefundPending(r as MoneyRow))
+    .filter((r) => !isRefundOwed(r as MoneyRow))
     .map((r) => r.id as string);
   if (ids.length === 0) return 0;
   const { error: delErr } = await db.from("reservations").delete().in("id", ids);

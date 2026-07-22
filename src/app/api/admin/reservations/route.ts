@@ -3,7 +3,7 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
 import { themeById, isSlotTime } from "@/lib/data";
-import { isRefundPending, refundAmount, refundRateFor } from "@/lib/money";
+import { isRefundOwed, refundAmount, refundRateFor } from "@/lib/money";
 import { getConfig, depositOf } from "@/lib/settings";
 import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations, maybePurgeOldReservations } from "@/lib/expire";
@@ -96,7 +96,7 @@ function buildStats(rows: Row[]) {
   for (const r of rows) {
     byStatus[r.status] = (byStatus[r.status] || 0) + 1;
     if (r.status === "pending" && !r.deposit_paid) { pendingUnpaid++; pendingUnpaidSum += r.deposit || 0; }
-    if (isRefundPending(r)) { refundPending++; refundPendingSum += refundAmount(r); }
+    if (isRefundOwed(r)) { refundPending++; refundPendingSum += refundAmount(r); }
     if (r.status !== "cancelled") {
       byTheme[r.theme_id] = byTheme[r.theme_id] || { name: r.theme_name, count: 0 };
       byTheme[r.theme_id].count++;
@@ -142,6 +142,12 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.refunded === "boolean") patch.refunded = body.refunded;
   if (typeof body.memo === "string") patch.memo = body.memo;
   if (typeof body.deposit_payer === "string") patch.deposit_payer = body.deposit_payer.trim() || null;
+
+  // 손님 환불 계좌 입력 — 사장님이 취소한 건은 계좌를 모르므로, 손님에게 받아 여기서 채워 넣는다.
+  //   계좌가 채워져야 [환불 처리] 큐에서 "바로 보낼 수 있는" 상태(isRefundReady)로 올라온다.
+  if (typeof body.refund_bank === "string") patch.refund_bank = body.refund_bank.trim().slice(0, 30) || null;
+  if (typeof body.refund_account === "string") patch.refund_account = body.refund_account.trim().slice(0, 40) || null;
+  if (typeof body.refund_holder === "string") patch.refund_holder = body.refund_holder.trim().slice(0, 30) || null;
 
   // 예약 옮기기 (날짜·시간·인원 변경) — 취소 후 재등록을 하지 않게 해서 장부가 더러워지는 걸 막는다.
   //   취소→재등록을 하면 환불율이 계산되고 환불 큐에 뜨고 입금상태가 초기화됨(손님은 그대로 오는데도).
@@ -212,9 +218,9 @@ export async function PATCH(req: NextRequest) {
   //    전에는 refund_rate 가 null 로 남아 환불 대기 큐에도, 예약 상세에도 아무 표시가 없어서
   //    "받은 돈이 남아있다" 는 신호가 화면 어디에도 없었다(입출금 '실수령'엔 그대로 잡힌 채).
   //    → 손님이 직접 취소할 때와 같은 규정으로 환불율을 기록해 둔다.
-  //    ⚠️ 환불 대기 큐(isRefundPending)는 '환불 계좌'까지 있어야 뜬다. 사장님이 취소한 건은
-  //       손님 계좌를 모르므로 큐에는 안 뜬다 — 계좌를 받아 [환불 처리]에서 입력해야 한다.
-  //       (2026-07-17 RPA 점검에서 발견)
+  //    ✅ 이 건은 계좌가 없어도 환불 대기(isRefundOwed)에 잡히고, [환불 처리] 큐 맨 위
+  //       "계좌 입력 필요" 칸에 떠서 사장님이 손님 계좌를 받아 그 자리에서 입력한다.
+  //       (2026-07-17 RPA 점검에서 계좌 입력 경로가 없던 것을 2026-07-22 보완)
   const nowCancelled = patch.status === "cancelled" && before.status !== "cancelled";
   if (nowCancelled && before.deposit_paid && before.refund_rate == null) {
     patch.refund_rate = refundRateFor(before.date, before.time);
@@ -245,6 +251,8 @@ export async function PATCH(req: NextRequest) {
   if (moved) logs.push({ reservation_id: id, action: "시간 옮김", detail: `${moved.from} → ${moved.to}` });
   if (patch.people != null) logs.push({ reservation_id: id, action: "인원 변경", detail: `${before.people}명 → ${patch.people}명` });
   if (typeof body.memo === "string" && body.memo !== (before.memo || "")) logs.push({ reservation_id: id, action: "메모", detail: body.memo.slice(0, 60) || "(지움)" });
+  // 환불 계좌를 채워 넣었을 때 — 이제 [환불 처리] 큐에서 바로 보낼 수 있는 상태가 됐다는 흔적.
+  if (patch.refund_account) logs.push({ reservation_id: id, action: "환불 계좌 입력", detail: `${patch.refund_bank || ""} ${patch.refund_account}`.trim() });
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
   // 안내 문자 (알리고 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
