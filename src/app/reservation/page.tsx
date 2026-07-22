@@ -131,7 +131,9 @@ export default function ReservationLookup() {
       setList((prev) => prev?.map((x) => (x.id === target.id ? { ...x, status: "cancelled" } : x)) || null);
       const rate = j.refundRate;
       setDoneMsg(
-        rate === 0
+        rate == null
+          ? "예약이 취소되었습니다. (예약금 입금 전이라 환불은 없습니다.)"
+          : rate === 0
           ? "예약이 취소되었습니다. (당일 예약/방문으로 환불은 불가합니다.)"
           : `예약이 취소되었습니다. 입력하신 계좌로 예약금의 ${rate}%가 환불됩니다.`
       );
@@ -222,15 +224,17 @@ export default function ReservationLookup() {
                     {!cancelled && (hasStarted(r.date, r.time)
                       ? <div className="hint">이용이 끝난 예약이에요. 문의는 매장으로 연락 주세요.</div>
                       : (() => {
-                          // 시간 변경은 ①시작 24시간 넘게 남고(=취소 100% 조건) ②아직 안 바꿨을 때만.
-                          const canChange = refundRateFor(r.date, r.time) === 100 && !r.changed;
+                          // 시간 변경은 ①예약금 입금 확정 ②시작 24시간 넘게 남고(=취소 100% 조건) ③아직 안 바꿨을 때만.
+                          const canChange = r.deposit_paid && refundRateFor(r.date, r.time) === 100 && !r.changed;
                           return (
                             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                               {canChange && <button className="btn sm" onClick={() => setChangeTarget(r)}>시간 변경</button>}
                               <button className="btn ghost sm" onClick={() => openCancel(r)}>예약 취소</button>
                               {!canChange && (
                                 <span className="hint" style={{ margin: 0 }}>
-                                  {r.changed
+                                  {!r.deposit_paid
+                                    ? "예약금 입금이 확인되면 시간 변경이 가능해요."
+                                    : r.changed
                                     ? "시간 변경은 한 번만 가능해 이미 사용하셨어요."
                                     : "시간 변경은 시작 24시간 전까지 가능해요."}
                                 </span>
@@ -253,7 +257,32 @@ export default function ReservationLookup() {
 
       {/* 취소 흐름 — ① 환불 규정 안내(먼저!) → ② 환불 계좌 입력.
           손님이 [예약 취소]를 누르면 80%/100%/0% 안내가 제일 먼저 뜨고, 동의해야 계좌 입력으로 넘어간다. */}
-      {target && (() => {
+      {target && !target.deposit_paid && (
+        /* 미입금(대기) 예약 — 돌려줄 돈이 없어 환불 안내·계좌 입력 없이 바로 취소한다. */
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !submitting) closeModal(); }}>
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <button className="close-x" onClick={closeModal} aria-label="닫기"><IconClose /></button>
+            <h3>예약 취소</h3>
+            <div className="res-summary" style={{ marginTop: 0, marginBottom: 14 }}>
+              <div className="r"><span>테마</span><b>{target.theme_name}</b></div>
+              <div className="r"><span>일시</span><b>{formatDate(target.date)} {target.time}</b></div>
+            </div>
+            <p className="modal-policy">
+              아직 <b>예약금 입금 전</b>이라, <b>환불 없이 바로 취소</b>됩니다.<br />
+              취소하시겠어요?
+            </p>
+            {modalErr && <div className="msg-err"><IconWarn /> {modalErr}</div>}
+            <div className="modal-btns" style={{ marginTop: 16 }}>
+              <button className="btn ghost" onClick={closeModal} disabled={submitting}>닫기</button>
+              <button className="btn danger" onClick={confirmCancel} disabled={submitting}>
+                {submitting ? "처리 중…" : "예약 취소"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {target && target.deposit_paid && (() => {
         const ri = refundInfo(target.date, target.time, target.deposit);
         const need = ri.rate < 100; // 100% 가 아니면(80%·0%) 동의 체크 필요
         return (

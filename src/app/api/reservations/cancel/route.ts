@@ -38,21 +38,11 @@ export async function POST(req: NextRequest) {
   if (!/^\d{4}$/.test(pin)) {
     return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
   }
-  if (!refundBank || !refundAccount || !refundHolder) {
-    return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
-  }
-  // 입력 하드닝: 길이 상한 + 계좌번호는 숫자·하이픈만
-  if (name.length > 40 || refundBank.length > 60 || refundAccount.length > 60 || refundHolder.length > 60) {
-    return NextResponse.json({ error: "입력값이 너무 깁니다." }, { status: 400 });
-  }
-  if (!/^[0-9-]+$/.test(refundAccount)) {
-    return NextResponse.json({ error: "계좌번호는 숫자와 하이픈(-)만 입력해 주세요." }, { status: 400 });
-  }
 
-  // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간 가져오기
+  // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간/입금여부 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
-    .select("id, status, date, time, theme_id, theme_name, people")
+    .select("id, status, date, time, theme_id, theme_name, people, deposit_paid")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -72,15 +62,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 이용하신 예약은 취소할 수 없습니다. 매장으로 문의해 주세요." }, { status: 409 });
   }
 
-  const refundRate = refundRateFor(found.date, found.time);
+  // 🔴 입금이 확정된 예약만 환불이 발생하고 환불 계좌가 필요하다.
+  //    미입금(대기) 건은 돌려줄 돈이 없어 계좌 없이 그냥 취소한다 — 환불율도 남기지 않는다.
+  //    (전엔 입금 안 했는데도 "100% 환불" 안내가 나가고 계좌 입력을 강요했다.)
+  const paid = !!found.deposit_paid;
+  if (paid) {
+    if (!refundBank || !refundAccount || !refundHolder) {
+      return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
+    }
+    // 입력 하드닝: 길이 상한 + 계좌번호는 숫자·하이픈만
+    if (name.length > 40 || refundBank.length > 60 || refundAccount.length > 60 || refundHolder.length > 60) {
+      return NextResponse.json({ error: "입력값이 너무 깁니다." }, { status: 400 });
+    }
+    if (!/^[0-9-]+$/.test(refundAccount)) {
+      return NextResponse.json({ error: "계좌번호는 숫자와 하이픈(-)만 입력해 주세요." }, { status: 400 });
+    }
+  }
+
+  // 미입금이면 환불율은 null(환불 없음), 입금건이면 규정대로 계산.
+  const refundRate = paid ? refundRateFor(found.date, found.time) : null;
 
   const { error } = await db
     .from("reservations")
     .update({
       status: "cancelled",
-      refund_bank: refundBank,
-      refund_account: refundAccount,
-      refund_holder: refundHolder,
+      refund_bank: paid ? refundBank : null,
+      refund_account: paid ? refundAccount : null,
+      refund_holder: paid ? refundHolder : null,
       refund_rate: refundRate,
       cancelled_at: new Date().toISOString(),
     })
@@ -91,13 +99,13 @@ export async function POST(req: NextRequest) {
 
   // 변경 이력 — 손님이 직접 취소한 것도 남긴다("제가 취소한 적 없는데요?" 대비)
   await db.from("reservation_logs").insert({
-    reservation_id: id, action: "손님 취소", detail: `환불율 ${refundRate}%`,
+    reservation_id: id, action: "손님 취소", detail: paid ? `환불율 ${refundRate}%` : "미입금 취소(환불 없음)",
   }).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 취소 안내 문자 (알리고 키 있을 때만 실제 발송)
+  // 취소 안내 문자 (알리고 키 있을 때만 실제 발송) — 미입금은 환불 언급 없이(refund_rate=0)
   await sendReservationSms("cancel", {
     name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
-    people: found.people, refund_rate: refundRate,
+    people: found.people, refund_rate: refundRate ?? 0,
   }).catch(() => {});
 
   return NextResponse.json({ ok: true, refundRate });

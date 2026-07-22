@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   // 본인 예약 확인 (id + 전화 + 이름 + 비번 모두 일치) + 현재 예약 정보 가져오기
   const { data: before, error: findErr } = await db
     .from("reservations")
-    .select("id, store_id, theme_id, date, time, status")
+    .select("id, store_id, theme_id, date, time, status, deposit_paid")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -63,6 +63,11 @@ export async function POST(req: NextRequest) {
   }
   if (before.status === "cancelled") {
     return NextResponse.json({ error: "이미 취소된 예약이에요." }, { status: 409 });
+  }
+  // 입금(예약금)이 확정된 예약만 시간 변경 가능 — 사장님 지시.
+  //   미입금 대기 건은 30분 자동취소 대상이라, 옮겨봤자 곧 사라질 수 있어 혼란을 준다.
+  if (!before.deposit_paid) {
+    return NextResponse.json({ error: "예약금 입금이 확인된 예약만 시간을 변경할 수 있어요. 입금 확인 전에는 매장으로 문의해 주세요." }, { status: 409 });
   }
   if (hasStarted(before.date, before.time)) {
     return NextResponse.json({ error: "이미 이용하신 예약은 변경할 수 없어요. 매장으로 문의해 주세요." }, { status: 409 });
