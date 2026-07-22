@@ -88,7 +88,11 @@ html{scroll-behavior:smooth}
 }
 body{margin:0;background:var(--bg);color:var(--text);
   font-family:"Pretendard Variable","Pretendard","Pretendard 임시",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  /* 한글은 기본값이면 "매장" 이 "매/장" 처럼 단어 한가운데서 잘려 해상도마다 줄바꿈이 제각각이다.
+     keep-all 로 어절(단어)을 통째로 유지 → 띄어쓰기에서만 줄바꿈(모든 해상도에서 일관).
+     계좌번호·URL 같은 긴 토큰만 넘칠 때 안전하게 끊도록 overflow-wrap 을 함께 둔다. */
+  word-break:keep-all;overflow-wrap:break-word}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
