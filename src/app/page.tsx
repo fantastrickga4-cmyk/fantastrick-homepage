@@ -262,6 +262,11 @@ export default function Home() {
         <div className="ht-grid" aria-hidden="true" />
         <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
         <div className="ht-noise" aria-hidden="true" />
+        {/* 마스코트 — 판타(파랑, 왼쪽)·트리키(빨강, 오른쪽)가 무대 양쪽에서 등장 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="ht-mascot ht-m-fanta" src="/images/mascot-fanta.png" alt="" aria-hidden="true" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="ht-mascot ht-m-tricky" src="/images/mascot-tricky.png" alt="" aria-hidden="true" />
         <div className="ht-stack">
           <div className="ht-eyebrow">PREMIUM ESCAPE ROOM</div>
           <div className="ht-slogan">
