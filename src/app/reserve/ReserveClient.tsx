@@ -242,9 +242,6 @@ export default function ReserveClient({ preset }: { preset: string }) {
                     <b>{PAY_ACCT}</b>
                     <span className="pay-holder">{PAY_HOLDER}</span>
                   </div>
-                  <button type="button" className="pay-copy" onClick={copyAcct}>
-                    {copied ? "복사됨" : "복사"}
-                  </button>
                 </div>
                 <p>예약금 입금이 확인되어야 비로소 예약이 확정 처리됩니다.</p>
                 <p>입금하실 때 <b>보내는 분(예금주)을 예약자 이름과 동일하게</b><br />해주셔야 정상 처리됩니다.</p>
