@@ -288,8 +288,7 @@ export default function Home() {
       <section className="block alt" id="themes">
         <div className="wrap">
           <div className="shead reveal">
-            <div className="eyebrow">INTERACTIVE CONTENTS</div>
-            <h2 className="title">테마 라인업</h2>
+            <h2 className="title">테마 · Themes</h2>
             <p className="lead">직영으로 만든 방탈출·머더룸</p>
           </div>
           {/* 준비중 테마도 같은 줄에 — 예전엔 아래 별도 스트립이라 눈에 안 띄었음 */}
@@ -301,8 +300,7 @@ export default function Home() {
       <section className="block" id="reviews">
         <div className="wrap">
           <div className="shead reveal">
-            <div className="eyebrow">REVIEWS</div>
-            <h2 className="title">플레이어 리뷰</h2>
+            <h2 className="title">후기 · Reviews</h2>
           </div>
           <div className="rev-summary reveal rv-left">
             <div className="rs-score">
@@ -355,8 +353,7 @@ export default function Home() {
         <div className="wrap">
           <div className="biz-head reveal">
             <div>
-              <div className="eyebrow gold">BUSINESS · B2B</div>
-              <h2 className="title">제작 스튜디오</h2>
+              <h2 className="title">제작 · Production</h2>
               <p className="lead">11년 직영으로 검증한 콘텐츠·공간·장치 제작.</p>
             </div>
             <Link href="/business" className="btn gold">제작 역량 보기 →</Link>
@@ -379,8 +376,7 @@ export default function Home() {
       <section className="block alt" id="stores">
         <div className="wrap">
           <div className="shead reveal">
-            <div className="eyebrow">STORES · 오시는 길</div>
-            <h2 className="title">지점 안내</h2>
+            <h2 className="title">오시는 길 · Location</h2>
             <p className="lead">강남역·신논현역 사이 — 세 매장 모두 걸어서 오갈 수 있습니다.</p>
           </div>
           <div className="stores-layout reveal rv-right">
