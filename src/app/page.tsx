@@ -265,7 +265,7 @@ export default function Home() {
         <div className="ht-stack">
           <div className="ht-eyebrow">PREMIUM ESCAPE ROOM</div>
           <div className="ht-slogan">
-            <span>환상을</span>
+            <span>상상을</span>
             <span>기술로써</span>
             <span>현실에 구현한다.</span>
           </div>
