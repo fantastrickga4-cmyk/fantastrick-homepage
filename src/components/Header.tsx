@@ -6,6 +6,7 @@ import { IconMenu, IconClose } from "@/components/Icon";
 
 // 공통 헤더 — 스크롤하면 배경이 생기는 시네마틱 헤더 + 모바일 드로어 메뉴
 const MENU = [
+  { href: "/about", label: "소개" },
   { href: "/#themes", label: "콘텐츠" },
   { href: "/#reviews", label: "리뷰" },
   { href: "/faq", label: "자주 묻는 질문" },
