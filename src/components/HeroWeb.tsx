@@ -2,8 +2,8 @@
 import { useEffect, useRef } from "react";
 
 // 히어로 배경 3D 성좌 단서망 — cantor8 네트워크 그래픽의 방탈출 번안.
-// 점들을 3D 구(球) 위에 뿌리고 원근투영으로 그린다: 앞쪽 별은 크고 밝게, 뒤쪽은 작고 흐리게(입체감).
-// 자동으로 천천히 회전 + 마우스 위치에 따라 시점(요/피치)이 부드럽게 따라온다. 장식이라 aria-hidden.
+// 연출: ① 마법진처럼 선이 천천히 그려지며 완성되고(draw-in) → ② 완성 후에는 지구 자전하듯
+//       천천히 회전하는 3D 구(球). 마우스 반응 없음(요청). 장식이라 aria-hidden.
 export default function HeroWeb() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -21,27 +21,28 @@ export default function HeroWeb() {
       return seed / 0x7fffffff;
     };
 
-    // 3D 구 표면에 점 배치(개수 줄여 정돈: 26개)
+    // 3D 구 표면에 점 배치(정돈: 26개)
     const N = 26;
     const pts = Array.from({ length: N }, () => {
       const u = rnd(), v = rnd();
       const theta = 2 * Math.PI * u;
       const phi = Math.acos(2 * v - 1);
-      const r = 0.86 + rnd() * 0.16; // 살짝 두께감
+      const r = 0.86 + rnd() * 0.16;
       return {
         x: r * Math.sin(phi) * Math.cos(theta),
         y: r * Math.sin(phi) * Math.sin(theta),
         z: r * Math.cos(phi),
-        tw: rnd() * Math.PI * 2, // 반짝임 위상
+        tw: rnd() * Math.PI * 2,
       };
     });
-    // 가까운 점끼리 연결(3D 거리) — 임계값 작게 잡아 선을 적게(깔끔)
+    // 가까운 점끼리 연결(3D 거리)
     const edges: [number, number][] = [];
     for (let i = 0; i < N; i++)
       for (let j = i + 1; j < N; j++) {
         const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y, pts[i].z - pts[j].z);
         if (d < 0.62) edges.push([i, j]);
       }
+    const E = edges.length;
 
     let W = 0, H = 0, dpr = 1;
     const resize = () => {
@@ -55,81 +56,83 @@ export default function HeroWeb() {
     resize();
     window.addEventListener("resize", resize);
 
-    // 마우스 → 목표 회전(부드럽게 lerp)
-    let targetRX = 0, targetRY = 0, curRX = 0, curRY = 0;
-    const onMove = (e: MouseEvent) => {
-      targetRY = (e.clientX / window.innerWidth - 0.5) * 0.9;  // 좌우 → yaw
-      targetRX = (e.clientY / window.innerHeight - 0.5) * 0.7; // 상하 → pitch
-    };
-    if (!reduce) window.addEventListener("mousemove", onMove, { passive: true });
+    const DRAW_DUR = 4.0;                    // 그려지는 시간(초) — 천천히
+    const ROT_SPEED = (2 * Math.PI) / 55;    // 완성 후 회전(약 55초에 한 바퀴, 자전처럼)
+    const BASE_Y = 0.2;                      // 초기 방향
+    const TILT = 0.34;                       // 지구 축 기울기 느낌(고정)
 
-    let t = reduce ? 0.6 : 0;
-    let raf = 0;
-
-    const render = () => {
-      curRX += (targetRX - curRX) * 0.05;
-      curRY += (targetRY - curRY) * 0.05;
-      const ry = t + curRY;                        // 자동 회전 + 마우스
-      const rx = 0.14 * Math.sin(t * 0.7) + curRX; // 살짝 끄덕이며 + 마우스
+    // dp: 그리기 진행률 0..1, rot: 완성 후 누적 회전각, t: 경과초(반짝임용)
+    const render = (dp: number, rot: number, t: number) => {
+      const ry = BASE_Y + rot;
+      const rx = TILT;
       const cosY = Math.cos(ry), sinY = Math.sin(ry);
       const cosX = Math.cos(rx), sinX = Math.sin(rx);
       const scale = Math.min(W, H) * 0.4;
       const cx = W / 2, cy = H * 0.46;
-      const f = 3.2; // 원근 강도
+      const f = 3.2;
 
       const proj = pts.map((p) => {
-        // Y축 회전
         const x = p.x * cosY - p.z * sinY;
         let z = p.x * sinY + p.z * cosY;
-        // X축 회전
         const y = p.y * cosX - z * sinX;
         z = p.y * sinX + z * cosX;
-        const persp = f / (f - z); // z 클수록(앞) 커짐
+        const persp = f / (f - z);
         return { sx: cx + x * scale * persp, sy: cy + y * scale * persp, z };
       });
 
       ctx.clearRect(0, 0, W, H);
 
-      // 선(뒤는 흐리게, 앞은 진하게)
-      for (const [i, j] of edges) {
-        const a = proj[i], b = proj[j];
-        const depth = (a.z + b.z) / 2;            // -1..1
-        const k = (depth + 1) / 2;                // 0..1
+      // 선 — 마법진 그려지듯 순서대로(인덱스 스태거) 각 선이 a→b 로 자라난다
+      for (let i = 0; i < E; i++) {
+        const st = (i / E) * 0.82;
+        const local = Math.min(1, Math.max(0, (dp - st) / 0.22));
+        if (local <= 0) continue;
+        const a = proj[edges[i][0]], b = proj[edges[i][1]];
+        const x2 = a.sx + (b.sx - a.sx) * local;
+        const y2 = a.sy + (b.sy - a.sy) * local;
+        const k = ((a.z + b.z) / 2 + 1) / 2; // 뒤=0 앞=1
         ctx.strokeStyle = `rgba(200,222,255,${0.07 + k * 0.26})`;
         ctx.lineWidth = 0.5 + k * 0.9;
         ctx.beginPath();
         ctx.moveTo(a.sx, a.sy);
-        ctx.lineTo(b.sx, b.sy);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       }
-      // 노드(앞은 크고 밝게 + 반짝임)
+      // 노드 — 그려질 때 하나씩 켜지고, 완성 후엔 아주 은은하게만 반짝
       for (let i = 0; i < N; i++) {
+        const st = (i / N) * 0.82;
+        const rev = Math.min(1, Math.max(0, (dp - st) / 0.12));
+        if (rev <= 0) continue;
         const pr = proj[i];
-        const k = (pr.z + 1) / 2; // 0..1 (앞=1)
-        const tw = reduce ? 1 : 0.62 + 0.38 * Math.sin(t * 3 + pts[i].tw);
-        const r = (1.0 + k * 2.8) * tw;
-        ctx.fillStyle = `rgba(210,226,255,${(0.3 + k * 0.62) * tw})`;
+        const k = (pr.z + 1) / 2;
+        const tw = 0.9 + 0.1 * Math.sin(t * 1.6 + pts[i].tw);
+        const r = 1.0 + k * 2.8;
+        ctx.fillStyle = `rgba(210,226,255,${(0.3 + k * 0.62) * rev * tw})`;
         ctx.beginPath();
         ctx.arc(pr.sx, pr.sy, r, 0, Math.PI * 2);
         ctx.fill();
       }
     };
 
+    let raf = 0;
+    let startTime: number | null = null;
     if (reduce) {
-      render(); // 모션 줄이기: 한 프레임만 정적으로
+      render(1, 0, 0); // 모션 최소화: 완성된 정적 1프레임
     } else {
-      const loop = () => {
-        t += 0.0022;
-        render();
+      const loop = (now: number) => {
+        if (startTime == null) startTime = now;
+        const t = (now - startTime) / 1000;
+        const dp = Math.min(1, t / DRAW_DUR);
+        const rot = t > DRAW_DUR ? (t - DRAW_DUR) * ROT_SPEED : 0; // 완성 후부터 자전
+        render(dp, rot, t);
         raf = requestAnimationFrame(loop);
       };
-      loop();
+      raf = requestAnimationFrame(loop);
     }
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMove);
     };
   }, []);
 

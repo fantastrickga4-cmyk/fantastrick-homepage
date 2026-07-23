@@ -68,15 +68,16 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // 데스크톱 + 모션 허용일 때만 핀 고정 가로스크롤. 아니면 네이티브 가로 스와이프.
     const pinned = () => window.matchMedia("(min-width: 861px)").matches && !reduce;
-    let overflow = 0;
+    let travel = 0, startX = 0;
 
     const onScroll = () => {
-      if (overflow <= 0) return;
-      // 섹션이 화면 맨 위에 닿는 순간(top=0)부터, overflow px 만큼 세로로 스크롤하는 동안
-      // 트랙을 같은 거리만큼 좌로 민다 → "휠 내리면 카드가 좌로 흐른다".
+      if (travel <= 0) return;
+      // 섹션이 화면 맨 위에 닿는 순간(top=0)부터, travel px 만큼 세로로 스크롤하는 동안
+      // 트랙을 startX(첫 카드 오른쪽 끝) → startX-travel(마지막 카드 오른쪽 끝) 로 좌로 민다.
       const top = sec.getBoundingClientRect().top;
-      const p = Math.min(1, Math.max(0, -top / overflow));
-      track.style.transform = `translate3d(${(-p * overflow).toFixed(1)}px,0,0)`;
+      const p = Math.min(1, Math.max(0, -top / travel));
+      const tx = startX - p * travel;
+      track.style.transform = `translate3d(${tx.toFixed(1)}px,0,0)`;
       // 카드는 작게 진입 → 스크롤 초반(0~40%)에 원래 크기로 커진다(cantor8). --gs 를 카드 scale 에 매핑.
       const scale = 0.84 + 0.16 * Math.min(1, p / 0.4);
       track.style.setProperty("--gs", scale.toFixed(3));
@@ -86,12 +87,17 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
         sec.style.height = "";
         track.style.transform = "";
         track.style.removeProperty("--gs"); // 모바일·모션최소: 스케일 원복(카드 원래 크기)
-        overflow = 0;
+        travel = 0;
         return;
       }
-      overflow = Math.max(0, track.scrollWidth - pin.clientWidth + 40);
-      // 트랙이 넘치는 만큼 세로 스크롤 길이를 확보(핀 고정 구간)
-      sec.style.height = `${window.innerHeight + overflow}px`;
+      const vw = pin.clientWidth;
+      const first = track.querySelector<HTMLElement>(".tcard");
+      const cardW = first ? first.offsetWidth : 300;
+      const trackW = track.scrollWidth;
+      startX = vw - cardW - 24;             // 첫 카드가 오른쪽 끝에서 시작
+      const endX = vw - trackW - 24;        // 마지막 카드가 오른쪽 끝에 왔을 때(음수)
+      travel = Math.max(0, startX - endX);  // = 트랙 전체 - 카드 한 장(모든 카드가 우→좌로 지나감)
+      sec.style.height = `${window.innerHeight + travel}px`;
       onScroll();
     };
 
