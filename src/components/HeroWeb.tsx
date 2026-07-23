@@ -56,7 +56,7 @@ export default function HeroWeb() {
     resize();
     window.addEventListener("resize", resize);
 
-    const DRAW_DUR = 4.0;                    // 그려지는 시간(초) — 천천히
+    const DRAW_DUR = 6.5;                    // 그려지는 시간(초) — 더 천천히
     const ROT_SPEED = (2 * Math.PI) / 55;    // 완성 후 회전(약 55초에 한 바퀴, 자전처럼)
     const BASE_Y = 0.2;                      // 초기 방향
     const TILT = 0.34;                       // 지구 축 기울기 느낌(고정)
@@ -67,7 +67,7 @@ export default function HeroWeb() {
       const rx = TILT;
       const cosY = Math.cos(ry), sinY = Math.sin(ry);
       const cosX = Math.cos(rx), sinX = Math.sin(rx);
-      const scale = Math.min(W, H) * 0.4;
+      const scale = Math.min(W, H) * 0.46; // 살짝 크게
       const cx = W / 2, cy = H * 0.46;
       const f = 3.2;
 
@@ -91,8 +91,8 @@ export default function HeroWeb() {
         const x2 = a.sx + (b.sx - a.sx) * local;
         const y2 = a.sy + (b.sy - a.sy) * local;
         const k = ((a.z + b.z) / 2 + 1) / 2; // 뒤=0 앞=1
-        ctx.strokeStyle = `rgba(200,222,255,${0.07 + k * 0.26})`;
-        ctx.lineWidth = 0.5 + k * 0.9;
+        ctx.strokeStyle = `rgba(200,222,255,${0.08 + k * 0.28})`;
+        ctx.lineWidth = 1.1 + k * 1.6; // 더 굵게
         ctx.beginPath();
         ctx.moveTo(a.sx, a.sy);
         ctx.lineTo(x2, y2);
@@ -106,7 +106,7 @@ export default function HeroWeb() {
         const pr = proj[i];
         const k = (pr.z + 1) / 2;
         const tw = 0.9 + 0.1 * Math.sin(t * 1.6 + pts[i].tw);
-        const r = 1.0 + k * 2.8;
+        const r = 1.3 + k * 3.2;
         ctx.fillStyle = `rgba(210,226,255,${(0.3 + k * 0.62) * rev * tw})`;
         ctx.beginPath();
         ctx.arc(pr.sx, pr.sy, r, 0, Math.PI * 2);
