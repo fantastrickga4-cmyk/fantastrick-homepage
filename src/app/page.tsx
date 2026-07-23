@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 import { IconStar } from "@/components/Icon";
+import HeroWeb from "@/components/HeroWeb";
 
 // 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
 type HomeReview = {
@@ -260,7 +261,7 @@ export default function Home() {
         {/* 배경 3겹 — 무대 조명 · 설계도 모눈 · 그레인 질감 (globals.css 설명 참고) */}
         <div className="ht-mesh" aria-hidden="true" />
         <div className="ht-grid" aria-hidden="true" />
-        <div className="ht-web" aria-hidden="true" />
+        <div className="ht-web" aria-hidden="true"><HeroWeb /></div>
         <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
         <div className="ht-noise" aria-hidden="true" />
         {/* 세로 구분선 — 마스코트 무대와 가운데 콘텐츠를 구분(데스크톱) */}

@@ -225,13 +225,26 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
           mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%)}
 /* 성좌 단서망 — cantor8의 네트워크 그래픽을 방탈출 "흩어진 단서를 잇다"로 번안(흰 점+선).
    중앙(워드마크 자리)은 마스크로 비우고, 가장자리로 갈수록 보이게. 천천히 페이드인. */
-.hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201600%20900'%3E%3Cg%20stroke='%23fff'%20stroke-width='1'%20fill='none'%20opacity='.9'%3E%3Cline%20x1='1528.9'%20y1='684.1'%20x2='1528.1'%20y2='516.1'/%3E%3Cline%20x1='1528.9'%20y1='684.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1278.5'%20y1='342.5'%20x2='1374.1'%20y2='257.8'/%3E%3Cline%20x1='1278.5'%20y1='342.5'%20x2='1292.0'%20y2='504.9'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1241.5'%20y2='607.7'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='165.9'%20y2='346.6'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='4.3'%20y2='409.4'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1528.9'%20y2='4.5'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1566.2'%20y2='265.8'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='881.6'%20y2='36.4'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='1108.9'%20y2='104.0'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='881.6'%20y1='36.4'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='1374.1'%20y1='257.8'%20x2='1566.2'%20y2='265.8'/%3E%3Cline%20x1='1374.1'%20y1='257.8'%20x2='1532.5'%20y2='375.9'/%3E%3Cline%20x1='1292.0'%20y1='504.9'%20x2='1241.5'%20y2='607.7'/%3E%3Cline%20x1='1292.0'%20y1='504.9'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1140.4'%20y2='885.5'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1368.2'%20y2='788.0'/%3E%3Cline%20x1='1140.4'%20y1='885.5'%20x2='1082.8'%20y2='784.6'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='362.5'%20y2='302.6'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='164.3'%20y2='535.5'/%3E%3Cline%20x1='164.3'%20y1='535.5'%20x2='4.3'%20y2='409.4'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1368.2'%20y2='788.0'/%3E%3Cline%20x1='1368.2'%20y1='788.0'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1566.2'%20y1='265.8'%20x2='1532.5'%20y2='375.9'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='637.9'%20y2='739.3'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='400.7'%20y2='877.1'/%3E%3Cline%20x1='1144.4'%20y1='191.8'%20x2='1108.9'%20y2='104.0'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='1144.4'%20y2='191.8'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1082.8'%20y2='784.6'/%3E%3Cline%20x1='287.7'%20y1='211.1'%20x2='362.5'%20y2='302.6'/%3E%3Cline%20x1='1532.5'%20y1='375.9'%20x2='1528.1'%20y2='516.1'/%3E%3Cline%20x1='1528.9'%20y1='4.5'%20x2='1348.0'%20y2='59.6'/%3E%3Cline%20x1='1566.2'%20y1='265.8'%20x2='1528.9'%20y2='4.5'/%3E%3Cline%20x1='1241.5'%20y1='607.7'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='325.8'%20y1='677.8'%20x2='179.8'%20y2='761.1'/%3E%3Cline%20x1='325.8'%20y1='677.8'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='287.7'%20y1='211.1'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1348.0'%20y2='59.6'/%3E%3Cline%20x1='295.7'%20y1='895.3'%20x2='400.7'%20y2='877.1'/%3E%3Cline%20x1='295.7'%20y1='895.3'%20x2='132.0'%20y2='890.1'/%3E%3Cline%20x1='132.0'%20y1='890.1'%20x2='179.8'%20y2='761.1'/%3E%3Cline%20x1='637.9'%20y1='739.3'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='637.9'%20y1='739.3'%20x2='797.2'%20y2='866.9'/%3E%3Cline%20x1='400.7'%20y1='877.1'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='1528.1'%20y1='516.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='733.1'%20y2='3.5'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='6.4'%20y1='142.8'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='6.4'%20y2='142.8'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='6.4'%20y2='142.8'/%3E%3Cline%20x1='284.1'%20y1='83.0'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='546.2'%20y1='36.5'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='546.2'%20y2='36.5'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='546.2'%20y2='36.5'/%3E%3Cline%20x1='797.2'%20y1='866.9'%20x2='925.9'%20y2='756.1'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='797.2'%20y2='866.9'/%3E%3Cline%20x1='1082.8'%20y1='784.6'%20x2='925.9'%20y2='756.1'/%3E%3Cline%20x1='733.1'%20y1='3.5'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='881.6'%20y1='36.4'%20x2='1108.9'%20y2='104.0'/%3E%3C/g%3E%3Cg%20fill='%23cfe0ff'%3E%3Ccircle%20cx='1528.9'%20cy='684.1'%20r='2.2'/%3E%3Ccircle%20cx='1278.5'%20cy='342.5'%20r='3.0'/%3E%3Ccircle%20cx='199.4'%20cy='184.7'%20r='2.8'/%3E%3Ccircle%20cx='1299.0'%20cy='698.1'%20r='2.0'/%3E%3Ccircle%20cx='165.9'%20cy='346.6'%20r='3.1'/%3E%3Ccircle%20cx='1521.3'%20cy='116.4'%20r='3.4'/%3E%3Ccircle%20cx='957.2'%20cy='137.8'%20r='3.1'/%3E%3Ccircle%20cx='881.6'%20cy='36.4'%20r='2.9'/%3E%3Ccircle%20cx='1374.1'%20cy='257.8'%20r='1.7'/%3E%3Ccircle%20cx='1292.0'%20cy='504.9'%20r='1.9'/%3E%3Ccircle%20cx='1226.1'%20cy='839.7'%20r='2.6'/%3E%3Ccircle%20cx='1140.4'%20cy='885.5'%20r='3.2'/%3E%3Ccircle%20cx='433.1'%20cy='166.0'%20r='2.1'/%3E%3Ccircle%20cx='164.3'%20cy='535.5'%20r='2.3'/%3E%3Ccircle%20cx='1368.2'%20cy='788.0'%20r='2.2'/%3E%3Ccircle%20cx='1566.2'%20cy='265.8'%20r='3.3'/%3E%3Ccircle%20cx='556.9'%20cy='830.3'%20r='2.7'/%3E%3Ccircle%20cx='1144.4'%20cy='191.8'%20r='2.6'/%3E%3Ccircle%20cx='1082.8'%20cy='784.6'%20r='2.2'/%3E%3Ccircle%20cx='287.7'%20cy='211.1'%20r='1.6'/%3E%3Ccircle%20cx='1532.5'%20cy='375.9'%20r='2.3'/%3E%3Ccircle%20cx='1528.9'%20cy='4.5'%20r='3.2'/%3E%3Ccircle%20cx='1241.5'%20cy='607.7'%20r='3.1'/%3E%3Ccircle%20cx='325.8'%20cy='677.8'%20r='3.0'/%3E%3Ccircle%20cx='284.1'%20cy='83.0'%20r='2.8'/%3E%3Ccircle%20cx='1348.0'%20cy='59.6'%20r='1.9'/%3E%3Ccircle%20cx='295.7'%20cy='895.3'%20r='3.3'/%3E%3Ccircle%20cx='132.0'%20cy='890.1'%20r='2.3'/%3E%3Ccircle%20cx='637.9'%20cy='739.3'%20r='2.0'/%3E%3Ccircle%20cx='400.7'%20cy='877.1'%20r='1.8'/%3E%3Ccircle%20cx='362.5'%20cy='302.6'%20r='1.9'/%3E%3Ccircle%20cx='179.8'%20cy='761.1'%20r='2.8'/%3E%3Ccircle%20cx='1528.1'%20cy='516.1'%20r='2.7'/%3E%3Ccircle%20cx='664.7'%20cy='72.3'%20r='2.6'/%3E%3Ccircle%20cx='6.4'%20cy='142.8'%20r='2.5'/%3E%3Ccircle%20cx='98.4'%20cy='82.8'%20r='3.1'/%3E%3Ccircle%20cx='546.2'%20cy='36.5'%20r='3.2'/%3E%3Ccircle%20cx='797.2'%20cy='866.9'%20r='2.7'/%3E%3Ccircle%20cx='925.9'%20cy='756.1'%20r='2.0'/%3E%3Ccircle%20cx='1367.7'%20cy='630.8'%20r='2.2'/%3E%3Ccircle%20cx='484.5'%20cy='762.5'%20r='2.6'/%3E%3Ccircle%20cx='568.1'%20cy='126.1'%20r='1.7'/%3E%3Ccircle%20cx='4.3'%20cy='409.4'%20r='2.8'/%3E%3Ccircle%20cx='733.1'%20cy='3.5'%20r='3.3'/%3E%3Ccircle%20cx='1108.9'%20cy='104.0'%20r='3.1'/%3E%3Ccircle%20cx='773.4'%20cy='98.9'%20r='2.0'/%3E%3C/g%3E%3C/svg%3E");
-  background-size:cover;background-position:center;opacity:0;mix-blend-mode:screen;
+.hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
   -webkit-mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
           mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
   animation:htWebIn 2.6s ease 1s both}
 @keyframes htWebIn{from{opacity:0}to{opacity:.42}}
+/* 성좌망 모션 — 인라인 SVG(HeroWeb): 선이 그려지고(draw-in) · 노드가 반짝이고(twinkle) · 전체가 느리게 흐른다(drift).
+   cantor8 네트워크 그래픽처럼 '살아있는' 느낌. */
+.hero-t .ht-web-svg{position:absolute;inset:0;width:100%;height:100%;
+  animation:hwDrift 42s ease-in-out infinite alternate}
+@keyframes hwDrift{from{transform:translate3d(0,0,0) scale(1.02)}to{transform:translate3d(-1.6%,1.1%,0) scale(1.06)}}
+.hero-t .hw-lines line{stroke:#fff;stroke-width:1;fill:none;
+  stroke-dasharray:1;stroke-dashoffset:1;animation:hwDraw 1.8s cubic-bezier(.4,0,.2,1) both}
+@keyframes hwDraw{to{stroke-dashoffset:0}}
+.hero-t .hw-nodes circle{fill:#cfe0ff;opacity:.35;animation:hwTwinkle 4s ease-in-out infinite}
+@keyframes hwTwinkle{0%,100%{opacity:.3}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  .hero-t .ht-web-svg{animation:none}
+  .hero-t .hw-lines line{animation:none;stroke-dashoffset:0}
+  .hero-t .hw-nodes circle{animation:none;opacity:.7}
+}
 .hero-t .ht-noise{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
 .hero-t .ht-ghost{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:1;white-space:nowrap;pointer-events:none;user-select:none;
@@ -432,13 +445,16 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* 섹션 헤더 미니 브랜드 룰 — '새 챕터 시작' 신호(히어로 룰과 호응, 좌측 정렬 제목 위) */
 .shead::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:2px;
   background:linear-gradient(90deg,#2f6fe0,#043cb2)}
+/* 미니 룰이 '그려지는' 전환 — 섹션 제목이 화면에 들어오면 좌→우로 늘어난다(cantor8식 디테일) */
+.js .shead::before{width:0;transition:width .8s cubic-bezier(.16,1,.3,1) .2s}
+.js .shead.in::before{width:46px}
 
 /* reveal (progressive enhancement — only hides when JS is active) + 인덱스 기반 스태거 */
 /* 등장 연출 — 화면에 들어오면 .in 이 붙는다(page.tsx IntersectionObserver).
    ⚠️ 이 방식은 스크롤 연동 CSS와 달리 모든 브라우저에서 동작하므로, 등장 연출은 계속 이걸 쓴다.
    기본은 '아래서 위로'. 섹션마다 결을 달리하려고 변주를 둠 — 한 페이지에서 전부 같은 방향이면 리듬이 없다. */
-.js .reveal{opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*.09s)}
-.js .reveal.in{opacity:1;transform:none}
+.js .reveal{opacity:0;transform:translateY(28px);filter:blur(5px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1),filter .8s ease;transition-delay:calc(var(--i,0)*.1s)}
+.js .reveal.in{opacity:1;transform:none;filter:blur(0)}
 /* 흐림에서 또렷하게 — 초점이 맞는 느낌. 포스터·지도처럼 '보는' 것에 */
 .js .reveal.rv-focus{transform:scale(.965);filter:blur(7px)}
 .js .reveal.rv-focus.in{transform:none;filter:blur(0)}
@@ -1253,6 +1269,7 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
   html{scroll-behavior:auto}
   .hero .bg img{animation:none;transform:none}
   .hero .wrap>*{opacity:1;transform:none}
-  .js .reveal{opacity:1;transform:none}
+  .js .reveal{opacity:1;transform:none;filter:none}
+  .js .shead::before{width:46px}
   .scrollcue{animation:none}
 }
