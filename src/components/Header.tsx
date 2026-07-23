@@ -43,11 +43,11 @@ export default function Header() {
 
   if (pathname?.startsWith("/admin")) return null;
 
-  // 홈 최상단(아직 스크롤 전)에서는 히어로가 어두운 파랑이라 헤더를 흰색 버전으로.
-  const overHero = pathname === "/" && !scrolled;
+  // 모든 페이지가 어두운 파랑 배경 → 스크롤 전(최상단)에는 헤더를 흰색 버전으로. 스크롤하면 흰 배경 헤더.
+  const overDark = !scrolled;
 
   return (
-    <header className={(scrolled ? "scrolled" : "") + (overHero ? " over-hero" : "")}>
+    <header className={(scrolled ? "scrolled" : "") + (overDark ? " over-hero" : "")}>
       <div className="hdr-in">
         <Link href="/" className="brand" aria-label="FANTASTRICK 홈">
           {/* eslint-disable-next-line @next/next/no-img-element */}

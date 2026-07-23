@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 import { IconStar } from "@/components/Icon";
 import HeroWeb from "@/components/HeroWeb";
@@ -55,106 +55,138 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
   );
 }
 
-// 테마 갤러리 — cantor8 "Product Suite" 식: 카드가 위아래로 엇갈려 가로로 늘어서고,
-// 세로 스크롤(휠)에 따라 좌로 흐른다. 데스크톱=핀 고정 가로스크롤 / 모바일·모션최소=네이티브 가로 스와이프.
-function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
-  const secRef = useRef<HTMLElement>(null);
-  const pinRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
+// 테마 가로 슬라이드(캐러셀) — 운영중 + 준비중 테마를 한 줄에.
+// 모바일=터치 스와이프(브라우저 기본) / PC=화살표 + 마우스로 잡아끌기(드래그).
+function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+  const drag = useRef({ on: false, startX: 0, startLeft: 0, moved: 0 });
+
+  const update = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 8);
+    setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+    const bar = barRef.current;
+    if (!bar) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const wPct = Math.min(100, (el.clientWidth / el.scrollWidth) * 100);
+    const pos = max > 0 ? el.scrollLeft / max : 0;
+    bar.style.setProperty("--w", `${wPct}%`);
+    bar.style.setProperty("--x", `${pos * (100 - wPct)}%`);
+    bar.style.opacity = max > 4 ? "1" : "0";
+  }, []);
 
   useEffect(() => {
-    const sec = secRef.current, pin = pinRef.current, track = trackRef.current;
-    if (!sec || !pin || !track) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // 데스크톱 + 모션 허용일 때만 핀 고정 가로스크롤. 아니면 네이티브 가로 스와이프.
-    const pinned = () => window.matchMedia("(min-width: 861px)").matches && !reduce;
-    let travel = 0, startX = 0, cardW = 360, vw = 0;
-    const GAP = 28;
+    const el = railRef.current;
+    if (!el) return;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [update]);
 
-    const onScroll = () => {
-      if (travel <= 0) return;
-      // 섹션이 화면 맨 위에 닿는 순간(top=0)부터, travel px 만큼 세로로 스크롤하는 동안
-      // 트랙을 startX(첫 카드 오른쪽 끝) → startX-travel(마지막 카드 오른쪽 끝) 로 좌로 민다.
-      const top = sec.getBoundingClientRect().top;
-      const p = Math.min(1, Math.max(0, -top / travel));
-      const tx = startX - p * travel;
-      track.style.transform = `translate3d(${tx.toFixed(1)}px,0,0)`;
-      // cantor8 실측 재현: 카드마다 '화면상 x 위치'로 개별 스케일 + 카드별 '고정' 상하 엇갈림.
-      //  · 스케일: 오른쪽 진입(cx≈1.28*vw)=0.70배 → 좌측 26% 지점에서 1.0배, 더 왼쪽은 1.0 유지. 한 장씩 커지며 그대로 흘러 나간다.
-      //  · 엇갈림: 각 카드의 상하 위치는 고정(스크롤해도 그 높이 유지) → 출렁이지 않고 직선으로 흐른다.
-      const fullX = vw * 0.26, rightX = vw * 1.28, minS = 0.70;
-      const STAG = [0, 60, 0, -74]; // 카드 index%4 별 고정 세로 오프셋(중앙·아래·중앙·위)
-      const BIAS = 46;              // 전체를 살짝 아래로 — 상단 제목과 카드가 안 겹치게
-      const kids = track.children;
-      for (let i = 0; i < kids.length; i++) {
-        const el = kids[i] as HTMLElement;
-        const cx = tx + i * (cardW + GAP) + cardW / 2; // 카드 중심의 화면 x
-        let s = 1 - (1 - minS) * (cx - fullX) / (rightX - fullX);
-        s = Math.max(minS, Math.min(1, s));
-        el.style.transform = `translateY(${STAG[i % 4] + BIAS}px) scale(${s.toFixed(3)})`;
-      }
-    };
-    const measure = () => {
-      if (!pinned()) {
-        sec.style.height = "";
-        track.style.transform = "";
-        for (const el of Array.from(track.children)) (el as HTMLElement).style.transform = "";
-        travel = 0;
-        return;
-      }
-      vw = pin.clientWidth;
-      const first = track.querySelector<HTMLElement>(".tcard");
-      cardW = first ? first.offsetWidth : 360;
-      const trackW = track.scrollWidth;
-      startX = vw - cardW - 24;             // 첫 카드가 오른쪽 끝에서 시작
-      const endX = vw - trackW - 24;        // 마지막 카드가 오른쪽 끝에 왔을 때(음수)
-      travel = Math.max(0, startX - endX);  // = 트랙 전체 - 카드 한 장(모든 카드가 우→좌로 지나감)
-      sec.style.height = `${window.innerHeight + travel}px`;
-      onScroll();
-    };
+  const move = (dir: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".tcard");
+    const step = card ? card.offsetWidth + 20 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
 
-    measure();
-    // 카드 폭이 늦게 잡혀 트랙 길이 측정이 빗나가지 않도록 ResizeObserver 로 재측정(견고).
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(track);
-    Array.from(track.children).forEach((el) => ro.observe(el));
-    const reMeasure = setTimeout(measure, 600);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", measure);
-    window.addEventListener("load", measure);
-    return () => {
-      ro.disconnect();
-      clearTimeout(reMeasure);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("load", measure);
-    };
-  }, [themes, soon]);
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el || e.pointerType !== "mouse" || e.button !== 0) return;
+    drag.current = { on: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0 };
+    el.classList.add("dragging");
+  };
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el || !drag.current.on) return;
+    const dx = e.clientX - drag.current.startX;
+    drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
+    el.scrollLeft = drag.current.startLeft - dx;
+  };
+  const endDrag = () => {
+    const el = railRef.current;
+    if (!el || !drag.current.on) return;
+    drag.current.on = false;
+    el.classList.remove("dragging");
+  };
+  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (drag.current.moved > 5) { e.preventDefault(); e.stopPropagation(); }
+    drag.current.moved = 0;
+  };
+
+  const barDrag = useRef(false);
+  const scrubTo = (clientX: number) => {
+    const el = railRef.current, bar = barRef.current;
+    if (!el || !bar) return;
+    const r = bar.getBoundingClientRect();
+    const max = el.scrollWidth - el.clientWidth;
+    const half = (el.clientWidth / el.scrollWidth) * r.width / 2;
+    const ratio = (clientX - r.left - half) / (r.width - half * 2);
+    el.scrollLeft = Math.max(0, Math.min(max, ratio * max));
+  };
+  const onBarDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = railRef.current;
+    if (!el) return;
+    barDrag.current = true;
+    el.classList.add("dragging");
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    scrubTo(e.clientX);
+  };
+  const onBarMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (barDrag.current) scrubTo(e.clientX);
+  };
+  const onBarUp = () => {
+    if (!barDrag.current) return;
+    barDrag.current = false;
+    railRef.current?.classList.remove("dragging");
+  };
 
   return (
-    <section className="tgal" id="themes" ref={secRef}>
-      <div className="tgal-pin" ref={pinRef}>
-        <div className="wrap tgal-head">
-          <div className="shead reveal">
-            <h2 className="title">테마 · Themes</h2>
-            <p className="lead">직영으로 만든 방탈출·머더룸 — 스크롤하면 옆으로 넘어갑니다.</p>
-          </div>
-        </div>
-        <div className="tgal-viewport">
-          <div className="tgal-track" ref={trackRef}>
-            {themes.map((t, i) => (
-              <ThemeCard key={t.id} t={t} no={i + 1} />
-            ))}
-            {soon.map((t, i) => (
-              <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
-            ))}
-          </div>
-        </div>
+    <div className="theme-carousel reveal rv-focus">
+      <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
+      <div
+        className="theme-rail"
+        id="theme-rail"
+        ref={railRef}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+        onDragStart={(e) => e.preventDefault()}
+      >
+        {themes.map((t, i) => (
+          <ThemeCard key={t.id} t={t} no={i + 1} />
+        ))}
+        {soon.map((t, i) => (
+          <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
+        ))}
       </div>
-    </section>
+      <div
+        className="rail-bar"
+        ref={barRef}
+        onPointerDown={onBarDown}
+        onPointerMove={onBarMove}
+        onPointerUp={onBarUp}
+        onPointerCancel={onBarUp}
+        role="scrollbar"
+        aria-controls="theme-rail"
+        aria-orientation="horizontal"
+        aria-label="테마 목록 가로 스크롤"
+      >
+        <i />
+      </div>
+      <button type="button" className="tc-arrow next" aria-label="다음 테마" disabled={!canNext} onClick={() => move(1)}>›</button>
+    </div>
   );
 }
-
 
 // 준비중 테마 — 이제 아래 슬림 스트립이 아니라 캐러셀 안에 같이 들어간다(클릭 불가).
 // 포스터 이미지가 아직 없어서(data.ts 의 poster:"") 자리표시 카드로 그린다.
@@ -212,7 +244,7 @@ export default function Home() {
   // 스크롤 이별 연출(globals.css .ht-stack) 이고, 둘 다 CSS 라 JS 가 필요 없음.
 
   return (
-    <div className="home-dark">
+    <>
       {/* HERO — 타이포(FANTASY + TRICK = FANTASTRICK) */}
       <section className="hero-t" id="home">
         {/* 배경 3겹 — 무대 조명 · 설계도 모눈 · 그레인 질감 (globals.css 설명 참고) */}
@@ -262,8 +294,16 @@ export default function Home() {
         <div className="scrollcue">SCROLL ↓</div>
       </section>
 
-      {/* 테마 — cantor8식 위아래 엇갈림 가로스크롤 갤러리 */}
-      <ThemeGallery themes={THEMES} soon={SOON_THEMES} />
+      {/* 인터랙티브 콘텐츠 */}
+      <section className="block alt" id="themes">
+        <div className="wrap">
+          <div className="shead reveal">
+            <h2 className="title">테마 · Themes</h2>
+            <p className="lead">직영으로 만든 방탈출·머더룸</p>
+          </div>
+          <ThemeCarousel themes={THEMES} soon={SOON_THEMES} />
+        </div>
+      </section>
 
       {/* REVIEWS — 별점 요약 + 대표 후기 발췌 */}
       <section className="block" id="reviews">
@@ -380,6 +420,6 @@ export default function Home() {
       </section>
 
       <Link href="/reserve" className="btn primary float">예약하기</Link>
-    </div>
+    </>
   );
 }

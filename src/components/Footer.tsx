@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 export default function Footer() {
   const pathname = usePathname();
   if (pathname?.startsWith("/admin")) return null;
-  // 홈은 다크 테마라 푸터도 이어지는 딥블루로(다른 페이지는 기존 밝은 푸터 유지)
+  // 관리자 외 전 페이지가 다크 테마라 푸터도 이어지는 딥블루로.
   return (
-    <footer className={pathname === "/" ? "foot-dark" : undefined}>
+    <footer className="foot-dark">
       <div className="wrap">
         <div className="foot-grid">
           <div>

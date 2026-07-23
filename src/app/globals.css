@@ -383,16 +383,17 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .block.alt{background:#e8ecf2}
 
 /* ============================================================
-   홈 전용 다크 테마 (2026-07-23) — cantor8.io 톤을 첫 페이지 전체로.
-   히어로부터 마지막 섹션까지 하나의 파랑으로 이어지는 모노톤.
-   방식: .home-dark 안에서 CSS 토큰(--text/--surface/--line 등)만 갈아끼우면
-   대부분의 컴포넌트(테마카드·후기·제작·매장)가 자동으로 다크로 따라온다.
+   사이트 전체 다크(파란) 테마 (2026-07-23) — cantor8.io 톤. 관리자(/admin) 제외 전 페이지.
+   ThemeShell 이 관리자 외 모든 페이지를 .site-dark 로 감싼다.
+   방식: .site-dark 안에서 CSS 토큰(--text/--surface/--line 등)만 갈아끼우면
+   대부분의 컴포넌트(카드·후기·제작·매장·폼·표)가 자동으로 다크로 따라온다.
    + 하드코딩된 밝은 배경(.block.alt/.biz/.store/soon 등)만 개별 오버라이드.
    ⚠️ 히어로(.ht-*)는 이미 하드코딩 밝은색이라 토큰 오버라이드 영향 없음.
    ============================================================ */
-.home-dark{
-  /* 연속된 딥블루 — 히어로 하단(#04277e)에서 이어져 아래로 살짝 더 깊어짐 */
-  background:linear-gradient(180deg,#062a80 0%,#05236c 55%,#041d57 100%);
+.site-dark{
+  min-height:100vh;
+  /* 연속된 딥블루 — 히어로 하단(#04277e)에서 이어져 아래로 살짝 더 깊어짐. 짧은 페이지도 min-height 로 꽉 참. */
+  background:linear-gradient(180deg,#062a80 0%,#05236c 45%,#041d57 100%);
   /* ⚠️ color 를 반드시 다시 지정 — 안 하면 제목 등 '색 없는' 텍스트가 상위 body 의
      어두운 --text(#131620)를 상속받아 파랑 위에서 안 보인다(lead 처럼 색을 명시한 것만 밝게 나옴). */
   color:var(--text);
@@ -406,32 +407,49 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   --font-display:var(--font-sans);
 }
 /* 후기 점수 큰 숫자도 홈에선 세리프(Bodoni) 대신 그로테스크로 */
-.home-dark .rev-summary .score{font-family:var(--font-sans);font-weight:700}
+.site-dark .rev-summary .score{font-family:var(--font-sans);font-weight:700}
 /* 섹션: 밝은 배경 제거 → 파랑이 계속 보이게. 여백 크게(cantor8식). alt 는 옅은 흰 틴트로만 구분 */
-.home-dark .block{border-top:1px solid rgba(255,255,255,.10);padding:116px 0}
-.home-dark .block.alt{background:rgba(255,255,255,.028)}
-.home-dark .biz{background:
+.site-dark .block{border-top:1px solid rgba(255,255,255,.10);padding:116px 0}
+.site-dark .block.alt{background:rgba(255,255,255,.028)}
+.site-dark .biz{background:
   radial-gradient(760px 420px at 85% 0%,rgba(150,110,220,.16),transparent 60%),
   radial-gradient(720px 420px at 10% 100%,rgba(120,170,255,.13),transparent 62%)}
 /* 큰 좌측정렬 제목 — 크고 자신 있게 + 여백 */
-.home-dark .shead{margin-bottom:52px}
-.home-dark .shead h2.title{font-size:clamp(30px,4.6vw,56px);line-height:1.08}
-.home-dark .shead .lead{font-size:clamp(15px,1.5vw,18px);margin-top:14px}
-.home-dark .shead::before{background:linear-gradient(90deg,#9cc2ff,#6ea8ff)}
+.site-dark .shead{margin-bottom:52px}
+.site-dark .shead h2.title{font-size:clamp(30px,4.6vw,56px);line-height:1.08}
+.site-dark .shead .lead{font-size:clamp(15px,1.5vw,18px);margin-top:14px}
+.site-dark .shead::before{background:linear-gradient(90deg,#9cc2ff,#6ea8ff)}
 /* 매장·후기 카드 = 유리(글라스) 패널 */
-.home-dark .store{background:rgba(255,255,255,.05)}
-.home-dark .store:hover{border-color:rgba(143,178,255,.5)}
-.home-dark .rev-summary .s-stars,.home-dark .rev-quote .rq-stars{color:#e7b85c}
-.home-dark .rev-quote .rq-mark{color:rgba(143,178,255,.34)}
+.site-dark .store{background:rgba(255,255,255,.05)}
+.site-dark .store:hover{border-color:rgba(143,178,255,.5)}
+.site-dark .rev-summary .s-stars,.site-dark .rev-quote .rq-stars{color:#e7b85c}
+.site-dark .rev-quote .rq-mark{color:rgba(143,178,255,.34)}
 /* 준비중 테마 썸네일 다크 */
-.home-dark .tcard.soon .thumb{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
+.site-dark .tcard.soon .thumb{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
 /* 보조 고스트 버튼(외주·이메일) 밝은 라벤더로 */
-.home-dark .btn.gold-ghost{border-color:rgba(196,180,255,.55);color:#dccdff;background:rgba(255,255,255,.04)}
-.home-dark .btn.gold-ghost:hover{background:rgba(196,180,255,.14)}
+.site-dark .btn.gold-ghost{border-color:rgba(196,180,255,.55);color:#dccdff;background:rgba(255,255,255,.04)}
+.site-dark .btn.gold-ghost:hover{background:rgba(196,180,255,.14)}
 /* biz CTA 패널 톤 */
-.home-dark .biz-cta{border-color:rgba(196,180,255,.3);background:rgba(196,180,255,.06)}
+.site-dark .biz-cta{border-color:rgba(196,180,255,.3);background:rgba(196,180,255,.06)}
 /* 로딩 안내(notice) 다크 */
-.home-dark .notice.info{background:rgba(143,178,255,.1);border-color:rgba(143,178,255,.3);color:#cfe0ff}
+.site-dark .notice.info{background:rgba(143,178,255,.1);border-color:rgba(143,178,255,.3);color:#cfe0ff}
+/* --- 커스텀 히어로들도 다크로(각 페이지 상단이 밝게 남지 않게) --- */
+/* 소개(/about) */
+.site-dark .about-hero{background:linear-gradient(180deg,#062a80,#04236c)}
+.site-dark .about-hero .ah-mesh{background:
+  radial-gradient(52% 60% at 50% 40%,rgba(130,175,255,.22),transparent 70%),
+  radial-gradient(42% 46% at 84% 14%,rgba(150,110,220,.15),transparent 72%),
+  radial-gradient(40% 44% at 12% 92%,rgba(255,120,110,.10),transparent 72%)}
+.site-dark .about-hero .ah-grid{background-image:
+  linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px)}
+/* 비즈니스(/business) — 배경 사진 위 오버레이를 어둡게(흰 글씨 대비 확보) */
+.site-dark .biz-hero .bg::after{background:
+  linear-gradient(90deg,rgba(6,26,88,.92) 8%,rgba(6,26,88,.66) 52%,rgba(6,26,88,.5)),
+  radial-gradient(900px 500px at 78% 35%,rgba(150,110,220,.14),transparent 60%),
+  radial-gradient(700px 460px at 18% 90%,rgba(120,170,255,.12),transparent 62%)}
+/* 테마 상세(/rooms) — 하단이 밝게 페이드되던 베일을 딥블루로 */
+.site-dark .room-hero .rh-veil{background:linear-gradient(180deg,rgba(4,20,60,.5),rgba(4,29,87,.95))}
 .shead{margin-bottom:42px;position:relative;padding-top:22px}
 /* 섹션 헤더 미니 브랜드 룰 — '새 챕터 시작' 신호(히어로 룰과 호응, 좌측 정렬 제목 위) */
 .shead::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:2px;
@@ -672,7 +690,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 
 /* ---------- FOOTER ---------- */
 footer{background:var(--bg2);border-top:1px solid var(--line);padding:54px 0 30px;font-size:13.5px;color:var(--muted)}
-/* 홈 전용 다크 푸터 — home-dark 하단(#041d57)에서 이어지는 딥블루. 토큰만 갈아 자동 다크화. */
+/* 홈 전용 다크 푸터 — site-dark 하단(#041d57)에서 이어지는 딥블루. 토큰만 갈아 자동 다크화. */
 footer.foot-dark{background:#041d57;border-top-color:rgba(255,255,255,.12);color:#a9b8d6;
   --text:#e9f0ff; --muted:#a9b8d6; --faint:#8ea0c4; --line:rgba(255,255,255,.14); --cyan:#8fb6ff; --bg2:#041d57}
 footer.foot-dark .logo-img{filter:brightness(0) invert(1)}

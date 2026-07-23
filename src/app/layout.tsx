@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NoticeModal from "@/components/NoticeModal";
+import ThemeShell from "@/components/ThemeShell";
 
 export const metadata: Metadata = {
   title: "판타스트릭 FANTASTRICK — 강남 이머시브 방탈출 & 머더룸",
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f4f6f9",
-  // 이 사이트는 밝은 테마 전용 — 모바일 브라우저(삼성 인터넷 등)의 "다크 강제 반전" 방지
+  themeColor: "#062a80",
+  // 우리가 직접 칠하는 다크(파란) 테마. colorScheme:light 는 모바일 브라우저의 "자동 다크 반전"을 막기 위한 것.
   colorScheme: "light",
 };
 
@@ -64,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Header />
-        {children}
+        <ThemeShell>{children}</ThemeShell>
         <Footer />
         {/* 팝업 공지 — 기존 사이트처럼 모든 페이지에서 뜸(관리자에서 켤 때만) */}
         <NoticeModal />
