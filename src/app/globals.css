@@ -223,28 +223,14 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   background-size:22px 22px;
   -webkit-mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%);
           mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%)}
-/* 성좌 단서망 — cantor8의 네트워크 그래픽을 방탈출 "흩어진 단서를 잇다"로 번안(흰 점+선).
-   중앙(워드마크 자리)은 마스크로 비우고, 가장자리로 갈수록 보이게. 천천히 페이드인. */
+/* 성좌 단서망(3D) — cantor8 네트워크 그래픽의 방탈출 번안. canvas 로 3D 구를 원근투영해 그린다
+   (HeroWeb.tsx). 자동 회전 + 마우스 시점 반응. 중앙(워드마크 자리)은 마스크로 살짝만 눌러 가독성 유지. */
 .hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
-  -webkit-mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
-          mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
+  -webkit-mask-image:radial-gradient(58% 56% at 50% 46%,rgba(0,0,0,.32) 0%,#000 58%);
+          mask-image:radial-gradient(58% 56% at 50% 46%,rgba(0,0,0,.32) 0%,#000 58%);
   animation:htWebIn 2.6s ease 1s both}
-@keyframes htWebIn{from{opacity:0}to{opacity:.42}}
-/* 성좌망 모션 — 인라인 SVG(HeroWeb): 선이 그려지고(draw-in) · 노드가 반짝이고(twinkle) · 전체가 느리게 흐른다(drift).
-   cantor8 네트워크 그래픽처럼 '살아있는' 느낌. */
-.hero-t .ht-web-svg{position:absolute;inset:0;width:100%;height:100%;
-  animation:hwDrift 42s ease-in-out infinite alternate}
-@keyframes hwDrift{from{transform:translate3d(0,0,0) scale(1.02)}to{transform:translate3d(-1.6%,1.1%,0) scale(1.06)}}
-.hero-t .hw-lines line{stroke:#fff;stroke-width:1;fill:none;
-  stroke-dasharray:1;stroke-dashoffset:1;animation:hwDraw 1.8s cubic-bezier(.4,0,.2,1) both}
-@keyframes hwDraw{to{stroke-dashoffset:0}}
-.hero-t .hw-nodes circle{fill:#cfe0ff;opacity:.35;animation:hwTwinkle 4s ease-in-out infinite}
-@keyframes hwTwinkle{0%,100%{opacity:.3}50%{opacity:1}}
-@media(prefers-reduced-motion:reduce){
-  .hero-t .ht-web-svg{animation:none}
-  .hero-t .hw-lines line{animation:none;stroke-dashoffset:0}
-  .hero-t .hw-nodes circle{animation:none;opacity:.7}
-}
+@keyframes htWebIn{from{opacity:0}to{opacity:.55}}
+.hero-t .ht-web-canvas{position:absolute;inset:0;width:100%;height:100%}
 .hero-t .ht-noise{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
 .hero-t .ht-ghost{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:1;white-space:nowrap;pointer-events:none;user-select:none;
