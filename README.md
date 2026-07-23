@@ -2,6 +2,19 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-23 — 폰트 그로테스크 통일(General Sans) + 테마 갤러리 cantor8식 재구성
+
+**① 폰트**: cantor8 본문 폰트는 "PP Neue Montreal"(상업용 **유료**)이라, 무료 대체 **General Sans**(Fontshare, 상업용 무료)로 적용.
+- `layout.tsx` 에 Fontshare 스타일시트 링크 추가. `globals.css` 에 `--font-sans:"General Sans", <Pretendard 스택>` 정의 → `body` 폰트로. **라틴은 General Sans, 한글은 자동으로 Pretendard 폴백**.
+- 홈(`.home-dark`)은 제목의 세리프(나눔명조)·점수의 Bodoni 도 그로테스크로 통일(`--font-display:var(--font-sans)`). cantor8 처럼 전부 산세리프. (FANTASTRICK 워드마크 로고 폰트는 유지)
+
+**② 테마 갤러리**(`page.tsx` ThemeGallery 신규, 옛 ThemeCarousel 대체): cantor8 "Product Suite" 섹션 참고.
+- 카드가 **위아래로 엇갈려**(odd 위/even 아래) 가로로 늘어서고, **세로 스크롤(휠)에 따라 좌로 흐른다**.
+- 방식: 섹션을 `(뷰포트+트랙 넘침)` 만큼 높게 잡고 안쪽을 `position:sticky` 로 고정 → 세로 스크롤 진행률을 트랙 `translateX` 에 매핑(핀 고정 가로스크롤). 제목은 고정.
+- 모바일·모션최소: 핀 없이 **네이티브 가로 스와이프**(엇갈림 해제)로 폴백.
+- 옛 캐러셀 CSS(.theme-carousel 등)는 미사용 상태로 남겨둠(참고용).
+- 빌드 통과, 데스크톱(엇갈림·가로스크롤)·모바일(스와이프)·폰트 확인.
+
 ## 2026-07-23 — 히어로 성좌망 애니메이션 + 섹션 전환효과 강화 (cantor8식 "살아있는" 모션)
 
 색만 맞추니 레퍼런스(cantor8)의 움직임이 없다는 피드백 → 실제 모션 추가.
