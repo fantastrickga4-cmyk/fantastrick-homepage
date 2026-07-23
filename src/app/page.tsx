@@ -77,11 +77,15 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
       const top = sec.getBoundingClientRect().top;
       const p = Math.min(1, Math.max(0, -top / overflow));
       track.style.transform = `translate3d(${(-p * overflow).toFixed(1)}px,0,0)`;
+      // 카드는 작게 진입 → 스크롤 초반(0~40%)에 원래 크기로 커진다(cantor8). --gs 를 카드 scale 에 매핑.
+      const scale = 0.84 + 0.16 * Math.min(1, p / 0.4);
+      track.style.setProperty("--gs", scale.toFixed(3));
     };
     const measure = () => {
       if (!pinned()) {
         sec.style.height = "";
         track.style.transform = "";
+        track.style.removeProperty("--gs"); // 모바일·모션최소: 스케일 원복(카드 원래 크기)
         overflow = 0;
         return;
       }

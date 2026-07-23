@@ -472,9 +472,10 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   padding-left:max(22px,calc((100vw - var(--maxw)) / 2));padding-right:24vw}
 .tgal-track .tcard{flex:0 0 300px;width:300px}
 .tgal-track .tcard .thumb{aspect-ratio:3/4}
-/* 위아래 엇갈림 — transform 은 트랙 min-height(520) 안에서만 움직여 잘리지 않는다 */
-.tgal-track > *:nth-child(odd){transform:translateY(-32px)}
-.tgal-track > *:nth-child(even){transform:translateY(42px)}
+/* 위아래 엇갈림(--sy) + 스케일(--gs, 스크롤 진행률로 커짐). transform 은 트랙 min-height(520) 안에서만 움직여 잘리지 않는다 */
+.tgal-track > *{transform:translateY(var(--sy,0)) scale(var(--gs,1));transform-origin:center}
+.tgal-track > *:nth-child(odd){--sy:-32px}
+.tgal-track > *:nth-child(even){--sy:42px}
 /* 모바일: 핀 없이 네이티브 가로 스와이프(엇갈림 해제) */
 @media(max-width:860px){
   .tgal{background:rgba(0,0,0,.09)}
