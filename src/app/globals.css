@@ -464,12 +464,14 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* 데스크톱: 섹션을 (뷰포트+넘침)만큼 높게 잡고 안쪽을 sticky 로 고정 → 세로로 스크롤하면
    트랙(카드 줄)이 좌로 흐른다(page.tsx ThemeGallery 가 translateX 를 세로 진행률에 매핑). */
 .tgal{position:relative;border-top:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12)}
-.tgal-pin{position:sticky;top:0;min-height:100vh;overflow:hidden;
-  display:flex;flex-direction:column;justify-content:center;gap:30px;padding:70px 0}
-.tgal-viewport{width:100%;overflow:hidden}
+.tgal-pin{position:sticky;top:0;height:100vh;overflow:hidden}
+/* 제목=상단 좌측 고정(cantor8), 카드 트랙=화면 세로 중앙 */
+.tgal-head{position:absolute;top:0;left:0;right:0;z-index:4;padding-top:92px;pointer-events:none}
+.tgal-head .shead{pointer-events:auto}
+.tgal-viewport{position:absolute;inset:0;display:flex;align-items:center;overflow:hidden}
 /* 데스크톱 핀: 시작 위치를 JS(startX)가 정하므로 좌우 패딩 없음(첫 카드가 오른쪽 끝에서 시작) */
-.tgal-track{display:flex;align-items:center;gap:26px;min-height:560px;will-change:transform;padding:0}
-.tgal-track .tcard{flex:0 0 320px;width:320px}
+.tgal-track{display:flex;align-items:center;gap:28px;will-change:transform;padding:0}
+.tgal-track .tcard{flex:0 0 360px;width:360px}
 .tgal-track .tcard .thumb{aspect-ratio:3/4}
 /* 카드별 transform(상하 물결+개별 스케일)은 JS(ThemeGallery onScroll)가 매 프레임 설정.
    transform 은 트랙 min-height(560) 안에서만 움직여 잘리지 않는다 */
@@ -477,17 +479,19 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* 모바일: 핀 없이 네이티브 가로 스와이프(엇갈림 해제) */
 @media(max-width:860px){
   .tgal{background:rgba(0,0,0,.09)}
-  .tgal-pin{position:static;min-height:0;overflow:visible;padding:92px 0;gap:22px}
-  .tgal-viewport{overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
-  .tgal-track{transform:none!important;min-height:0;padding:18px 22px;gap:14px}
+  .tgal-pin{position:static;height:auto;overflow:visible;padding:92px 0}
+  .tgal-head{position:static;padding-top:0;margin-bottom:20px;pointer-events:auto}
+  .tgal-viewport{position:static;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .tgal-track{transform:none!important;padding:18px 22px;gap:14px}
   .tgal-track .tcard{flex:0 0 74vw;width:74vw;scroll-snap-align:start}
   .tgal-track > *{transform:none!important}
 }
 /* 모션 최소화: 핀·엇갈림 해제, 네이티브 가로 스크롤 */
 @media(prefers-reduced-motion:reduce){
-  .tgal-pin{position:static;min-height:0;overflow:visible;padding:92px 0}
-  .tgal-viewport{overflow-x:auto}
-  .tgal-track{transform:none!important;min-height:0;padding:20px 22px}
+  .tgal-pin{position:static;height:auto;overflow:visible;padding:92px 0}
+  .tgal-head{position:static;padding-top:0;margin-bottom:20px}
+  .tgal-viewport{position:static;display:block;overflow-x:auto}
+  .tgal-track{transform:none!important;padding:20px 22px}
   .tgal-track > *{transform:none!important}
 }
 

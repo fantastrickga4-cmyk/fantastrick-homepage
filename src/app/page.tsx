@@ -68,8 +68,8 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // 데스크톱 + 모션 허용일 때만 핀 고정 가로스크롤. 아니면 네이티브 가로 스와이프.
     const pinned = () => window.matchMedia("(min-width: 861px)").matches && !reduce;
-    let travel = 0, startX = 0, cardW = 320, vw = 0;
-    const GAP = 26;
+    let travel = 0, startX = 0, cardW = 360, vw = 0;
+    const GAP = 28;
 
     const onScroll = () => {
       if (travel <= 0) return;
@@ -79,19 +79,19 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
       const p = Math.min(1, Math.max(0, -top / travel));
       const tx = startX - p * travel;
       track.style.transform = `translate3d(${tx.toFixed(1)}px,0,0)`;
-      // 카드마다 '화면상 x 위치'에 따라 개별 스케일 + 상하 물결(cantor8 실측 재현):
-      //  · 스케일: 오른쪽 진입(cx≈1.22*vw)=0.72배 → 좌측 26% 지점에서 1.0배, 더 왼쪽은 1.0 유지. 한 장씩 커진다.
-      //  · 물결: 상하 위치를 cx 의 sine 으로 → 흐르면서 연속으로 출렁(고정 엇갈림 아님).
-      const fullX = vw * 0.26, rightX = vw * 1.22, minS = 0.72;
-      const amp = 46, period = (cardW + GAP) * 2.1;
+      // cantor8 실측 재현: 카드마다 '화면상 x 위치'로 개별 스케일 + 카드별 '고정' 상하 엇갈림.
+      //  · 스케일: 오른쪽 진입(cx≈1.28*vw)=0.70배 → 좌측 26% 지점에서 1.0배, 더 왼쪽은 1.0 유지. 한 장씩 커지며 그대로 흘러 나간다.
+      //  · 엇갈림: 각 카드의 상하 위치는 고정(스크롤해도 그 높이 유지) → 출렁이지 않고 직선으로 흐른다.
+      const fullX = vw * 0.26, rightX = vw * 1.28, minS = 0.70;
+      const STAG = [0, 60, 0, -74]; // 카드 index%4 별 고정 세로 오프셋(중앙·아래·중앙·위)
+      const BIAS = 46;              // 전체를 살짝 아래로 — 상단 제목과 카드가 안 겹치게
       const kids = track.children;
       for (let i = 0; i < kids.length; i++) {
         const el = kids[i] as HTMLElement;
         const cx = tx + i * (cardW + GAP) + cardW / 2; // 카드 중심의 화면 x
         let s = 1 - (1 - minS) * (cx - fullX) / (rightX - fullX);
         s = Math.max(minS, Math.min(1, s));
-        const ty = amp * Math.sin((cx / period) * Math.PI * 2);
-        el.style.transform = `translateY(${ty.toFixed(1)}px) scale(${s.toFixed(3)})`;
+        el.style.transform = `translateY(${STAG[i % 4] + BIAS}px) scale(${s.toFixed(3)})`;
       }
     };
     const measure = () => {
@@ -104,7 +104,7 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
       }
       vw = pin.clientWidth;
       const first = track.querySelector<HTMLElement>(".tcard");
-      cardW = first ? first.offsetWidth : 320;
+      cardW = first ? first.offsetWidth : 360;
       const trackW = track.scrollWidth;
       startX = vw - cardW - 24;             // 첫 카드가 오른쪽 끝에서 시작
       const endX = vw - trackW - 24;        // 마지막 카드가 오른쪽 끝에 왔을 때(음수)
@@ -114,20 +114,27 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     };
 
     measure();
-    const reMeasure = setTimeout(measure, 500); // 포스터 이미지 로딩 후 폭 재측정
+    // 카드 폭이 늦게 잡혀 트랙 길이 측정이 빗나가지 않도록 ResizeObserver 로 재측정(견고).
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(track);
+    Array.from(track.children).forEach((el) => ro.observe(el));
+    const reMeasure = setTimeout(measure, 600);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measure);
+    window.addEventListener("load", measure);
     return () => {
+      ro.disconnect();
       clearTimeout(reMeasure);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measure);
+      window.removeEventListener("load", measure);
     };
   }, [themes, soon]);
 
   return (
     <section className="tgal" id="themes" ref={secRef}>
       <div className="tgal-pin" ref={pinRef}>
-        <div className="wrap">
+        <div className="wrap tgal-head">
           <div className="shead reveal">
             <h2 className="title">테마 · Themes</h2>
             <p className="lead">직영으로 만든 방탈출·머더룸 — 스크롤하면 옆으로 넘어갑니다.</p>
