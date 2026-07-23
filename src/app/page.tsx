@@ -254,7 +254,7 @@ export default function Home() {
   // 스크롤 이별 연출(globals.css .ht-stack) 이고, 둘 다 CSS 라 JS 가 필요 없음.
 
   return (
-    <>
+    <div className="home-dark">
       {/* HERO — 타이포(FANTASY + TRICK = FANTASTRICK) */}
       <section className="hero-t" id="home">
         {/* 배경 3겹 — 무대 조명 · 설계도 모눈 · 그레인 질감 (globals.css 설명 참고) */}
@@ -431,6 +431,6 @@ export default function Home() {
       </section>
 
       <Link href="/reserve" className="btn primary float">예약하기</Link>
-    </>
+    </div>
   );
 }

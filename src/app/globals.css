@@ -381,6 +381,53 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
    예전 .alt 그라디언트는 아래로 갈수록 페이지 배경(--bg)과 같은 색이 돼 이음매 단차가 0이었다(경계 모호). */
 .block{padding:96px 0;border-top:1px solid var(--line)}
 .block.alt{background:#e8ecf2}
+
+/* ============================================================
+   홈 전용 다크 테마 (2026-07-23) — cantor8.io 톤을 첫 페이지 전체로.
+   히어로부터 마지막 섹션까지 하나의 파랑으로 이어지는 모노톤.
+   방식: .home-dark 안에서 CSS 토큰(--text/--surface/--line 등)만 갈아끼우면
+   대부분의 컴포넌트(테마카드·후기·제작·매장)가 자동으로 다크로 따라온다.
+   + 하드코딩된 밝은 배경(.block.alt/.biz/.store/soon 등)만 개별 오버라이드.
+   ⚠️ 히어로(.ht-*)는 이미 하드코딩 밝은색이라 토큰 오버라이드 영향 없음.
+   ============================================================ */
+.home-dark{
+  /* 연속된 딥블루 — 히어로 하단(#04277e)에서 이어져 아래로 살짝 더 깊어짐 */
+  background:linear-gradient(180deg,#062a80 0%,#05236c 55%,#041d57 100%);
+  /* ⚠️ color 를 반드시 다시 지정 — 안 하면 제목 등 '색 없는' 텍스트가 상위 body 의
+     어두운 --text(#131620)를 상속받아 파랑 위에서 안 보인다(lead 처럼 색을 명시한 것만 밝게 나옴). */
+  color:var(--text);
+  /* --- 토큰 다크화(모든 자손에 적용) --- */
+  --text:#e9f0ff; --muted:#a9b8d6; --faint:#8ea0c4;
+  --surface:rgba(255,255,255,.05); --surface2:rgba(255,255,255,.10);
+  --line:rgba(255,255,255,.14); --line2:rgba(255,255,255,.24);
+  --cyan:#8fb6ff; --brand-bright:#8fb6ff; --brand:#6ea8ff;
+  --gold:#c9b6ff; --violet:#8a6fd0;
+}
+/* 섹션: 밝은 배경 제거 → 파랑이 계속 보이게. 여백 크게(cantor8식). alt 는 옅은 흰 틴트로만 구분 */
+.home-dark .block{border-top:1px solid rgba(255,255,255,.10);padding:116px 0}
+.home-dark .block.alt{background:rgba(255,255,255,.028)}
+.home-dark .biz{background:
+  radial-gradient(760px 420px at 85% 0%,rgba(150,110,220,.16),transparent 60%),
+  radial-gradient(720px 420px at 10% 100%,rgba(120,170,255,.13),transparent 62%)}
+/* 큰 좌측정렬 제목 — 크고 자신 있게 + 여백 */
+.home-dark .shead{margin-bottom:52px}
+.home-dark .shead h2.title{font-size:clamp(30px,4.6vw,56px);line-height:1.08}
+.home-dark .shead .lead{font-size:clamp(15px,1.5vw,18px);margin-top:14px}
+.home-dark .shead::before{background:linear-gradient(90deg,#9cc2ff,#6ea8ff)}
+/* 매장·후기 카드 = 유리(글라스) 패널 */
+.home-dark .store{background:rgba(255,255,255,.05)}
+.home-dark .store:hover{border-color:rgba(143,178,255,.5)}
+.home-dark .rev-summary .s-stars,.home-dark .rev-quote .rq-stars{color:#e7b85c}
+.home-dark .rev-quote .rq-mark{color:rgba(143,178,255,.34)}
+/* 준비중 테마 썸네일 다크 */
+.home-dark .tcard.soon .thumb{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
+/* 보조 고스트 버튼(외주·이메일) 밝은 라벤더로 */
+.home-dark .btn.gold-ghost{border-color:rgba(196,180,255,.55);color:#dccdff;background:rgba(255,255,255,.04)}
+.home-dark .btn.gold-ghost:hover{background:rgba(196,180,255,.14)}
+/* biz CTA 패널 톤 */
+.home-dark .biz-cta{border-color:rgba(196,180,255,.3);background:rgba(196,180,255,.06)}
+/* 로딩 안내(notice) 다크 */
+.home-dark .notice.info{background:rgba(143,178,255,.1);border-color:rgba(143,178,255,.3);color:#cfe0ff}
 .shead{margin-bottom:42px;position:relative;padding-top:22px}
 /* 섹션 헤더 미니 브랜드 룰 — '새 챕터 시작' 신호(히어로 룰과 호응, 좌측 정렬 제목 위) */
 .shead::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:2px;
@@ -583,6 +630,10 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 
 /* ---------- FOOTER ---------- */
 footer{background:var(--bg2);border-top:1px solid var(--line);padding:54px 0 30px;font-size:13.5px;color:var(--muted)}
+/* 홈 전용 다크 푸터 — home-dark 하단(#041d57)에서 이어지는 딥블루. 토큰만 갈아 자동 다크화. */
+footer.foot-dark{background:#041d57;border-top-color:rgba(255,255,255,.12);color:#a9b8d6;
+  --text:#e9f0ff; --muted:#a9b8d6; --faint:#8ea0c4; --line:rgba(255,255,255,.14); --cyan:#8fb6ff; --bg2:#041d57}
+footer.foot-dark .logo-img{filter:brightness(0) invert(1)}
 .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:34px}
 @media(max-width:760px){.foot-grid{grid-template-columns:1fr;gap:24px}}
 footer h5{color:var(--text);font-size:13px;letter-spacing:.05em;margin:0 0 12px;text-transform:uppercase}
