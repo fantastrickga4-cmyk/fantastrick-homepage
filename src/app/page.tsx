@@ -68,7 +68,8 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // 데스크톱 + 모션 허용일 때만 핀 고정 가로스크롤. 아니면 네이티브 가로 스와이프.
     const pinned = () => window.matchMedia("(min-width: 861px)").matches && !reduce;
-    let travel = 0, startX = 0;
+    let travel = 0, startX = 0, cardW = 320, vw = 0;
+    const GAP = 26;
 
     const onScroll = () => {
       if (travel <= 0) return;
@@ -78,21 +79,32 @@ function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
       const p = Math.min(1, Math.max(0, -top / travel));
       const tx = startX - p * travel;
       track.style.transform = `translate3d(${tx.toFixed(1)}px,0,0)`;
-      // 카드는 작게 진입 → 스크롤 초반(0~40%)에 원래 크기로 커진다(cantor8). --gs 를 카드 scale 에 매핑.
-      const scale = 0.84 + 0.16 * Math.min(1, p / 0.4);
-      track.style.setProperty("--gs", scale.toFixed(3));
+      // 카드마다 '화면상 x 위치'에 따라 개별 스케일 + 상하 물결(cantor8 실측 재현):
+      //  · 스케일: 오른쪽 진입(cx≈1.22*vw)=0.72배 → 좌측 26% 지점에서 1.0배, 더 왼쪽은 1.0 유지. 한 장씩 커진다.
+      //  · 물결: 상하 위치를 cx 의 sine 으로 → 흐르면서 연속으로 출렁(고정 엇갈림 아님).
+      const fullX = vw * 0.26, rightX = vw * 1.22, minS = 0.72;
+      const amp = 46, period = (cardW + GAP) * 2.1;
+      const kids = track.children;
+      for (let i = 0; i < kids.length; i++) {
+        const el = kids[i] as HTMLElement;
+        const cx = tx + i * (cardW + GAP) + cardW / 2; // 카드 중심의 화면 x
+        let s = 1 - (1 - minS) * (cx - fullX) / (rightX - fullX);
+        s = Math.max(minS, Math.min(1, s));
+        const ty = amp * Math.sin((cx / period) * Math.PI * 2);
+        el.style.transform = `translateY(${ty.toFixed(1)}px) scale(${s.toFixed(3)})`;
+      }
     };
     const measure = () => {
       if (!pinned()) {
         sec.style.height = "";
         track.style.transform = "";
-        track.style.removeProperty("--gs"); // 모바일·모션최소: 스케일 원복(카드 원래 크기)
+        for (const el of Array.from(track.children)) (el as HTMLElement).style.transform = "";
         travel = 0;
         return;
       }
-      const vw = pin.clientWidth;
+      vw = pin.clientWidth;
       const first = track.querySelector<HTMLElement>(".tcard");
-      const cardW = first ? first.offsetWidth : 300;
+      cardW = first ? first.offsetWidth : 320;
       const trackW = track.scrollWidth;
       startX = vw - cardW - 24;             // 첫 카드가 오른쪽 끝에서 시작
       const endX = vw - trackW - 24;        // 마지막 카드가 오른쪽 끝에 왔을 때(음수)

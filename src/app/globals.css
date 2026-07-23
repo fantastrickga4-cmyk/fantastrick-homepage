@@ -468,13 +468,12 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   display:flex;flex-direction:column;justify-content:center;gap:30px;padding:70px 0}
 .tgal-viewport{width:100%;overflow:hidden}
 /* 데스크톱 핀: 시작 위치를 JS(startX)가 정하므로 좌우 패딩 없음(첫 카드가 오른쪽 끝에서 시작) */
-.tgal-track{display:flex;align-items:center;gap:26px;min-height:520px;will-change:transform;padding:0}
-.tgal-track .tcard{flex:0 0 300px;width:300px}
+.tgal-track{display:flex;align-items:center;gap:26px;min-height:560px;will-change:transform;padding:0}
+.tgal-track .tcard{flex:0 0 320px;width:320px}
 .tgal-track .tcard .thumb{aspect-ratio:3/4}
-/* 위아래 엇갈림(--sy) + 스케일(--gs, 스크롤 진행률로 커짐). transform 은 트랙 min-height(520) 안에서만 움직여 잘리지 않는다 */
-.tgal-track > *{transform:translateY(var(--sy,0)) scale(var(--gs,1));transform-origin:center}
-.tgal-track > *:nth-child(odd){--sy:-32px}
-.tgal-track > *:nth-child(even){--sy:42px}
+/* 카드별 transform(상하 물결+개별 스케일)은 JS(ThemeGallery onScroll)가 매 프레임 설정.
+   transform 은 트랙 min-height(560) 안에서만 움직여 잘리지 않는다 */
+.tgal-track > *{transform-origin:center;will-change:transform}
 /* 모바일: 핀 없이 네이티브 가로 스와이프(엇갈림 해제) */
 @media(max-width:860px){
   .tgal{background:rgba(0,0,0,.09)}
