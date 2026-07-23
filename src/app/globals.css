@@ -192,9 +192,7 @@ nav.main a:hover{color:var(--text)}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
 
 /* ---------- HERO (타이포 · FANTASY + TRICK = FANTASTRICK) ---------- */
-.hero-t{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;
-  /* 다크 히어로(미드나잇 블루프린트 워시) — 배경을 딥네이비로 꽉 채움 */
-  background:radial-gradient(120% 100% at 50% -12%,#173d80,transparent 60%),radial-gradient(90% 90% at 14% 105%,#0b2a60,transparent 60%),linear-gradient(160deg,#0a1a3a,#0a1430 60%,#08122a)}
+.hero-t{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;background:var(--bg)}
 /* 배경 = 세 겹을 각각 "기준치보다 옅게" 깔고 겹친 것 (2026-07-16 확정, 샘플 10안 중 10번).
    조사에서 나온 안전 수치: 패턴 8~20% · 격자 16~24px · 선 1px · 그레인 4~6%.
    한 겹만 쓰면 밋밋하거나 과해져서, 셋 다 기준 하한 근처로 깔고 포갠다.
@@ -325,8 +323,8 @@ nav.main a:hover{color:var(--text)}
 .hero-t .cta{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center;opacity:0;animation:htUp .7s cubic-bezier(.16,1,.3,1) 3.5s both}
 @keyframes htUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes htSg{from{opacity:0;filter:blur(4px);transform:translateY(8px)}to{opacity:1;filter:blur(0);transform:none}}
-@keyframes htWinL{0%{opacity:0}18%{opacity:1;color:#7db4ff}70%{color:#7db4ff}100%{opacity:1;color:#eaf1ff}}
-@keyframes htWinR{0%{opacity:0}18%{opacity:1;color:#ff7a70}70%{color:#ff7a70}100%{opacity:1;color:#eaf1ff}}
+@keyframes htWinL{0%{opacity:0}18%{opacity:1;color:var(--brand-bright)}70%{color:var(--brand-bright)}100%{opacity:1;color:var(--text)}}
+@keyframes htWinR{0%{opacity:0}18%{opacity:1;color:var(--blood)}70%{color:var(--blood)}100%{opacity:1;color:var(--text)}}
 /* ⚠️ ch 단위 쓰지 말 것 — ch = 폰트의 "0" 글자 폭인데 로고 폰트엔 숫자가 없다.
    그러면 브라우저가 0.5em 으로 때워서(=58px) Y(폭 .743em=86px)의 오른쪽이 잘렸다.
    로고 폰트 기준: 글자 한 칸 advance = 743/1000em = .743em → 여유 둬서 .8em. */
@@ -349,35 +347,6 @@ nav.main a:hover{color:var(--text)}
   .hero-t .ht-y,.hero-t .ht-plus,.hero-t .ht-shine{display:none}
   .hero-t .ht-rule{animation:none;transform:scaleX(1)}
 }
-
-/* ===== 다크 히어로(1번 · 미드나잇 블루프린트) — 배경 위 텍스트/요소 반전 ===== */
-.hero-t .ht-mesh{display:none}                       /* 조명은 배경 그라디언트가 담당 */
-.hero-t .ht-grid{opacity:1;background-size:30px 30px;
-  background-image:linear-gradient(rgba(150,190,255,.10) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(150,190,255,.10) 1px,transparent 1px);
-  -webkit-mask-image:radial-gradient(80% 80% at 50% 46%,#000,transparent 100%);
-          mask-image:radial-gradient(80% 80% at 50% 46%,#000,transparent 100%)}
-.hero-t .ht-ghost{-webkit-text-stroke-color:rgba(150,190,255,.05)}
-.hero-t .ht-noise{mix-blend-mode:soft-light;opacity:.09}
-.hero-t .ht-eyebrow{color:#9cc0ff}
-.hero-t .ht-slogan{color:#eaf1ff}
-.hero-t .ht-wm{color:#eaf1ff}
-.hero-t .ht-fantasy{color:#7db4ff}
-.hero-t .ht-trick{color:#ff7a70}
-.hero-t .ht-y{color:#7db4ff}
-.hero-t .ht-plus{color:#8ea6cf}
-.hero-t .ht-rule{background:linear-gradient(90deg,transparent,#7db4ff 16%,#a98bff 50%,#ff7a70 84%,transparent)}
-.hero-t .scrollcue{color:rgba(233,241,255,.55)}
-.hero-t .ht-div-l{background:linear-gradient(180deg,transparent,rgba(125,180,255,.34) 18%,rgba(125,180,255,.34) 82%,transparent)}
-.hero-t .ht-div-r{background:linear-gradient(180deg,transparent,rgba(255,122,112,.30) 18%,rgba(255,122,112,.30) 82%,transparent)}
-.hero-t .ht-mascot-in img{filter:drop-shadow(0 10px 34px rgba(90,140,240,.30))}
-.hero-t .btn.gold-ghost{color:#c9b6ff;border-color:rgba(168,139,255,.5)}
-/* 헤더가 다크 히어로 위(홈 최상단, 스크롤 전)에 있을 때 밝게 */
-header.over-hero nav.main{color:rgba(233,241,255,.82)}
-header.over-hero nav.main a:hover{color:#fff}
-header.over-hero .brand .logo-img{filter:brightness(0) invert(1)}
-header.over-hero .btn.ghost{border-color:rgba(233,241,255,.42);color:#eaf1ff;background:rgba(255,255,255,.06)}
-header.over-hero .menu-btn{border-color:rgba(233,241,255,.42);color:#eaf1ff}
 
 /* ---------- generic section spacing ---------- */
 /* 섹션 구분(2026-07-23): 모든 섹션 상단에 얇은 구분선 + alt는 '녹지 않는' 플랫 틴트.
