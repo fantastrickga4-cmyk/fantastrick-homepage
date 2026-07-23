@@ -2,6 +2,17 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-23 — 테마 갤러리 원복 + 전 페이지 다크 테마 통일
+
+**① 테마 갤러리 원복**: cantor8식 핀 고정 가로스크롤 갤러리(ThemeGallery)를 접고, **원래 드래그+화살표+스크롤바 캐러셀(ThemeCarousel)**로 되돌림. (여러 번 튜닝했지만 레퍼런스 느낌이 안 나 사용자 요청으로 원복)
+
+**② 전 페이지 다크(파란) 테마 통일**: 홈에만 있던 `.home-dark`가 다른 페이지는 하얀색이라 이질감 → 전 페이지로 확장.
+- `.home-dark` → `.site-dark` 로 이름 변경. **`ThemeShell`(신규 클라이언트 컴포넌트)** 가 layout 에서 `{children}`을 감싸 **관리자(/admin) 외 모든 페이지**에 `.site-dark` 적용. 대부분 컴포넌트가 토큰 기반이라 자동 다크화(폼·표·카드·아코디언 포함).
+- **헤더**: 전 페이지 최상단에서 흰색(over-hero), 스크롤 시 흰 배경. **푸터**: 전 페이지 다크(foot-dark).
+- **커스텀 히어로**(하드코딩 밝은 배경이라 자동 안 됨) 개별 오버라이드: `.about-hero`(+ah-mesh/ah-grid), `.biz-hero .bg::after`(사진 위 딥블루 오버레이), `.room-hero .rh-veil`(딥블루 베일).
+- `themeColor` 파랑(#062a80)으로.
+- 빌드 통과, about/faq/reserve/reservation/business/reviews/rooms + 홈 전부 다크·헤더/푸터·폰트 통일 확인.
+
 ## 2026-07-23 — 폰트 그로테스크 통일(General Sans) + 테마 갤러리 cantor8식 재구성
 
 **① 폰트**: cantor8 본문 폰트는 "PP Neue Montreal"(상업용 **유료**)이라, 무료 대체 **General Sans**(Fontshare, 상업용 무료)로 적용.
