@@ -262,16 +262,24 @@ export default function Home() {
         <div className="ht-grid" aria-hidden="true" />
         <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
         <div className="ht-noise" aria-hidden="true" />
-        {/* 마스코트 — 판타(파랑, 왼쪽)·트리키(빨강, 오른쪽) + 머리 위 말풍선 이름표 */}
+        {/* 세로 구분선 — 마스코트 무대와 가운데 콘텐츠를 구분(데스크톱) */}
+        <div className="ht-divider ht-div-l" aria-hidden="true" />
+        <div className="ht-divider ht-div-r" aria-hidden="true" />
+        {/* 마스코트 — 판타(파랑, 왼쪽)·트리키(빨강, 오른쪽) + 머리 위 말풍선 이름표.
+            바깥(.ht-mascot)=스크롤 시 페이드아웃, 안쪽(.ht-mascot-in)=등장+플로팅 */}
         <div className="ht-mascot ht-m-fanta" aria-hidden="true">
-          <span className="ht-name ht-name-blue">판타</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/mascot-fanta.png" alt="" />
+          <div className="ht-mascot-in">
+            <span className="ht-name ht-name-blue">판타</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/mascot-fanta.png" alt="" />
+          </div>
         </div>
         <div className="ht-mascot ht-m-tricky" aria-hidden="true">
-          <span className="ht-name ht-name-red">트리키</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/mascot-tricky.png" alt="" />
+          <div className="ht-mascot-in">
+            <span className="ht-name ht-name-red">트리키</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/mascot-tricky.png" alt="" />
+          </div>
         </div>
         <div className="ht-stack">
           <div className="ht-eyebrow">PREMIUM ESCAPE ROOM</div>
