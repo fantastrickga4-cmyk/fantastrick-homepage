@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 import { IconStar } from "@/components/Icon";
 import HeroWeb from "@/components/HeroWeb";
@@ -55,149 +55,77 @@ function ThemeCard({ t, no }: { t: Theme; no: number }) {
   );
 }
 
-// 테마 가로 슬라이드(캐러셀) — 운영중 + 준비중 테마를 한 줄에.
-// 모바일=터치 스와이프(브라우저 기본) / PC=화살표 + 마우스로 잡아끌기(드래그).
-function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
-  const railRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-  // 드래그 상태: 눌린 지점·시작 스크롤·움직인 거리(클릭이었는지 드래그였는지 판단용)
-  const drag = useRef({ on: false, startX: 0, startLeft: 0, moved: 0 });
-
-  const update = useCallback(() => {
-    const el = railRef.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 8);
-    setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
-
-    // 포스터 아래 스크롤바 — 손잡이 폭=보이는 비율, 위치=스크롤 진행률.
-    // ⚠️ 상태(useState)로 하면 스크롤할 때마다 화면을 다시 그려 버벅인다 → DOM 에 직접 쓴다.
-    const bar = barRef.current;
-    if (!bar) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const wPct = Math.min(100, (el.clientWidth / el.scrollWidth) * 100);
-    const pos = max > 0 ? el.scrollLeft / max : 0;
-    bar.style.setProperty("--w", `${wPct}%`);
-    bar.style.setProperty("--x", `${pos * (100 - wPct)}%`);
-    bar.style.opacity = max > 4 ? "1" : "0"; // 넘칠 게 없으면(카드가 다 보이면) 숨김
-  }, []);
+// 테마 갤러리 — cantor8 "Product Suite" 식: 카드가 위아래로 엇갈려 가로로 늘어서고,
+// 세로 스크롤(휠)에 따라 좌로 흐른다. 데스크톱=핀 고정 가로스크롤 / 모바일·모션최소=네이티브 가로 스와이프.
+function ThemeGallery({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
+  const secRef = useRef<HTMLElement>(null);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = railRef.current;
-    if (!el) return;
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, [update]);
+    const sec = secRef.current, pin = pinRef.current, track = trackRef.current;
+    if (!sec || !pin || !track) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // 데스크톱 + 모션 허용일 때만 핀 고정 가로스크롤. 아니면 네이티브 가로 스와이프.
+    const pinned = () => window.matchMedia("(min-width: 861px)").matches && !reduce;
+    let overflow = 0;
 
-  const move = (dir: number) => {
-    const el = railRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>(".tcard");
-    const step = card ? card.offsetWidth + 20 : el.clientWidth * 0.8;
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
-  };
+    const onScroll = () => {
+      if (overflow <= 0) return;
+      // 섹션이 화면 맨 위에 닿는 순간(top=0)부터, overflow px 만큼 세로로 스크롤하는 동안
+      // 트랙을 같은 거리만큼 좌로 민다 → "휠 내리면 카드가 좌로 흐른다".
+      const top = sec.getBoundingClientRect().top;
+      const p = Math.min(1, Math.max(0, -top / overflow));
+      track.style.transform = `translate3d(${(-p * overflow).toFixed(1)}px,0,0)`;
+    };
+    const measure = () => {
+      if (!pinned()) {
+        sec.style.height = "";
+        track.style.transform = "";
+        overflow = 0;
+        return;
+      }
+      overflow = Math.max(0, track.scrollWidth - pin.clientWidth + 40);
+      // 트랙이 넘치는 만큼 세로 스크롤 길이를 확보(핀 고정 구간)
+      sec.style.height = `${window.innerHeight + overflow}px`;
+      onScroll();
+    };
 
-  // ── 마우스로 잡아끌기 ──
-  // 터치는 브라우저가 알아서 스와이프해주므로 마우스일 때만 붙인다(둘 다 걸면 서로 싸움).
-  // 끄는 동안엔 스냅·부드러운스크롤을 잠시 꺼야 손가락(커서)에 착 붙는다 → .dragging 클래스.
-  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = railRef.current;
-    if (!el || e.pointerType !== "mouse" || e.button !== 0) return;
-    drag.current = { on: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0 };
-    el.classList.add("dragging");
-  };
-  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = railRef.current;
-    if (!el || !drag.current.on) return;
-    const dx = e.clientX - drag.current.startX;
-    drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
-    el.scrollLeft = drag.current.startLeft - dx;
-  };
-  const endDrag = () => {
-    const el = railRef.current;
-    if (!el || !drag.current.on) return;
-    drag.current.on = false;
-    el.classList.remove("dragging");
-  };
-  // 끌고 나서 손을 떼면 카드가 링크라 페이지가 열려버린다 → 5px 이상 움직였으면 클릭을 막는다.
-  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (drag.current.moved > 5) { e.preventDefault(); e.stopPropagation(); }
-    drag.current.moved = 0;
-  };
-
-  // ── 스크롤바를 직접 끌기 ──
-  const barDrag = useRef(false);
-  const scrubTo = (clientX: number) => {
-    const el = railRef.current, bar = barRef.current;
-    if (!el || !bar) return;
-    const r = bar.getBoundingClientRect();
-    const max = el.scrollWidth - el.clientWidth;
-    // 손잡이 '가운데'가 커서로 오도록 보정 — 안 하면 항상 왼쪽으로 치우쳐 잡힌다
-    const half = (el.clientWidth / el.scrollWidth) * r.width / 2;
-    const ratio = (clientX - r.left - half) / (r.width - half * 2);
-    el.scrollLeft = Math.max(0, Math.min(max, ratio * max));
-  };
-  const onBarDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = railRef.current;
-    if (!el) return;
-    barDrag.current = true;
-    el.classList.add("dragging"); // 끄는 동안 스냅·부드러운스크롤 해제(안 하면 커서에 안 붙음)
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    scrubTo(e.clientX);
-  };
-  const onBarMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (barDrag.current) scrubTo(e.clientX);
-  };
-  const onBarUp = () => {
-    if (!barDrag.current) return;
-    barDrag.current = false;
-    railRef.current?.classList.remove("dragging");
-  };
+    measure();
+    const reMeasure = setTimeout(measure, 500); // 포스터 이미지 로딩 후 폭 재측정
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", measure);
+    return () => {
+      clearTimeout(reMeasure);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", measure);
+    };
+  }, [themes, soon]);
 
   return (
-    <div className="theme-carousel reveal rv-focus">
-      <button type="button" className="tc-arrow prev" aria-label="이전 테마" disabled={!canPrev} onClick={() => move(-1)}>‹</button>
-      <div
-        className="theme-rail"
-        id="theme-rail"
-        ref={railRef}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={endDrag}
-        onPointerLeave={endDrag}
-        onPointerCancel={endDrag}
-        onClickCapture={onClickCapture}
-        onDragStart={(e) => e.preventDefault()}  /* 카드 안 이미지가 브라우저 기본 드래그로 끌려가는 것 방지 */
-      >
-        {themes.map((t, i) => (
-          <ThemeCard key={t.id} t={t} no={i + 1} />
-        ))}
-        {soon.map((t, i) => (
-          <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
-        ))}
+    <section className="tgal" id="themes" ref={secRef}>
+      <div className="tgal-pin" ref={pinRef}>
+        <div className="wrap">
+          <div className="shead reveal">
+            <h2 className="title">테마 · Themes</h2>
+            <p className="lead">직영으로 만든 방탈출·머더룸 — 스크롤하면 옆으로 넘어갑니다.</p>
+          </div>
+        </div>
+        <div className="tgal-viewport">
+          <div className="tgal-track" ref={trackRef}>
+            {themes.map((t, i) => (
+              <ThemeCard key={t.id} t={t} no={i + 1} />
+            ))}
+            {soon.map((t, i) => (
+              <SoonRailCard key={t.id} t={t} no={themes.length + i + 1} />
+            ))}
+          </div>
+        </div>
       </div>
-      {/* 포스터 바로 아래 스크롤바 — "옆으로 더 있다 / 지금 여기쯤"을 보여준다. 끌어서 넘길 수도 있음 */}
-      <div
-        className="rail-bar"
-        ref={barRef}
-        onPointerDown={onBarDown}
-        onPointerMove={onBarMove}
-        onPointerUp={onBarUp}
-        onPointerCancel={onBarUp}
-        role="scrollbar"
-        aria-controls="theme-rail"
-        aria-orientation="horizontal"
-        aria-label="테마 목록 가로 스크롤"
-      >
-        <i />
-      </div>
-      <button type="button" className="tc-arrow next" aria-label="다음 테마" disabled={!canNext} onClick={() => move(1)}>›</button>
-    </div>
+    </section>
   );
 }
+
 
 // 준비중 테마 — 이제 아래 슬림 스트립이 아니라 캐러셀 안에 같이 들어간다(클릭 불가).
 // 포스터 이미지가 아직 없어서(data.ts 의 poster:"") 자리표시 카드로 그린다.
@@ -305,17 +233,8 @@ export default function Home() {
         <div className="scrollcue">SCROLL ↓</div>
       </section>
 
-      {/* 인터랙티브 콘텐츠 */}
-      <section className="block alt" id="themes">
-        <div className="wrap">
-          <div className="shead reveal">
-            <h2 className="title">테마 · Themes</h2>
-            <p className="lead">직영으로 만든 방탈출·머더룸</p>
-          </div>
-          {/* 준비중 테마도 같은 줄에 — 예전엔 아래 별도 스트립이라 눈에 안 띄었음 */}
-          <ThemeCarousel themes={THEMES} soon={SOON_THEMES} />
-        </div>
-      </section>
+      {/* 테마 — cantor8식 위아래 엇갈림 가로스크롤 갤러리 */}
+      <ThemeGallery themes={THEMES} soon={SOON_THEMES} />
 
       {/* REVIEWS — 별점 요약 + 대표 후기 발췌 */}
       <section className="block" id="reviews">

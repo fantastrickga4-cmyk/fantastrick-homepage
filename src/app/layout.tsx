@@ -29,6 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" className="js">
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        {/* 라틴 본문/제목 그로테스크 — cantor8 의 "PP Neue Montreal"(상업용 유료)을 무료로 대체한
+            General Sans(Fontshare, 상업용 무료). 한글은 라틴 글리프가 없으니 자동으로 Pretendard 로 폴백된다. */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" />
         {/* 본문 폰트 — variable + dynamic-subset.
             전에는 static/pretendard.css 를 썼는데, 굵기 4종을 각각 750KB 통짜로 받아
             **홈 전송량 3.6MB 중 3.3MB(92%)가 글꼴**이었다(3G 로딩 19초 실측, 2026-07-17).

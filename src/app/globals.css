@@ -66,6 +66,8 @@
 
   /* ---- 역할별 폰트 ---- 제목=나눔명조 ExtraBold(세리프), 본문/버튼/숫자/라벨=Pretendard ---- */
   --font-display:"Nanum Myeongjo","Pretendard Variable","Pretendard","Pretendard 임시",serif;
+  /* 라틴 본문 그로테스크(General Sans) + 한글 폴백(Pretendard). cantor8 톤. 라틴만 General Sans, 한글은 Pretendard. */
+  --font-sans:"General Sans","Pretendard Variable","Pretendard","Pretendard 임시",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -87,7 +89,7 @@ html{scroll-behavior:smooth}
   font-display:swap;
 }
 body{margin:0;background:var(--bg);color:var(--text);
-  font-family:"Pretendard Variable","Pretendard","Pretendard 임시",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-family:var(--font-sans);
   line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;
   /* 한글은 기본값이면 "매장" 이 "매/장" 처럼 단어 한가운데서 잘려 해상도마다 줄바꿈이 제각각이다.
      keep-all 로 어절(단어)을 통째로 유지 → 띄어쓰기에서만 줄바꿈(모든 해상도에서 일관).
@@ -401,7 +403,11 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   --line:rgba(255,255,255,.14); --line2:rgba(255,255,255,.24);
   --cyan:#8fb6ff; --brand-bright:#8fb6ff; --brand:#6ea8ff;
   --gold:#c9b6ff; --violet:#8a6fd0;
+  /* 홈은 제목도 세리프(나눔명조) 대신 그로테스크로 — cantor8 처럼 전부 산세리프 톤으로 통일 */
+  --font-display:var(--font-sans);
 }
+/* 후기 점수 큰 숫자도 홈에선 세리프(Bodoni) 대신 그로테스크로 */
+.home-dark .rev-summary .score{font-family:var(--font-sans);font-weight:700}
 /* 섹션: 밝은 배경 제거 → 파랑이 계속 보이게. 여백 크게(cantor8식). alt 는 옅은 흰 틴트로만 구분 */
 .home-dark .block{border-top:1px solid rgba(255,255,255,.10);padding:116px 0}
 .home-dark .block.alt{background:rgba(255,255,255,.028)}
@@ -455,7 +461,38 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* (2026-07-16) 옛 ABOUT 섹션 CSS(.about-grid/.pillar/.about-visual/.worldtags) 22줄 삭제 —
    히어로 통계·SINCE2015 스탬프와 함께 화면에서 없어진 섹션이라 아무 데서도 안 씀. */
 
-/* ---------- THEMES (가로 슬라이드 캐러셀 · PC/모바일 동일 구성) ---------- */
+/* ---------- THEMES 갤러리 (cantor8식: 위아래 엇갈림 + 핀 고정 가로스크롤) ---------- */
+/* 데스크톱: 섹션을 (뷰포트+넘침)만큼 높게 잡고 안쪽을 sticky 로 고정 → 세로로 스크롤하면
+   트랙(카드 줄)이 좌로 흐른다(page.tsx ThemeGallery 가 translateX 를 세로 진행률에 매핑). */
+.tgal{position:relative;border-top:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12)}
+.tgal-pin{position:sticky;top:0;min-height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;gap:30px;padding:70px 0}
+.tgal-viewport{width:100%;overflow:hidden}
+.tgal-track{display:flex;align-items:center;gap:26px;min-height:520px;will-change:transform;
+  padding-left:max(22px,calc((100vw - var(--maxw)) / 2));padding-right:24vw}
+.tgal-track .tcard{flex:0 0 300px;width:300px}
+.tgal-track .tcard .thumb{aspect-ratio:3/4}
+/* 위아래 엇갈림 — transform 은 트랙 min-height(520) 안에서만 움직여 잘리지 않는다 */
+.tgal-track > *:nth-child(odd){transform:translateY(-32px)}
+.tgal-track > *:nth-child(even){transform:translateY(42px)}
+/* 모바일: 핀 없이 네이티브 가로 스와이프(엇갈림 해제) */
+@media(max-width:860px){
+  .tgal{background:rgba(0,0,0,.09)}
+  .tgal-pin{position:static;min-height:0;overflow:visible;padding:92px 0;gap:22px}
+  .tgal-viewport{overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .tgal-track{transform:none!important;min-height:0;padding:18px 22px;gap:14px}
+  .tgal-track .tcard{flex:0 0 74vw;width:74vw;scroll-snap-align:start}
+  .tgal-track > *{transform:none!important}
+}
+/* 모션 최소화: 핀·엇갈림 해제, 네이티브 가로 스크롤 */
+@media(prefers-reduced-motion:reduce){
+  .tgal-pin{position:static;min-height:0;overflow:visible;padding:92px 0}
+  .tgal-viewport{overflow-x:auto}
+  .tgal-track{transform:none!important;min-height:0}
+  .tgal-track > *{transform:none!important}
+}
+
+/* ---------- THEMES (옛 가로 슬라이드 캐러셀 — 현재 미사용, 참고용) ---------- */
 .theme-carousel{position:relative}
 /* 가로 스크롤 레일: 모바일=터치 스와이프, PC=4개 한 줄(넘치면 화살표) */
 .theme-rail{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
