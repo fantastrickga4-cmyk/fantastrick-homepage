@@ -260,6 +260,7 @@ export default function Home() {
         {/* 배경 3겹 — 무대 조명 · 설계도 모눈 · 그레인 질감 (globals.css 설명 참고) */}
         <div className="ht-mesh" aria-hidden="true" />
         <div className="ht-grid" aria-hidden="true" />
+        <div className="ht-web" aria-hidden="true" />
         <div className="ht-ghost" aria-hidden="true">FANTASTRICK</div>
         <div className="ht-noise" aria-hidden="true" />
         {/* 세로 구분선 — 마스코트 무대와 가운데 콘텐츠를 구분(데스크톱) */}

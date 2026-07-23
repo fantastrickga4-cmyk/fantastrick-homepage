@@ -147,6 +147,13 @@ nav.main{display:flex;gap:24px;margin-left:14px;font-size:14.5px;color:var(--mut
 nav.main a{transition:color .15s}
 nav.main a:hover{color:var(--text)}
 .hdr-cta{margin-left:auto;display:flex;gap:9px}
+/* 홈 최상단(어두운 파랑 히어로 위) — 로고 흰색화 + 메뉴/버튼 흰색. 스크롤하면 .scrolled 로 원복. */
+header.over-hero .logo-img{filter:brightness(0) invert(1)}
+header.over-hero nav.main{color:rgba(255,255,255,.86)}
+header.over-hero nav.main a:hover{color:#fff}
+header.over-hero .menu-btn{border-color:rgba(255,255,255,.42);color:#fff}
+header.over-hero .btn.ghost{border-color:rgba(255,255,255,.55);color:#fff}
+header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .menu-btn{display:none;margin-left:auto;background:none;border:1px solid var(--line);color:var(--text);
   border-radius:var(--r-sm);padding:0 12px;font-size:18px;cursor:pointer;min-height:44px;min-width:44px;align-items:center;justify-content:center}
 @media(max-width:860px){
@@ -188,11 +195,15 @@ nav.main a:hover{color:var(--text)}
 /* (2026-07-16) 옛 사진 히어로(.hero — Ken Burns 줌·배경영상·heroIn 스태거) 30줄 삭제.
    메인은 .hero-t(타이포), 비즈니스는 .biz-hero 를 쓰므로 아무 데서도 안 쓰던 죽은 CSS.
    아래 .scrollcue 는 살아있는 코드(page.tsx 의 SCROLL ↓)라 남김. */
-.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;color:var(--muted);font-size:11px;letter-spacing:.2em;text-align:center;animation:bob 2s infinite}
+.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;color:rgba(222,232,255,.62);font-size:11px;letter-spacing:.2em;text-align:center;animation:bob 2s infinite}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
 
 /* ---------- HERO (타이포 · FANTASY + TRICK = FANTASTRICK) ---------- */
-.hero-t{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;background:var(--bg)}
+/* (2026-07-23) cantor8.io 참고 재설계 — 대담한 브랜드 파랑 단색 채움 + 성좌 단서망 라인아트 + 여백.
+   밋밋한 흰 배경(옛 세 겹 조명) 대신 화면을 파랑 한 색으로 꽉 채워 자신감·프리미엄을 준다.
+   가운데는 살짝 밝게(워드마크 자리 무대조명), 가장자리는 딥(비네트). */
+.hero-t{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;
+  background:radial-gradient(96% 76% at 50% 32%,#0a4bd0 0%,#063aad 44%,#04277e 100%)}
 /* 배경 = 세 겹을 각각 "기준치보다 옅게" 깔고 겹친 것 (2026-07-16 확정, 샘플 10안 중 10번).
    조사에서 나온 안전 수치: 패턴 8~20% · 격자 16~24px · 선 1px · 그레인 4~6%.
    한 겹만 쓰면 밋밋하거나 과해져서, 셋 다 기준 하한 근처로 깔고 포갠다.
@@ -200,23 +211,32 @@ nav.main a:hover{color:var(--text)}
    ② ht-grid  = 설계도 모눈 (슬로건 "기술로써 구현한다"와 직결) — 글자 뒤는 마스크로 비워 가독성 유지
    ③ ht-noise = 그레인 질감 (전역 .grain 2.5% 위에 히어로에만 추가) */
 .hero-t .ht-mesh{position:absolute;inset:-12%;z-index:0;pointer-events:none;
-  background:radial-gradient(50% 58% at 50% 42%,color-mix(in oklab,var(--brand-bright) 13%,transparent),transparent 70%),
-    radial-gradient(40% 46% at 82% 16%,color-mix(in oklab,var(--violet) 10%,transparent),transparent 72%),
-    linear-gradient(180deg,#f2f5f9,#f7f9fc 50%,#eaeef4);
+  background:radial-gradient(46% 54% at 50% 40%,rgba(130,175,255,.28),transparent 68%),
+    radial-gradient(40% 46% at 82% 12%,rgba(150,110,220,.16),transparent 72%);
   animation:htMesh 30s ease-in-out infinite alternate}
 @keyframes htMesh{100%{transform:translate3d(-1.6%,1.2%,0) scale(1.05)}}
-/* 격자는 흐르면 안 됨(어지러움) → 애니메이션 없음. 가운데는 마스크로 비워 워드마크가 격자와 안 싸우게. */
+/* 격자는 흐르면 안 됨(어지러움) → 애니메이션 없음. 가운데는 마스크로 비워 워드마크가 격자와 안 싸우게.
+   어두운 배경이라 선은 흰색 저투명(설계도 모눈 느낌). */
 .hero-t .ht-grid{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background-image:linear-gradient(rgba(4,60,178,.075) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(4,60,178,.075) 1px,transparent 1px);
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
   background-size:22px 22px;
   -webkit-mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%);
           mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%)}
-.hero-t .ht-noise{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:multiply;
+/* 성좌 단서망 — cantor8의 네트워크 그래픽을 방탈출 "흩어진 단서를 잇다"로 번안(흰 점+선).
+   중앙(워드마크 자리)은 마스크로 비우고, 가장자리로 갈수록 보이게. 천천히 페이드인. */
+.hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201600%20900'%3E%3Cg%20stroke='%23fff'%20stroke-width='1'%20fill='none'%20opacity='.9'%3E%3Cline%20x1='1528.9'%20y1='684.1'%20x2='1528.1'%20y2='516.1'/%3E%3Cline%20x1='1528.9'%20y1='684.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1278.5'%20y1='342.5'%20x2='1374.1'%20y2='257.8'/%3E%3Cline%20x1='1278.5'%20y1='342.5'%20x2='1292.0'%20y2='504.9'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1241.5'%20y2='607.7'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='165.9'%20y2='346.6'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='4.3'%20y2='409.4'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1528.9'%20y2='4.5'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1566.2'%20y2='265.8'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='881.6'%20y2='36.4'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='1108.9'%20y2='104.0'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='881.6'%20y1='36.4'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='1374.1'%20y1='257.8'%20x2='1566.2'%20y2='265.8'/%3E%3Cline%20x1='1374.1'%20y1='257.8'%20x2='1532.5'%20y2='375.9'/%3E%3Cline%20x1='1292.0'%20y1='504.9'%20x2='1241.5'%20y2='607.7'/%3E%3Cline%20x1='1292.0'%20y1='504.9'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1140.4'%20y2='885.5'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1368.2'%20y2='788.0'/%3E%3Cline%20x1='1140.4'%20y1='885.5'%20x2='1082.8'%20y2='784.6'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='287.7'%20y2='211.1'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='362.5'%20y2='302.6'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='164.3'%20y2='535.5'/%3E%3Cline%20x1='164.3'%20y1='535.5'%20x2='4.3'%20y2='409.4'/%3E%3Cline%20x1='1299.0'%20y1='698.1'%20x2='1368.2'%20y2='788.0'/%3E%3Cline%20x1='1368.2'%20y1='788.0'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='1566.2'%20y1='265.8'%20x2='1532.5'%20y2='375.9'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='637.9'%20y2='739.3'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='400.7'%20y2='877.1'/%3E%3Cline%20x1='1144.4'%20y1='191.8'%20x2='1108.9'%20y2='104.0'/%3E%3Cline%20x1='957.2'%20y1='137.8'%20x2='1144.4'%20y2='191.8'/%3E%3Cline%20x1='1226.1'%20y1='839.7'%20x2='1082.8'%20y2='784.6'/%3E%3Cline%20x1='287.7'%20y1='211.1'%20x2='362.5'%20y2='302.6'/%3E%3Cline%20x1='1532.5'%20y1='375.9'%20x2='1528.1'%20y2='516.1'/%3E%3Cline%20x1='1528.9'%20y1='4.5'%20x2='1348.0'%20y2='59.6'/%3E%3Cline%20x1='1566.2'%20y1='265.8'%20x2='1528.9'%20y2='4.5'/%3E%3Cline%20x1='1241.5'%20y1='607.7'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='325.8'%20y1='677.8'%20x2='179.8'%20y2='761.1'/%3E%3Cline%20x1='325.8'%20y1='677.8'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='287.7'%20y1='211.1'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='284.1'%20y2='83.0'/%3E%3Cline%20x1='1521.3'%20y1='116.4'%20x2='1348.0'%20y2='59.6'/%3E%3Cline%20x1='295.7'%20y1='895.3'%20x2='400.7'%20y2='877.1'/%3E%3Cline%20x1='295.7'%20y1='895.3'%20x2='132.0'%20y2='890.1'/%3E%3Cline%20x1='132.0'%20y1='890.1'%20x2='179.8'%20y2='761.1'/%3E%3Cline%20x1='637.9'%20y1='739.3'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='637.9'%20y1='739.3'%20x2='797.2'%20y2='866.9'/%3E%3Cline%20x1='400.7'%20y1='877.1'%20x2='484.5'%20y2='762.5'/%3E%3Cline%20x1='1528.1'%20y1='516.1'%20x2='1367.7'%20y2='630.8'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='733.1'%20y2='3.5'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='6.4'%20y1='142.8'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='199.4'%20y1='184.7'%20x2='6.4'%20y2='142.8'/%3E%3Cline%20x1='165.9'%20y1='346.6'%20x2='6.4'%20y2='142.8'/%3E%3Cline%20x1='284.1'%20y1='83.0'%20x2='98.4'%20y2='82.8'/%3E%3Cline%20x1='546.2'%20y1='36.5'%20x2='568.1'%20y2='126.1'/%3E%3Cline%20x1='664.7'%20y1='72.3'%20x2='546.2'%20y2='36.5'/%3E%3Cline%20x1='433.1'%20y1='166.0'%20x2='546.2'%20y2='36.5'/%3E%3Cline%20x1='797.2'%20y1='866.9'%20x2='925.9'%20y2='756.1'/%3E%3Cline%20x1='556.9'%20y1='830.3'%20x2='797.2'%20y2='866.9'/%3E%3Cline%20x1='1082.8'%20y1='784.6'%20x2='925.9'%20y2='756.1'/%3E%3Cline%20x1='733.1'%20y1='3.5'%20x2='773.4'%20y2='98.9'/%3E%3Cline%20x1='881.6'%20y1='36.4'%20x2='1108.9'%20y2='104.0'/%3E%3C/g%3E%3Cg%20fill='%23cfe0ff'%3E%3Ccircle%20cx='1528.9'%20cy='684.1'%20r='2.2'/%3E%3Ccircle%20cx='1278.5'%20cy='342.5'%20r='3.0'/%3E%3Ccircle%20cx='199.4'%20cy='184.7'%20r='2.8'/%3E%3Ccircle%20cx='1299.0'%20cy='698.1'%20r='2.0'/%3E%3Ccircle%20cx='165.9'%20cy='346.6'%20r='3.1'/%3E%3Ccircle%20cx='1521.3'%20cy='116.4'%20r='3.4'/%3E%3Ccircle%20cx='957.2'%20cy='137.8'%20r='3.1'/%3E%3Ccircle%20cx='881.6'%20cy='36.4'%20r='2.9'/%3E%3Ccircle%20cx='1374.1'%20cy='257.8'%20r='1.7'/%3E%3Ccircle%20cx='1292.0'%20cy='504.9'%20r='1.9'/%3E%3Ccircle%20cx='1226.1'%20cy='839.7'%20r='2.6'/%3E%3Ccircle%20cx='1140.4'%20cy='885.5'%20r='3.2'/%3E%3Ccircle%20cx='433.1'%20cy='166.0'%20r='2.1'/%3E%3Ccircle%20cx='164.3'%20cy='535.5'%20r='2.3'/%3E%3Ccircle%20cx='1368.2'%20cy='788.0'%20r='2.2'/%3E%3Ccircle%20cx='1566.2'%20cy='265.8'%20r='3.3'/%3E%3Ccircle%20cx='556.9'%20cy='830.3'%20r='2.7'/%3E%3Ccircle%20cx='1144.4'%20cy='191.8'%20r='2.6'/%3E%3Ccircle%20cx='1082.8'%20cy='784.6'%20r='2.2'/%3E%3Ccircle%20cx='287.7'%20cy='211.1'%20r='1.6'/%3E%3Ccircle%20cx='1532.5'%20cy='375.9'%20r='2.3'/%3E%3Ccircle%20cx='1528.9'%20cy='4.5'%20r='3.2'/%3E%3Ccircle%20cx='1241.5'%20cy='607.7'%20r='3.1'/%3E%3Ccircle%20cx='325.8'%20cy='677.8'%20r='3.0'/%3E%3Ccircle%20cx='284.1'%20cy='83.0'%20r='2.8'/%3E%3Ccircle%20cx='1348.0'%20cy='59.6'%20r='1.9'/%3E%3Ccircle%20cx='295.7'%20cy='895.3'%20r='3.3'/%3E%3Ccircle%20cx='132.0'%20cy='890.1'%20r='2.3'/%3E%3Ccircle%20cx='637.9'%20cy='739.3'%20r='2.0'/%3E%3Ccircle%20cx='400.7'%20cy='877.1'%20r='1.8'/%3E%3Ccircle%20cx='362.5'%20cy='302.6'%20r='1.9'/%3E%3Ccircle%20cx='179.8'%20cy='761.1'%20r='2.8'/%3E%3Ccircle%20cx='1528.1'%20cy='516.1'%20r='2.7'/%3E%3Ccircle%20cx='664.7'%20cy='72.3'%20r='2.6'/%3E%3Ccircle%20cx='6.4'%20cy='142.8'%20r='2.5'/%3E%3Ccircle%20cx='98.4'%20cy='82.8'%20r='3.1'/%3E%3Ccircle%20cx='546.2'%20cy='36.5'%20r='3.2'/%3E%3Ccircle%20cx='797.2'%20cy='866.9'%20r='2.7'/%3E%3Ccircle%20cx='925.9'%20cy='756.1'%20r='2.0'/%3E%3Ccircle%20cx='1367.7'%20cy='630.8'%20r='2.2'/%3E%3Ccircle%20cx='484.5'%20cy='762.5'%20r='2.6'/%3E%3Ccircle%20cx='568.1'%20cy='126.1'%20r='1.7'/%3E%3Ccircle%20cx='4.3'%20cy='409.4'%20r='2.8'/%3E%3Ccircle%20cx='733.1'%20cy='3.5'%20r='3.3'/%3E%3Ccircle%20cx='1108.9'%20cy='104.0'%20r='3.1'/%3E%3Ccircle%20cx='773.4'%20cy='98.9'%20r='2.0'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:cover;background-position:center;opacity:0;mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
+          mask-image:radial-gradient(60% 58% at 50% 46%,transparent 26%,#000 66%);
+  animation:htWebIn 2.6s ease 1s both}
+@keyframes htWebIn{from{opacity:0}to{opacity:.42}}
+.hero-t .ht-noise{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
 .hero-t .ht-ghost{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:1;white-space:nowrap;pointer-events:none;user-select:none;
   font-family:var(--font-logo);font-size:clamp(110px,26vw,400px);line-height:1;letter-spacing:0;
-  color:transparent;-webkit-text-stroke:1px rgba(47,111,224,.04);mix-blend-mode:multiply;animation:htGhost 50s ease-in-out infinite alternate}
+  color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.055);animation:htGhost 50s ease-in-out infinite alternate}
 @keyframes htGhost{100%{transform:translate3d(1%,-.8%,0)}}
 .hero-t .ht-stack{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;padding:80px 22px 40px}
 /* 마스코트 판타(파랑·왼쪽)·트리키(빨강·오른쪽) — 무대 양쪽 하단에서 등장. 텍스트(z:5)보다 뒤(z:3).
@@ -229,14 +249,17 @@ nav.main a:hover{color:var(--text)}
 .hero-t .ht-mascot-in img{height:min(40vh,380px);width:auto;filter:drop-shadow(0 14px 26px rgba(20,22,42,.16))}
 .hero-t .ht-m-fanta{left:1%}
 .hero-t .ht-m-tricky{right:1%}
+/* 어두운 배경 분리용 글로우 — 판타=파랑, 트리키=빨강. 검은 그림자로 바닥 앵커 + 색 글로우로 발광. */
+.hero-t .ht-m-fanta img{filter:drop-shadow(0 16px 30px rgba(0,0,0,.42)) drop-shadow(0 4px 34px rgba(95,155,255,.30))}
+.hero-t .ht-m-tricky img{filter:drop-shadow(0 16px 30px rgba(0,0,0,.42)) drop-shadow(0 4px 34px rgba(255,115,105,.28))}
 .hero-t .ht-m-tricky .ht-mascot-in{animation-delay:3.9s, 5.4s}
 /* 세로 구분선 — 마스코트 무대와 가운데를 또렷하게 나눔(판타=파랑 / 트리키=빨강 톤). 데스크톱만. */
 .hero-t .ht-divider{position:absolute;top:15%;bottom:12%;width:2px;z-index:2;pointer-events:none;border-radius:2px;
   opacity:0;animation:htUp .8s ease 3.2s both}
 .hero-t .ht-div-l{left:clamp(300px,23%,430px);
-  background:linear-gradient(180deg,transparent,rgba(47,111,224,.28) 18%,rgba(47,111,224,.28) 82%,transparent)}
+  background:linear-gradient(180deg,transparent,rgba(130,175,255,.34) 18%,rgba(130,175,255,.34) 82%,transparent)}
 .hero-t .ht-div-r{right:clamp(300px,23%,430px);
-  background:linear-gradient(180deg,transparent,rgba(178,14,25,.24) 18%,rgba(178,14,25,.24) 82%,transparent)}
+  background:linear-gradient(180deg,transparent,rgba(255,130,120,.30) 18%,rgba(255,130,120,.30) 82%,transparent)}
 @media(max-width:1024px){.hero-t .ht-divider{display:none}}
 /* 머리 위 이름표 — 귀여운 말풍선(둥근 알약) + 아래로 향한 꼬리(말꼬리) */
 .hero-t .ht-name{position:relative;margin-bottom:17px;font-weight:800;font-size:clamp(15px,1.35vw,21px);
@@ -290,13 +313,12 @@ nav.main a:hover{color:var(--text)}
     }
   }
 }
-/* 라벨 색 = 딥블루(--brand). 밝은 블루(--brand-bright)는 배경이 진해지자 대비 3.8:1 로 떨어져 AA(4.5:1) 미달이었음
-   (12px 작은 글자라 큰 글자 예외 3:1 도 못 씀) */
-.hero-t .ht-eyebrow{color:var(--brand);font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;opacity:0;animation:htUp .6s cubic-bezier(.16,1,.3,1) .1s both}
+/* 라벨 색 = 어두운 파랑 배경 위 밝은 라벤더블루(대비 충분). 12px 작은 글자라 밝게. */
+.hero-t .ht-eyebrow{color:#cddcff;font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;opacity:0;animation:htUp .6s cubic-bezier(.16,1,.3,1) .1s both}
 /* 슬로건은 헤더 메뉴(콘텐츠·리뷰·자주 묻는 질문)와 같은 서체 = 본문 Pretendard.
    예전엔 나눔명조(세리프)라 헤더와 따로 놀았음 */
 .hero-t .ht-slogan{font-family:"Pretendard Variable","Pretendard",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  font-weight:700;color:var(--text);font-size:clamp(18px,3vw,30px);letter-spacing:-.01em;display:flex;flex-wrap:wrap;justify-content:center;gap:.4em}
+  font-weight:700;color:#eaf1ff;font-size:clamp(18px,3vw,30px);letter-spacing:-.01em;display:flex;flex-wrap:wrap;justify-content:center;gap:.4em}
 .hero-t .ht-slogan span{display:inline-block;opacity:0;animation:htSg .7s cubic-bezier(.16,1,.3,1) both}
 .hero-t .ht-slogan span:nth-child(1){animation-delay:.35s}
 .hero-t .ht-slogan span:nth-child(2){animation-delay:.7s}
@@ -306,12 +328,13 @@ nav.main a:hover{color:var(--text)}
    안 지우면 로고 글꼴을 억지로 굵게 흉내내(합성 볼드) 모양이 달라진다. */
 .hero-t .ht-wm{position:relative;font-family:var(--font-logo);text-transform:uppercase;letter-spacing:0;
   margin:0;font-weight:400;
-  line-height:1;white-space:nowrap;font-size:clamp(32px,8.2vw,116px);display:flex;align-items:baseline;justify-content:center;color:var(--text);animation:htGlow 5s ease-in-out 3.4s infinite}
+  line-height:1;white-space:nowrap;font-size:clamp(32px,8.2vw,116px);display:flex;align-items:baseline;justify-content:center;color:#eef3ff;animation:htGlow 5s ease-in-out 3.4s infinite}
 .hero-t .ht-w{display:inline-flex}
-.hero-t .ht-fantasy{color:var(--brand-bright);opacity:0;animation:htWinL 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
-.hero-t .ht-trick{color:var(--blood);opacity:0;animation:htWinR 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
-.hero-t .ht-y{display:inline-block;overflow:hidden;color:var(--brand-bright);animation:htDy .7s cubic-bezier(.16,1,.3,1) 2.4s both}
-.hero-t .ht-plus{display:inline-block;overflow:hidden;color:var(--muted);font-weight:700;font-family:"Pretendard Variable","Pretendard",sans-serif;font-size:.5em;transform:translateY(-.12em);
+/* 어두운 파랑 배경 → FANTASY=밝은 하늘파랑, TRICK=밝은 코랄레드로 정착(브랜드 파랑/빨강 유지하되 대비 확보) */
+.hero-t .ht-fantasy{color:#6ea8ff;opacity:0;animation:htWinL 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
+.hero-t .ht-trick{color:#ff7d72;opacity:0;animation:htWinR 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
+.hero-t .ht-y{display:inline-block;overflow:hidden;color:#6ea8ff;animation:htDy .7s cubic-bezier(.16,1,.3,1) 2.4s both}
+.hero-t .ht-plus{display:inline-block;overflow:hidden;color:rgba(220,230,255,.72);font-weight:700;font-family:"Pretendard Variable","Pretendard",sans-serif;font-size:.5em;transform:translateY(-.12em);
   opacity:0;max-width:0;margin:0;animation:htPl 1.5s cubic-bezier(.16,1,.3,1) 1.6s both}
 .hero-t .ht-shine{position:absolute;inset:0;display:flex;align-items:baseline;justify-content:center;pointer-events:none;opacity:0;
   font-family:var(--font-logo);text-transform:uppercase;letter-spacing:0;
@@ -319,12 +342,17 @@ nav.main a:hover{color:var(--text)}
   background-size:280% 100%;background-position:88% 0;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
   animation:htGlint 4.2s cubic-bezier(.4,0,.2,1) 3.0s both}
 .hero-t .ht-rule{height:1px;width:min(520px,52vw);transform:scaleX(0);transform-origin:center;
-  background:linear-gradient(90deg,transparent,var(--brand-bright) 16%,var(--violet) 50%,var(--blood) 84%,transparent);animation:htRule .9s cubic-bezier(.16,1,.3,1) 3.1s both}
+  background:linear-gradient(90deg,transparent,#6ea8ff 16%,#b98cff 50%,#ff7d72 84%,transparent);animation:htRule .9s cubic-bezier(.16,1,.3,1) 3.1s both}
 .hero-t .cta{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center;opacity:0;animation:htUp .7s cubic-bezier(.16,1,.3,1) 3.5s both}
+/* 어두운 배경 위 CTA — 보조 버튼(외주·컨설팅)은 딥보라 텍스트라 안 보임 → 밝은 라벤더로 오버라이드 */
+.hero-t .cta .btn.gold-ghost{border-color:rgba(196,180,255,.55);color:#d9ccff;background:rgba(255,255,255,.04)}
+.hero-t .cta .btn.gold-ghost:hover{background:rgba(196,180,255,.14)}
+/* 모션 줄이기 설정이면 성좌망 페이드인 없이 바로 보이게 */
+@media(prefers-reduced-motion:reduce){.hero-t .ht-web{animation:none;opacity:.42}}
 @keyframes htUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes htSg{from{opacity:0;filter:blur(4px);transform:translateY(8px)}to{opacity:1;filter:blur(0);transform:none}}
-@keyframes htWinL{0%{opacity:0}18%{opacity:1;color:var(--brand-bright)}70%{color:var(--brand-bright)}100%{opacity:1;color:var(--text)}}
-@keyframes htWinR{0%{opacity:0}18%{opacity:1;color:var(--blood)}70%{color:var(--blood)}100%{opacity:1;color:var(--text)}}
+@keyframes htWinL{0%{opacity:0}18%{opacity:1;color:#9cc2ff}70%{color:#9cc2ff}100%{opacity:1;color:#6ea8ff}}
+@keyframes htWinR{0%{opacity:0}18%{opacity:1;color:#ff9d94}70%{color:#ff9d94}100%{opacity:1;color:#ff7d72}}
 /* ⚠️ ch 단위 쓰지 말 것 — ch = 폰트의 "0" 글자 폭인데 로고 폰트엔 숫자가 없다.
    그러면 브라우저가 0.5em 으로 때워서(=58px) Y(폭 .743em=86px)의 오른쪽이 잘렸다.
    로고 폰트 기준: 글자 한 칸 advance = 743/1000em = .743em → 여유 둬서 .8em. */
@@ -332,7 +360,7 @@ nav.main a:hover{color:var(--text)}
 @keyframes htPl{0%{opacity:0;max-width:0;margin:0}13%{opacity:1;max-width:1.4em;margin:0 .16em}53%{opacity:1;max-width:1.4em;margin:0 .16em}100%{opacity:0;max-width:0;margin:0}}
 @keyframes htGlint{0%{opacity:1;background-position:88% 0}90%{opacity:1;background-position:-32% 0}100%{opacity:0;background-position:-38% 0}}
 @keyframes htRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes htGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(47,111,224,0))}50%{filter:drop-shadow(0 0 18px rgba(47,111,224,.18))}}
+@keyframes htGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(130,175,255,0))}50%{filter:drop-shadow(0 0 22px rgba(130,175,255,.32))}}
 .hero-t .ht-stack{max-width:100%}
 /* 모바일: 워드마크가 넘치지 않게 축소(넘치면 stack이 넓어져 버튼도 안 감쌈) */
 @media (max-width:600px){
