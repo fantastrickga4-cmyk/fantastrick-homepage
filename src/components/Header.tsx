@@ -43,8 +43,11 @@ export default function Header() {
 
   if (pathname?.startsWith("/admin")) return null;
 
+  // 홈 최상단은 다크 히어로 위 → 헤더를 밝게(over-hero). 스크롤하면 밝은 배경이 깔려 원래대로.
+  const overHero = pathname === "/" && !scrolled;
+
   return (
-    <header className={scrolled ? "scrolled" : ""}>
+    <header className={`${scrolled ? "scrolled" : ""}${overHero ? " over-hero" : ""}`.trim()}>
       <div className="hdr-in">
         <Link href="/" className="brand" aria-label="FANTASTRICK 홈">
           {/* eslint-disable-next-line @next/next/no-img-element */}
