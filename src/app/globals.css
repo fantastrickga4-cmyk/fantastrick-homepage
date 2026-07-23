@@ -349,9 +349,14 @@ nav.main a:hover{color:var(--text)}
 }
 
 /* ---------- generic section spacing ---------- */
-.block{padding:96px 0}
-.block.alt{background:linear-gradient(180deg,var(--bg2),var(--bg))}
-.shead{margin-bottom:42px}
+/* 섹션 구분(2026-07-23): 모든 섹션 상단에 얇은 구분선 + alt는 '녹지 않는' 플랫 틴트.
+   예전 .alt 그라디언트는 아래로 갈수록 페이지 배경(--bg)과 같은 색이 돼 이음매 단차가 0이었다(경계 모호). */
+.block{padding:96px 0;border-top:1px solid var(--line)}
+.block.alt{background:#e8ecf2}
+.shead{margin-bottom:42px;position:relative;padding-top:22px}
+/* 섹션 헤더 미니 브랜드 룰 — '새 챕터 시작' 신호(히어로 룰과 호응, 좌측 정렬 제목 위) */
+.shead::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,#2f6fe0,#043cb2)}
 
 /* reveal (progressive enhancement — only hides when JS is active) + 인덱스 기반 스태거 */
 /* 등장 연출 — 화면에 들어오면 .in 이 붙는다(page.tsx IntersectionObserver).
@@ -518,8 +523,8 @@ nav.main a:hover{color:var(--text)}
 .biz{background:
   radial-gradient(760px 420px at 85% 0%,rgba(122,59,184,.08),transparent 60%),
   radial-gradient(720px 420px at 10% 100%,rgba(47,111,224,.07),transparent 62%),
-  linear-gradient(180deg,#f0f2f6,#e9ecf1);
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  linear-gradient(180deg,#f0f2f6,#e9ecf1)}
+  /* 상단 구분선은 이제 .block 공통 규칙이 담당(중복 보더 제거) */
 .biz-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:40px}
 .cap3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 @media(max-width:860px){.cap3{grid-template-columns:1fr}}
