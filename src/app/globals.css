@@ -986,6 +986,10 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
   display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{width:100%;max-width:440px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);
   box-shadow:var(--shadow);padding:24px;max-height:90vh;overflow:auto}
+/* 다크 테마에서 --surface 가 rgba(255,255,255,.05)(거의 투명)라 모달 박스가 비쳐
+   뒤 예약 내역 글씨와 겹쳐 보이던 문제 → 불투명 딥블루 + 뒤 배경 딤 강화 */
+.site-dark .modal-overlay{background:rgba(4,12,32,.74)}
+.site-dark .modal{background:#0b1d46;border-color:rgba(143,178,255,.18)}
 .modal h3{margin:0 0 14px;font-size:19px;font-weight:800}
 .modal .close-x{float:right;background:none;border:none;color:var(--faint);font-size:20px;cursor:pointer;line-height:1}
 .modal-policy{font-size:14.5px;color:var(--text);line-height:1.7;margin:6px 0 20px}
@@ -1010,6 +1014,11 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .pay-acct .pay-bank{color:var(--muted);font-weight:700;font-size:13px}
 .pay-acct b{font-size:16px;font-weight:800;font-feature-settings:"tnum";letter-spacing:.01em;color:var(--text);white-space:nowrap}
 .pay-acct .pay-holder{color:var(--muted);font-size:13px}
+/* 다크 테마(전 페이지 .site-dark)에서 계좌 박스가 밝은 배경(#eef2f8)이라
+   밝은 글자와 겹쳐 계좌번호·예금주가 안 보이던 문제 → 어두운 유리 배경으로 */
+.site-dark .pay-acct{background:rgba(143,178,255,.12);border-color:rgba(143,178,255,.24)}
+.site-dark .pay-acct b{color:#eef4ff}
+.site-dark .pay-acct .pay-bank,.site-dark .pay-acct .pay-holder{color:#c3d2f0}
 
 /* 체크 후 나타나는 송금 버튼들 */
 .pay-actions{margin-top:14px;display:flex;flex-direction:column;gap:8px}
@@ -1233,6 +1242,12 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .nt-foot .btn{margin-left:auto}
 .nt-switch{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:14.5px;min-height:44px}
 .nt-switch input{width:18px;height:18px;cursor:pointer;accent-color:var(--brand)}
+/* 공지 팝업은 흰 배경 고정이라, 다크 테마에서도 컨트롤 글자를 어둡게(흰 배경에 묻히지 않게) */
+.site-dark .nt-modal .close-x{color:#8890a0}
+.site-dark .nt-foot{border-top-color:#e6e9ef}
+.site-dark .nt-hide{color:#535a69}
+.site-dark .nt-hide:hover{color:#131620}
+.site-dark .nt-switch{color:#131620}
 
 /* ---------- 테마 상세 (/rooms/[id]) ---------- */
 .room-hero{position:relative;height:min(46vh,380px);display:grid;place-items:center;overflow:hidden}
@@ -1393,6 +1408,9 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .ast-store .tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--brand);padding:3px 12px;border-radius:999px}
 .ast-store .ast-addr{margin-top:14px;font-size:14px;color:var(--muted)}
 .ast-store .ast-theme{margin-top:6px;font-size:15px;font-weight:700;color:var(--text)}
+.ast-store .ast-tel{display:inline-block;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  width:100%;font-size:14px;font-weight:700;color:var(--brand-bright);letter-spacing:.02em;text-decoration:none}
+.ast-store .ast-tel:hover{text-decoration:underline;text-underline-offset:3px}
 
 /* 마스코트 — 판타(왼)·설명(중앙)·트리키(오른) → 모바일은 위 2열 + 아래 설명 */
 .about-mascot{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:center;gap:clamp(16px,3vw,40px);max-width:920px;margin:0 auto}
@@ -1413,6 +1431,28 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 /* 마무리 CTA */
 .about-final{max-width:640px;margin:0 auto;text-align:center}
 .af-star{font-size:30px;color:var(--brand);display:flex;justify-content:center}
+/* 마무리 CTA 배경 — 살짝 열린 문틈으로 따뜻한 빛이 새어나오는 연출(CSS로만, 이미지·저작권 없이) */
+.about-cta-sec{position:relative;overflow:hidden}
+.about-cta-sec .wrap{position:relative;z-index:1}
+.af-door{position:absolute;inset:0;z-index:0;display:grid;place-items:center;pointer-events:none}
+.af-door .afd{position:relative;width:min(46vw,300px);aspect-ratio:5/7}
+/* 어두운 아치형 문짝 */
+.afd-frame{position:absolute;inset:0;border-radius:150px 150px 0 0;
+  background:linear-gradient(180deg,#0b1226,#05091a);
+  border:2px solid rgba(160,190,255,.15);border-bottom:0;
+  box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
+/* 살짝 열린 틈으로 새어나오는 따뜻한 빛(세로 슬리버 + 번지는 글로우) */
+.afd-open{position:absolute;top:7%;bottom:0;left:53%;width:13px;border-radius:8px;
+  background:linear-gradient(180deg,rgba(255,242,216,.35),rgba(255,232,188,1) 26%,rgba(255,245,224,1) 68%,rgba(255,236,198,.55));
+  box-shadow:0 0 50px 16px rgba(255,214,150,.6),0 0 130px 60px rgba(255,198,128,.32),0 0 240px 130px rgba(255,186,116,.16)}
+/* 틈 오른쪽으로 번지는 빛(문 안쪽 면에 닿는 반사광) */
+.afd-door{position:absolute;top:5%;bottom:0;left:calc(53% + 13px);width:26%;
+  background:linear-gradient(90deg,rgba(255,224,176,.55),rgba(255,214,150,0));
+  filter:blur(3px)}
+@media(max-width:600px){.af-door .afd{width:62vw}}
+/* 문 빛과 겹쳐도 글자가 또렷하게 */
+.about-cta-sec .about-final .title{text-shadow:0 2px 20px rgba(4,10,30,.6)}
+.about-cta-sec .about-final p{text-shadow:0 1px 14px rgba(4,10,30,.7)}
 .about-final p{color:var(--muted);font-size:clamp(14.5px,1.8vw,16.5px);margin:14px auto 0;max-width:520px}
 .af-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 
