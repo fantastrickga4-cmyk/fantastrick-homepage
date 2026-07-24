@@ -2,6 +2,11 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-25 — 문장 속 대시(—) 제거 + 소개 마무리 CTA 문 배너 이미지
+- **문장 속 "—" 전부 제거**(화면에 렌더되는 본문만; 시간범위 `11:00–23:30`·전화번호·탭 제목 구분자·리뷰 평점 자리표시 "—"는 문장이 아니라 유지). 대상: 소개(브랜드스토리·철학·마스코트), 이벤트 요약, FAQ(이름·값→`·`), 홈(매장 리드·지도 alt), 비즈니스, 예약 안내, `data.ts` 테마 부제(→괄호), `theme-content.ts`(SYSTEM ONLINE·머더룸 안내).
+- **소개 마무리 CTA("문을 열 준비가 되셨나요?")** 배경을 저퀄 CSS 문 → **웅장한 문 배너 이미지로 교체**(`public/images/about-door.jpg`). 무료 이미지 생성(Pollinations.ai Flux, 비용 0)으로 딥블루 톤 시네마틱 사원 문 생성. 직사각형을 불투명 cover로 채우고 어두운 스크림+글자 그림자로 가독성 확보. 기존 `.afd-*` CSS 제거.
+- 파일: `src/app/about/page.tsx`, `src/app/events/page.tsx`, `src/app/faq/page.tsx`, `src/app/page.tsx`, `src/app/business/page.tsx`, `src/app/reserve/ReserveClient.tsx`, `src/lib/data.ts`, `src/lib/theme-content.ts`, `src/app/globals.css`, `public/images/about-door.jpg`.
+
 ## 2026-07-25 — FAQ 정비 (지시서)
 - 자주 묻는 질문(/faq): ① "예약 확인·변경" 답변을 **"예약 조회에서 1회 직접 변경 가능, 1회 초과 시 매장 전화"**로 수정(실제 예약변경 모달 지원 반영) ② "늦으면?" 답변 문장 줄바꿈 ③ "몇 명까지?"에 맨 아래 작은 글씨로 **"1인 이용 시 2인 가격 결제 후 플레이 가능"** 추가 ④ 주차 안내는 공통 `BOOKING_INFO.parking` 사용이라 언구비공영주차장 자동 반영.
 - 파일: `src/app/faq/page.tsx`.

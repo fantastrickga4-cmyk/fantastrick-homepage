@@ -35,7 +35,7 @@ export const STORES: Store[] = [
     addr: "강남대로79길 39, B1",
     phone: "010-4547-0481",
     hours: "평일 11:00–23:30 · 주말 09:00–23:30 · 연중무휴",
-    themes: "태초의 신부 — 이브 프로젝트",
+    themes: "태초의 신부 (이브 프로젝트)",
   },
   {
     id: "s2",
@@ -44,7 +44,7 @@ export const STORES: Store[] = [
     addr: "사평대로 353, B1",
     phone: "010-4995-0482",
     hours: "금·토·일 11:00–23:30 · 월~목 부분운영 / 주말 무휴",
-    themes: "사자의 서 — Book of Duat",
+    themes: "사자의 서 (Book of Duat)",
   },
   {
     id: "s3",

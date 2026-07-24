@@ -138,7 +138,7 @@ export default function EventsPage() {
                 <span className="ev-tag">#옵저버제도</span>
                 <StatusBadge schedule={{ type: "always" }} />
               </div>
-              <p className="ev-summary">테마별 옵저버 혜택 — 카드를 넘겨 확인하세요</p>
+              <p className="ev-summary">테마별 옵저버 혜택을 카드로 넘겨 확인하세요</p>
               <span className="ev-more">자세히 보기 →</span>
             </div>
           </button>

@@ -65,7 +65,7 @@ export default function AboutPage() {
             <p>아무리 근사한 상상도, 눈앞에 실제로 펼쳐지지 않으면 이야기로 끝납니다.</p>
             <p>
               판타스트릭은 그 사이를 잇는 브랜드입니다.<br />
-              머릿속의 판타지를 정교한 트릭 — 공간, 장치, 연출 — 으로 구현해,<br />
+              머릿속의 판타지를 정교한 트릭(공간·장치·연출)으로 구현해,<br />
               손님이 &lsquo;보는 이야기&rsquo;가 아닌 &lsquo;직접 경험하는 이야기&rsquo;로 만듭니다.
             </p>
             <p className="as-punch">문을 열면, 상상은 더 이상 상상이 아닙니다.</p>
@@ -82,7 +82,7 @@ export default function AboutPage() {
             우리의 기준은 단 하나입니다. &ldquo;이 공간이 진짜처럼 느껴지는가.&rdquo;
           </p>
           <p>
-            벽 하나, 조명 하나, 손끝에 닿는 장치 하나까지 — 몰입을 깨는 요소는 남기지 않습니다.
+            벽 하나, 조명 하나, 손끝에 닿는 장치 하나까지 몰입을 깨는 요소는 남기지 않습니다.
           </p>
           <p>
             화려함이 아니라 완결된 세계를 짓는 것. 그래서 판타스트릭의 테마는, 나온 뒤에도 여운이 남습니다.
@@ -200,31 +200,27 @@ export default function AboutPage() {
           </div>
           <div className="about-mascot reveal">
             <figure className="am-fig am-fanta">
-              <Image src="/images/mascot-fanta.png" alt="판타 — 상상을 담은 흰 판다 마스코트" width={697} height={900} sizes="(max-width:600px) 42vw, 280px" />
+              <Image src="/images/mascot-fanta.png" alt="판타, 상상을 담은 흰 판다 마스코트" width={697} height={900} sizes="(max-width:600px) 42vw, 280px" />
               <figcaption>판타 · Fantasy</figcaption>
             </figure>
             <p className="am-text">
               상상을 담은 <b className="am-b-blue">판타</b>(흰 판다)와<br />
               장치를 다루는 <b className="am-b-red">트리키</b>(레서판다).<br />
-              두 마스코트는 판타스트릭의 두 얼굴 —<br />
+              두 마스코트는 판타스트릭의 두 얼굴,<br />
               Fantasy와 Trick을 그대로 대표합니다.
             </p>
             <figure className="am-fig am-tricky">
-              <Image src="/images/mascot-tricky.png" alt="트리키 — 장치를 다루는 빨간 레서판다 마스코트" width={657} height={877} sizes="(max-width:600px) 42vw, 280px" />
+              <Image src="/images/mascot-tricky.png" alt="트리키, 장치를 다루는 빨간 레서판다 마스코트" width={657} height={877} sizes="(max-width:600px) 42vw, 280px" />
               <figcaption>트리키 · Trick</figcaption>
             </figure>
           </div>
         </div>
       </section>
 
-      {/* 마무리 CTA — 배경에 '살짝 열린 문'(빛이 새어나오는) 연출 */}
+      {/* 마무리 CTA — 배경에 '웅장한 문' 배너 이미지(불투명) + 가독성 스크림 */}
       <section className="block alt about-cta-sec">
         <div className="af-door" aria-hidden="true">
-          <div className="afd">
-            <div className="afd-frame" />
-            <div className="afd-open" />
-            <div className="afd-door" />
-          </div>
+          <Image src="/images/about-door.jpg" alt="" fill sizes="100vw" className="af-door-img" />
         </div>
         <div className="wrap about-final reveal">
           <h2 className="title">문을 열 준비가 되셨나요?</h2>

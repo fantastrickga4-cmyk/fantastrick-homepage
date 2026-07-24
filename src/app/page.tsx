@@ -194,7 +194,7 @@ function ThemeCarousel({ themes, soon }: { themes: Theme[]; soon: Theme[] }) {
 function SoonRailCard({ t, no }: { t: Theme; no: number }) {
   return (
     <div className="tcard soon" data-cat={t.cat}>
-      <div className="thumb" role="img" aria-label={`${t.name} — 준비중`}>
+      <div className="thumb" role="img" aria-label={`${t.name} 준비중`}>
         <span className="tcase">TITLE {String(no).padStart(2, "0")}</span>
         <span className="tsoon">COMING SOON</span>
         <div className="tt">
@@ -389,7 +389,7 @@ export default function Home() {
         <div className="wrap">
           <div className="shead reveal">
             <h2 className="title">오시는 길 · Location</h2>
-            <p className="lead">강남역·신논현역 사이 — 세 매장 모두 걸어서 오갈 수 있습니다.</p>
+            <p className="lead">강남역·신논현역 사이, 세 매장 모두 걸어서 오갈 수 있습니다.</p>
           </div>
           <div className="stores-layout reveal rv-right">
             <div className="stores-left">
@@ -412,7 +412,7 @@ export default function Home() {
               <Image
                 className="store-map-img"
                 src="/images/stores-map.png"
-                alt="판타스트릭 매장 위치 지도 — TGC·1호점·2호점"
+                alt="판타스트릭 매장 위치 지도 (TGC·1호점·2호점)"
                 fill
                 sizes="(max-width:760px) 100vw, 620px"
               />

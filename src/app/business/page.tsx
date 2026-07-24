@@ -28,7 +28,7 @@ export default function BusinessPage() {
           <h1>11년의 이머시브 노하우를,<br /><span className="accent">당신의 프로젝트에</span></h1>
           <p className="sub">
             직영 매장 3곳을 직접 기획·시공·운영하며 쌓은 콘텐츠·공간·장치 역량을 외부 프로젝트에 제공합니다.
-            체험형 콘텐츠, 브랜드 공간, 이머시브 장치 — 처음부터 끝까지 함께합니다.
+            체험형 콘텐츠, 브랜드 공간, 이머시브 장치까지 처음부터 끝까지 함께합니다.
           </p>
           <div className="cta">
             <a href="#contact" className="btn gold">프로젝트 문의하기 →</a>
@@ -127,7 +127,7 @@ export default function BusinessPage() {
           <div className="cinfo reveal">
             <div className="eyebrow gold">CONTACT · 문의</div>
             <h2 className="title">프로젝트를 알려주세요</h2>
-            <p className="lead">창업, 테마 리뉴얼, 브랜드 전시, 장치 도입 — 무엇이든 상담해 드립니다.</p>
+            <p className="lead">창업, 테마 리뉴얼, 브랜드 전시, 장치 도입까지 무엇이든 상담해 드립니다.</p>
             <div style={{ marginTop: 18 }}>
               <div className="line"><span>이메일</span><b>fantastrick@fantastrick.co.kr</b></div>
               <div className="line"><span>대상</span><b>방탈출·체험형 매장, 브랜드/전시, 장치 도입처</b></div>

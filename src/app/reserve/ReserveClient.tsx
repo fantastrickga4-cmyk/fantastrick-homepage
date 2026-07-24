@@ -376,7 +376,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
           {!slotsLoading && cfgLoaded && !(dayClosed || noSlotsDay) && (
             <div className="hint">
               ※ <IconBan /> 표시는 마감(예약 불가)된 시간입니다.
-              {leadMin > 0 && <> <IconClock /> 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요 — 매장으로 전화 주시면 도와드립니다.</>}
+              {leadMin > 0 && <> <IconClock /> 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요. 매장으로 전화 주시면 도와드립니다.</>}
             </div>
           )}
           {!slotsLoading && cfgLoaded && !time && !(dayClosed || noSlotsDay) && (

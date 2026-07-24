@@ -61,7 +61,7 @@ export default async function FaqPage() {
           <ul>
             {THEMES.map((t) => (
               <li key={t.id}>
-                <b>{t.name}</b> — 예약금 {won(depositOf(cfg, t.id, t.deposit))}
+                <b>{t.name}</b> · 예약금 {won(depositOf(cfg, t.id, t.deposit))}
                 {THEME_CONTENT[t.id]?.pricing.kind === "fixed" && t.id === "time" ? " (이 금액이 전부, 매장 결제 없음)" : ""}
               </li>
             ))}
@@ -132,7 +132,7 @@ export default async function FaqPage() {
         <div className="faq-b">
           <ul>
             {THEMES.map((t) => (
-              <li key={t.id}><b>{t.name}</b> — {THEME_CONTENT[t.id]?.players}</li>
+              <li key={t.id}><b>{t.name}</b> · {THEME_CONTENT[t.id]?.players}</li>
             ))}
           </ul>
           <p className="faq-note">테마마다 추천 인원이 달라요. 각 <Link href="/rooms/bookofduat" className="tlink">테마 페이지</Link>의 주의사항을 확인해 주세요.</p>
@@ -176,9 +176,9 @@ export default async function FaqPage() {
           <p><b>{BOOKING_INFO.subway}</b></p>
           <p>매장이 <b>세 곳</b>이고 테마마다 위치가 다릅니다. 예약하신 테마의 매장을 꼭 확인해 주세요.</p>
           <ul>
-            <li><b>1호점</b> 강남대로79길 39, B1 — 태초의 신부</li>
-            <li><b>2호점</b> 사평대로 353, B1 — 사자의 서</li>
-            <li><b>3호점 TGC</b> 강남대로83길 34, B1 — 락다운시티 · 시간의 영속성</li>
+            <li><b>1호점</b> 강남대로79길 39, B1 · 태초의 신부</li>
+            <li><b>2호점</b> 사평대로 353, B1 · 사자의 서</li>
+            <li><b>3호점 TGC</b> 강남대로83길 34, B1 · 락다운시티 · 시간의 영속성</li>
           </ul>
         </div>
       </details>

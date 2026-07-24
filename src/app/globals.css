@@ -1440,28 +1440,18 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 /* 마무리 CTA */
 .about-final{max-width:640px;margin:0 auto;text-align:center}
 .af-star{font-size:30px;color:var(--brand);display:flex;justify-content:center}
-/* 마무리 CTA 배경 — 살짝 열린 문틈으로 따뜻한 빛이 새어나오는 연출(CSS로만, 이미지·저작권 없이) */
-.about-cta-sec{position:relative;overflow:hidden}
-.about-cta-sec .wrap{position:relative;z-index:1}
-.af-door{position:absolute;inset:0;z-index:0;display:grid;place-items:center;pointer-events:none}
-.af-door .afd{position:relative;width:min(46vw,300px);aspect-ratio:5/7}
-/* 어두운 아치형 문짝 */
-.afd-frame{position:absolute;inset:0;border-radius:150px 150px 0 0;
-  background:linear-gradient(180deg,#0b1226,#05091a);
-  border:2px solid rgba(160,190,255,.15);border-bottom:0;
-  box-shadow:inset 0 0 70px rgba(0,0,0,.5)}
-/* 살짝 열린 틈으로 새어나오는 따뜻한 빛(세로 슬리버 + 번지는 글로우) */
-.afd-open{position:absolute;top:7%;bottom:0;left:53%;width:13px;border-radius:8px;
-  background:linear-gradient(180deg,rgba(255,242,216,.35),rgba(255,232,188,1) 26%,rgba(255,245,224,1) 68%,rgba(255,236,198,.55));
-  box-shadow:0 0 50px 16px rgba(255,214,150,.6),0 0 130px 60px rgba(255,198,128,.32),0 0 240px 130px rgba(255,186,116,.16)}
-/* 틈 오른쪽으로 번지는 빛(문 안쪽 면에 닿는 반사광) */
-.afd-door{position:absolute;top:5%;bottom:0;left:calc(53% + 13px);width:26%;
-  background:linear-gradient(90deg,rgba(255,224,176,.55),rgba(255,214,150,0));
-  filter:blur(3px)}
-@media(max-width:600px){.af-door .afd{width:62vw}}
-/* 문 빛과 겹쳐도 글자가 또렷하게 */
-.about-cta-sec .about-final .title{text-shadow:0 2px 20px rgba(4,10,30,.6)}
-.about-cta-sec .about-final p{text-shadow:0 1px 14px rgba(4,10,30,.7)}
+/* 마무리 CTA 배경 — 웅장한 문 배너 이미지(불투명)로 직사각형을 꽉 채우고, 글자 가독성 스크림을 얹음 */
+.about-cta-sec{position:relative;overflow:hidden;isolation:isolate}
+.about-cta-sec .wrap{position:relative;z-index:2}
+.af-door{position:absolute;inset:0;z-index:0;pointer-events:none}
+.af-door-img{object-fit:cover;object-position:center 42%}
+/* 이미지 위 어두운 스크림 — 가운데 황금빛 위에서도 흰 글자가 또렷하게 */
+.af-door::after{content:"";position:absolute;inset:0;z-index:1;
+  background:radial-gradient(130% 100% at 50% 52%,rgba(4,11,32,.34),rgba(4,11,32,.72) 74%),
+            linear-gradient(180deg,rgba(4,11,32,.58),rgba(4,11,32,.32) 42%,rgba(4,11,32,.78))}
+/* 배너 위 글자 그림자로 가독성 한 번 더 */
+.about-cta-sec .about-final .title{text-shadow:0 2px 22px rgba(2,6,20,.75)}
+.about-cta-sec .about-final p{text-shadow:0 1px 16px rgba(2,6,20,.85)}
 .about-final p{color:var(--muted);font-size:clamp(14.5px,1.8vw,16.5px);margin:14px auto 0;max-width:520px}
 .af-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 
