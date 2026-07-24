@@ -378,7 +378,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* ---------- generic section spacing ---------- */
 /* 섹션 구분(2026-07-23): 모든 섹션 상단에 얇은 구분선 + alt는 '녹지 않는' 플랫 틴트.
    예전 .alt 그라디언트는 아래로 갈수록 페이지 배경(--bg)과 같은 색이 돼 이음매 단차가 0이었다(경계 모호). */
-.block{padding:96px 0;border-top:1px solid var(--line)}
+.block{padding:96px 0;border-top:1px solid var(--line);isolation:isolate}
 .block.alt{background:#e8ecf2}
 
 /* ============================================================
@@ -432,6 +432,15 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .site-dark .biz-cta{border-color:rgba(196,180,255,.3);background:rgba(196,180,255,.06)}
 /* 로딩 안내(notice) 다크 */
 .site-dark .notice.info{background:rgba(143,178,255,.1);border-color:rgba(143,178,255,.3);color:#cfe0ff}
+/* --- 섹션 경계 흐르는 빛줄기(FlowLines, cantor8 참고) --- */
+/* 섹션 위쪽에 걸쳐(top:-108px) 회로 트레이스 라인 + 흐르는 빛 펄스. 콘텐츠(z:1+)보다 뒤. */
+.flowlines{position:absolute;left:0;right:0;top:-108px;width:100%;height:216px;z-index:-1;pointer-events:none;overflow:visible}
+.flowlines .fl-base{fill:none;stroke-width:1;opacity:.55}
+.flowlines .fl-pulse{fill:none;stroke:#dbe9ff;stroke-width:1.6;stroke-linecap:round;
+  stroke-dasharray:26 1000;stroke-dashoffset:0;filter:drop-shadow(0 0 5px rgba(150,195,255,.9));
+  animation-name:flPulse;animation-timing-function:linear;animation-iteration-count:infinite}
+@keyframes flPulse{from{stroke-dashoffset:0}to{stroke-dashoffset:-1026}}
+@media(prefers-reduced-motion:reduce){.flowlines .fl-pulse{animation:none;opacity:0}}
 /* --- 커스텀 히어로들도 다크로(각 페이지 상단이 밝게 남지 않게) --- */
 /* 소개(/about) */
 .site-dark .about-hero{background:linear-gradient(180deg,#062a80,#04236c)}

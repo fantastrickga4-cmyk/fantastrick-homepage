@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { STORES, THEMES, SOON_THEMES, type Theme } from "@/lib/data";
 import { IconStar } from "@/components/Icon";
 import HeroWeb from "@/components/HeroWeb";
+import FlowLines from "@/components/FlowLines";
 
 // 홈 노출용 후기 타입 (승인된 실제 후기를 API에서 가져옴)
 type HomeReview = {
@@ -296,6 +297,7 @@ export default function Home() {
 
       {/* 인터랙티브 콘텐츠 */}
       <section className="block alt" id="themes">
+        <FlowLines />
         <div className="wrap">
           <div className="shead reveal">
             <h2 className="title">테마 · Themes</h2>
@@ -307,6 +309,7 @@ export default function Home() {
 
       {/* REVIEWS — 별점 요약 + 대표 후기 발췌 */}
       <section className="block" id="reviews">
+        <FlowLines flip />
         <div className="wrap">
           <div className="shead reveal">
             <h2 className="title">후기 · Reviews</h2>
@@ -359,6 +362,7 @@ export default function Home() {
 
       {/* BUSINESS / B2B */}
       <section className="block biz" id="business">
+        <FlowLines />
         <div className="wrap">
           <div className="biz-head reveal">
             <div>
@@ -383,6 +387,7 @@ export default function Home() {
 
       {/* STORES (오시는 길) — 마지막 */}
       <section className="block alt" id="stores">
+        <FlowLines flip />
         <div className="wrap">
           <div className="shead reveal">
             <h2 className="title">오시는 길 · Location</h2>
