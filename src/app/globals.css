@@ -141,7 +141,8 @@ h1.title,h2.title{font-family:var(--font-display);font-size:var(--fs-2xl);font-w
 /* ---------- HEADER ---------- */
 header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.25s}
 .hdr-in{max-width:var(--maxw);margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:18px}
-header.scrolled{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+/* 저사양 스크롤 최적화: backdrop-filter(스크롤마다 블러 리페인트) 제거 → 불투명 배경으로 대체 */
+header.scrolled{background:rgba(255,255,255,.96);border-bottom:1px solid var(--line)}
 header.scrolled .hdr-in{padding:11px 22px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.04em;font-size:17px}
 .brand .logo-img{height:26px;width:auto;display:block}
@@ -189,7 +190,8 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .drawer-cta .btn{width:100%}
 
 /* ---------- 전역 필름 그레인 오버레이(1장) ---------- */
-.grain{position:fixed;inset:0;z-index:400;pointer-events:none;opacity:.025;mix-blend-mode:multiply;
+/* mix-blend-mode 제거(고정 오버레이가 스크롤마다 재합성돼 무거움). 매우 옅어(.02) 블렌드 없어도 티 안 남 */
+.grain{position:fixed;inset:0;z-index:400;pointer-events:none;opacity:.02;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:180px 180px}
 
@@ -360,7 +362,9 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 @keyframes htGlint{0%{opacity:1;background-position:88% 0}90%{opacity:1;background-position:-32% 0}100%{opacity:0;background-position:-38% 0}}
 @keyframes htRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes htGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(130,175,255,0))}50%{filter:drop-shadow(0 0 22px rgba(130,175,255,.32))}}
-.hero-t .ht-stack{max-width:100%}
+/* width:100% 고정 — 워드마크(+·Y 의 max-width 애니메이션)로 폭이 매 프레임 바뀌어도
+   stack 폭은 그대로라, 그 안에 중앙정렬된 슬로건이 좌우로 밀리지(흔들리지) 않는다. */
+.hero-t .ht-stack{width:100%;max-width:100%}
 /* 모바일: 워드마크가 넘치지 않게 축소(넘치면 stack이 넓어져 버튼도 안 감쌈) */
 @media (max-width:600px){
   .hero-t .ht-wm{font-size:clamp(22px,7.4vw,34px);letter-spacing:.02em}
@@ -415,7 +419,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   radial-gradient(720px 420px at 10% 100%,rgba(120,170,255,.13),transparent 62%)}
 /* 큰 좌측정렬 제목 — 크고 자신 있게 + 여백 */
 .site-dark .shead{margin-bottom:52px}
-.site-dark .shead h2.title{font-size:clamp(30px,4.6vw,56px);line-height:1.08}
+.site-dark .shead h2.title,.site-dark .biz-head h2.title{font-size:clamp(30px,4.6vw,56px);line-height:1.08}
 .site-dark .shead .lead{font-size:clamp(15px,1.5vw,18px);margin-top:14px}
 .site-dark .shead::before{background:linear-gradient(90deg,#9cc2ff,#6ea8ff)}
 /* 매장·후기 카드 = 유리(글라스) 패널 */
@@ -438,7 +442,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .cflow{position:absolute;left:0;right:0;top:-160px;width:100%;height:500px;z-index:-1;pointer-events:none;overflow:visible;opacity:.72}
 .cflow .cf-rail{fill:none;stroke-width:1.2;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .cflow .cf-pulse{fill:none;stroke:#eaf3ff;stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke;
-  filter:drop-shadow(0 0 5px #8fb6ff) drop-shadow(0 0 2px rgba(234,243,255,.9))}
+  filter:drop-shadow(0 0 5px #8fb6ff)} /* 저사양: 글로우 단일화(스크롤마다 리페인트 부담↓) */
 /* 모바일: 세로 트레이스로 전환(컴포넌트가 .m 부여). 높이=viewBox(760)와 1:1이라 안 뭉개짐. */
 .cflow.m{top:-180px;height:760px;opacity:.7}
 .cflow.m .cf-pulse{stroke-width:2.8}
@@ -492,11 +496,12 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* 등장 연출 — 화면에 들어오면 .in 이 붙는다(page.tsx IntersectionObserver).
    ⚠️ 이 방식은 스크롤 연동 CSS와 달리 모든 브라우저에서 동작하므로, 등장 연출은 계속 이걸 쓴다.
    기본은 '아래서 위로'. 섹션마다 결을 달리하려고 변주를 둠 — 한 페이지에서 전부 같은 방향이면 리듬이 없다. */
-.js .reveal{opacity:0;transform:translateY(28px);filter:blur(5px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1),filter .8s ease;transition-delay:calc(var(--i,0)*.1s)}
-.js .reveal.in{opacity:1;transform:none;filter:blur(0)}
-/* 흐림에서 또렷하게 — 초점이 맞는 느낌. 포스터·지도처럼 '보는' 것에 */
-.js .reveal.rv-focus{transform:scale(.965);filter:blur(7px)}
-.js .reveal.rv-focus.in{transform:none;filter:blur(0)}
+/* 저사양 최적화: filter:blur 제거(스크롤 중 GPU 무거움) → translate·opacity·scale 만(충분히 우아) */
+.js .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*.1s)}
+.js .reveal.in{opacity:1;transform:none}
+/* 살짝 확대에서 제자리 — 포스터·지도처럼 '보는' 것에 */
+.js .reveal.rv-focus{transform:scale(.965)}
+.js .reveal.rv-focus.in{transform:none}
 /* 좌우에서 — 가로로 긴 것에. 좌·우를 번갈아 쓰면 리듬이 생긴다 */
 .js .reveal.rv-left{transform:translateX(-34px)}
 .js .reveal.rv-right{transform:translateX(34px)}
@@ -601,7 +606,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 /* TITLE 넘버 */
 .tcard .tcase{position:absolute;top:12px;left:14px;z-index:3;font-size:11px;letter-spacing:.14em;font-weight:600;color:rgba(255,255,255,.62);font-feature-settings:"tnum";transition:color .3s}
 .tcard:hover .tcase{color:#fff}
-.tcard .tmurder{position:absolute;top:11px;right:11px;z-index:3;font-size:10.5px;font-weight:700;color:#ffd7da;background:rgba(178,14,25,.72);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
+.tcard .tmurder{position:absolute;top:11px;right:11px;z-index:3;font-size:10.5px;font-weight:700;color:#ffd7da;background:rgba(178,14,25,.72);padding:3px 8px;border-radius:6px}
 /* 하단: 이름(세리프) 기본 노출, 매장·메타는 호버 슬라이드업 */
 .tcard .tt{position:absolute;left:15px;right:15px;bottom:14px;z-index:3}
 /* ⚠️ 클래스 이름은 .tstore — 매장 섹션의 .store(흰 박스 카드)와 이름이 겹쳐서,
@@ -625,7 +630,7 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .tcard.soon .tt .tstore,.tcard.soon .tt .tmeta{opacity:1;transform:none}
 .tcard.soon .tt h3{color:#fff}
 .tsoon{position:absolute;top:11px;right:11px;z-index:3;font-size:10px;font-weight:800;letter-spacing:.1em;
-  color:#fff;background:rgba(47,111,224,.85);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px}
+  color:#fff;background:rgba(47,111,224,.85);padding:3px 8px;border-radius:6px}
 .diff{display:inline-flex;gap:2px;vertical-align:-1px}
 .diff .lock{width:11px;height:12px;display:inline-block;color:var(--faint);background:currentColor;
   -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/></svg>") center/contain no-repeat;
@@ -653,9 +658,9 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .stores-left{display:flex;flex-direction:column;gap:14px}
 .stores-right{display:block;position:relative;align-self:start;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);transition:.2s;aspect-ratio:1592/1231}
 .stores-right:hover{border-color:rgba(59,123,240,.5)}
-.stores-right::after{content:"지도 크게 보기 ↗";position:absolute;right:12px;bottom:12px;z-index:3;font-size:11.5px;font-weight:700;color:#fff;background:rgba(9,10,21,.78);backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 11px;opacity:.85;transition:.2s}
+.stores-right::after{content:"지도 크게 보기 ↗";position:absolute;right:12px;bottom:12px;z-index:3;font-size:11.5px;font-weight:700;color:#fff;background:rgba(9,10,21,.78);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 11px;opacity:.85;transition:.2s}
 .stores-right:hover::after{opacity:1}
-.stores-right .map-cap{position:absolute;left:12px;bottom:12px;z-index:3;font-size:11.5px;font-weight:700;color:#fff;background:rgba(47,111,224,.82);backdrop-filter:blur(4px);border-radius:var(--r-sm);padding:6px 11px}
+.stores-right .map-cap{position:absolute;left:12px;bottom:12px;z-index:3;font-size:11.5px;font-weight:700;color:#fff;background:rgba(47,111,224,.82);border-radius:var(--r-sm);padding:6px 11px}
 .store-map-img{object-fit:cover}
 
 /* ---------- 홈 리뷰/평점 섹션 ---------- */
@@ -718,6 +723,77 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .reserve h2{font-family:var(--font-display);font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-.005em;margin:0 0 10px}
 .reserve p{color:var(--muted);margin:0 0 26px}
 
+/* ---------- 이벤트 게시판 (인스타 포토카드) ---------- */
+.ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+@media(max-width:560px){.ev-grid{grid-template-columns:1fr 1fr;gap:12px}}
+.ev-card{display:flex;flex-direction:column;text-align:left;border:1px solid var(--line);border-radius:var(--r-lg);
+  overflow:hidden;background:var(--surface);cursor:pointer;transition:transform .22s,border-color .22s,box-shadow .22s;font-family:inherit;padding:0}
+.ev-card:hover{transform:translateY(-4px);border-color:rgba(143,178,255,.5);box-shadow:0 18px 44px rgba(4,20,60,.4)}
+.ev-thumb{position:relative;aspect-ratio:1/1;overflow:hidden;display:grid;place-items:end center}
+.ev-thumb.ev-blue{background:radial-gradient(120% 100% at 50% 0%,#1e5bd6,#0a3aa0 68%,#052680)}
+.ev-thumb.ev-coral{background:radial-gradient(120% 100% at 50% 0%,#c9503f,#9e2f27 60%,#6a1f1a)}
+.ev-thumb .ev-masc{width:72%;height:auto;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.4));z-index:1}
+.ev-badge{position:absolute;top:12px;left:12px;z-index:3;font-size:11px;font-weight:800;color:#fff;
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.4);padding:4px 10px;border-radius:999px}
+.ev-sub{position:absolute;top:15px;right:14px;z-index:3;font-size:9.5px;font-weight:700;letter-spacing:.22em;color:rgba(255,255,255,.6)}
+.ev-thumb-title{position:absolute;left:16px;bottom:14px;z-index:2;font-family:var(--font-display);font-weight:800;
+  font-size:clamp(20px,2.6vw,28px);color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.ev-cap{padding:14px 16px 16px}
+.ev-tag{font-size:12px;font-weight:700;color:var(--cyan)}
+.ev-summary{margin:7px 0 10px;font-size:13.5px;color:var(--muted);line-height:1.55}
+.ev-more{font-size:12.5px;font-weight:700;color:var(--brand-bright)}
+/* 상세 모달 */
+.ev-modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,12,32,.72);display:grid;place-items:center;padding:18px;animation:evFade .2s ease}
+@keyframes evFade{from{opacity:0}to{opacity:1}}
+.ev-modal{position:relative;width:min(560px,100%);max-height:90vh;overflow-y:auto;background:#0a1c44;
+  border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.ev-modal-x{position:absolute;top:12px;right:12px;z-index:5;width:38px;height:38px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.32);color:#fff;font-size:15px;cursor:pointer;line-height:1}
+.ev-modal-head{position:relative;display:flex;align-items:flex-end;gap:16px;padding:24px 22px 18px;overflow:hidden}
+.ev-modal-head.ev-blue{background:radial-gradient(120% 120% at 28% 0%,#1e5bd6,#0a3aa0 68%,#062680)}
+.ev-modal-head.ev-coral{background:radial-gradient(120% 120% at 28% 0%,#c9503f,#9e2f27 60%,#3a1512)}
+.ev-modal-head .ev-masc{width:118px;height:auto;flex:0 0 auto;filter:drop-shadow(0 8px 20px rgba(0,0,0,.4))}
+.ev-modal-head .ev-badge{position:static;margin-bottom:8px}
+.ev-modal-titles{display:flex;flex-direction:column;gap:4px;padding-bottom:6px}
+.ev-modal-titles .ev-sub{position:static;color:rgba(255,255,255,.65)}
+.ev-modal-titles h2{margin:0;font-family:var(--font-display);font-weight:800;font-size:26px;color:#fff;line-height:1.1}
+.ev-modal-body{padding:20px 22px 24px}
+.ev-modal-lead{font-size:15px;font-weight:700;color:var(--text);margin:0 0 16px;line-height:1.55}
+.ev-sec{margin-bottom:16px}
+.ev-sec h3{margin:0 0 8px;font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--cyan)}
+.ev-sec ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.ev-sec li{font-size:14px;color:var(--muted);line-height:1.6}
+.ev-modal-cta{margin-top:20px}
+.ev-modal-cta .btn{width:100%}
+/* 테마별 옵저버 포토카드 — 포스터 이미지 썸네일 */
+.ev-poster{object-fit:cover}
+.ev-thumb .ev-poster{z-index:0}
+.ev-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(4,12,32,0) 42%,rgba(4,12,32,.55) 72%,rgba(4,12,32,.92))}
+.ev-thumb-store{position:absolute;right:12px;bottom:14px;z-index:2;font-size:11px;font-weight:700;color:rgba(255,255,255,.82)}
+/* 라이트박스 넘김 화살표 */
+.ev-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:305;width:52px;height:52px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.28);background:rgba(10,28,68,.55);color:#fff;font-size:30px;line-height:1;
+  display:grid;place-items:center;cursor:pointer;transition:background .18s,transform .18s;backdrop-filter:blur(4px)}
+.ev-nav:hover{background:rgba(30,91,214,.75)}
+.ev-nav.prev{left:max(14px,calc(50vw - 360px))}
+.ev-nav.next{right:max(14px,calc(50vw - 360px))}
+@media(max-width:720px){.ev-modal{width:calc(100% - 92px)}.ev-nav{width:38px;height:38px;font-size:22px}.ev-nav.prev{left:6px}.ev-nav.next{right:6px}}
+/* 포스터형 모달 헤더 */
+.ev-poster-head{height:230px;padding:0;align-items:stretch}
+.ev-poster-head .ev-poster{z-index:0}
+.ev-poster-overlay{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
+  gap:8px;padding:20px 22px;background:linear-gradient(180deg,rgba(4,12,32,.15) 30%,rgba(4,12,32,.9))}
+.ev-poster-overlay .ev-badge{position:static;align-self:flex-start}
+.ev-poster-overlay h2{margin:0;font-family:var(--font-display);font-weight:800;font-size:28px;color:#fff;line-height:1.1}
+.ev-modal-count{margin-top:12px;text-align:center;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--faint)}
+/* 옵저버 카드 썸네일 — 테마 4장 콜라주(2x2) */
+.ev-collage-grid{position:absolute;inset:0;z-index:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px}
+.ev-cell{position:relative;overflow:hidden}
+/* 팝업 안 점(도트) 인디케이터 */
+.ev-dots{margin-top:18px;display:flex;justify-content:center;gap:8px}
+.ev-dot{width:8px;height:8px;border-radius:50%;border:0;padding:0;cursor:pointer;background:rgba(143,178,255,.28);transition:background .18s,transform .18s}
+.ev-dot.on{background:var(--brand-bright);transform:scale(1.25)}
+
 /* ---------- FOOTER ---------- */
 footer{background:var(--bg2);border-top:1px solid var(--line);padding:54px 0 30px;font-size:13.5px;color:var(--muted)}
 /* 홈 전용 다크 푸터 — site-dark 하단(#041d57)에서 이어지는 딥블루. 토큰만 갈아 자동 다크화. */
@@ -740,7 +816,8 @@ footer ul li{padding:3px 0}
 
 /* floating reserve (mobile) */
 .float{position:fixed;right:16px;bottom:16px;z-index:120;display:none}
-@media(max-width:860px){.float{display:inline-flex}}
+/* 모바일: 하단 마스코트(판타·트리키)와 겹쳐 가려지므로 우측 상단(헤더 아래)으로 */
+@media(max-width:860px){.float{display:inline-flex;top:72px;bottom:auto;right:14px}}
 
 /* ---------- 폼 공통 (예약·리뷰) ---------- */
 .page-top{height:74px}
@@ -905,7 +982,7 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .formnote{font-size:11.5px;color:var(--muted);margin-top:10px}
 
 /* ---------- 모달(팝업) ---------- */
-.modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(20,22,42,.45);backdrop-filter:blur(4px);
+.modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(20,22,42,.45);
   display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{width:100%;max-width:440px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);
   box-shadow:var(--shadow);padding:24px;max-height:90vh;overflow:auto}

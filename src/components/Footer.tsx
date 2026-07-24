@@ -24,10 +24,11 @@ export default function Footer() {
           <div>
             <h5>바로가기</h5>
             <ul>
-              <li><Link href="/#themes">인터랙티브 콘텐츠</Link></li>
-              <li><Link href="/reviews">리뷰</Link></li>
-              <li><Link href="/business">비즈니스(B2B)</Link></li>
-              <li><Link href="/#stores">오시는 길</Link></li>
+              <li><Link href="/#themes">테마</Link></li>
+              <li><Link href="/#reviews">후기</Link></li>
+              <li><Link href="/events">이벤트</Link></li>
+              <li><Link href="/business">제작</Link></li>
+              <li><Link href="/#stores">오시는길</Link></li>
             </ul>
           </div>
           <div>
@@ -35,10 +36,6 @@ export default function Footer() {
             <ul>
               <li>예약 · <Link href="/reserve">홈페이지에서 예약</Link></li>
               <li>예약 조회·취소 · <Link href="/reservation">바로가기</Link></li>
-              <li>비즈니스 · <a href="mailto:fantastrick@fantastrick.co.kr">fantastrick@fantastrick.co.kr</a></li>
-              <li>1호점 · 강남대로79길 39, B1</li>
-              <li>2호점 · 사평대로 353, B1</li>
-              <li>TGC · 강남대로83길 34, B1</li>
             </ul>
           </div>
         </div>

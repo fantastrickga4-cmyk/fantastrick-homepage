@@ -79,6 +79,7 @@ export default function HeroWeb() {
     };
 
     let raf = 0;
+    let io: IntersectionObserver | null = null;
     if (reduce) {
       // 모션 최소화: 잔상 없이 정적 흐름 무늬 한 장만 만들어 둔다
       for (let k = 0; k < 90; k++) step(k * 0.04);
@@ -89,11 +90,17 @@ export default function HeroWeb() {
         step((now - start) / 1000);
         raf = requestAnimationFrame(loop);
       };
-      raf = requestAnimationFrame(loop);
+      const play = () => { if (!raf) raf = requestAnimationFrame(loop); };
+      const pause = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
+      // 히어로가 화면 밖으로 나가면 애니메이션 정지(스크롤 내렸을 때 CPU 낭비·끊김 방지)
+      io = new IntersectionObserver((es) => (es[0].isIntersecting ? play() : pause()), { threshold: 0 });
+      io.observe(canvas);
+      play();
     }
 
     return () => {
       cancelAnimationFrame(raf);
+      io?.disconnect();
       window.removeEventListener("resize", resize);
     };
   }, []);
