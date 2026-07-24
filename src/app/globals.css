@@ -1444,11 +1444,11 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .about-cta-sec{position:relative;overflow:hidden;isolation:isolate}
 .about-cta-sec .wrap{position:relative;z-index:2}
 .af-door{position:absolute;inset:0;z-index:0;pointer-events:none}
-.af-door-img{object-fit:cover;object-position:center 42%}
-/* 이미지 위 어두운 스크림 — 가운데 황금빛 위에서도 흰 글자가 또렷하게 */
+.af-door-img{object-fit:cover;object-position:center 48%}
+/* 이미지 위 어두운 스크림 — 흰 글자 가독성 + 배너 가장자리를 페이지 딥블루로 자연스럽게 */
 .af-door::after{content:"";position:absolute;inset:0;z-index:1;
-  background:radial-gradient(130% 100% at 50% 52%,rgba(4,11,32,.34),rgba(4,11,32,.72) 74%),
-            linear-gradient(180deg,rgba(4,11,32,.58),rgba(4,11,32,.32) 42%,rgba(4,11,32,.78))}
+  background:radial-gradient(135% 105% at 50% 50%,rgba(4,11,32,.26),rgba(4,11,32,.64) 76%),
+            linear-gradient(180deg,rgba(4,11,32,.5),rgba(4,11,32,.22) 42%,rgba(4,11,32,.68))}
 /* 배너 위 글자 그림자로 가독성 한 번 더 */
 .about-cta-sec .about-final .title{text-shadow:0 2px 22px rgba(2,6,20,.75)}
 .about-cta-sec .about-final p{text-shadow:0 1px 16px rgba(2,6,20,.85)}

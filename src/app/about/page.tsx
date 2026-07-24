@@ -220,7 +220,7 @@ export default function AboutPage() {
       {/* 마무리 CTA — 배경에 '웅장한 문' 배너 이미지(불투명) + 가독성 스크림 */}
       <section className="block alt about-cta-sec">
         <div className="af-door" aria-hidden="true">
-          <Image src="/images/about-door.jpg" alt="" fill sizes="100vw" className="af-door-img" />
+          <Image src="/images/about-door-v2.jpg" alt="" fill sizes="100vw" className="af-door-img" />
         </div>
         <div className="wrap about-final reveal">
           <h2 className="title">문을 열 준비가 되셨나요?</h2>
