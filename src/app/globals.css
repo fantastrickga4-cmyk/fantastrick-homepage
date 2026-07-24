@@ -432,15 +432,17 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .site-dark .biz-cta{border-color:rgba(196,180,255,.3);background:rgba(196,180,255,.06)}
 /* 로딩 안내(notice) 다크 */
 .site-dark .notice.info{background:rgba(143,178,255,.1);border-color:rgba(143,178,255,.3);color:#cfe0ff}
-/* --- 섹션 경계 흐르는 빛줄기(FlowLines, cantor8 참고) --- */
-/* 섹션 위쪽에 걸쳐(top:-108px) 회로 트레이스 라인 + 흐르는 빛 펄스. 콘텐츠(z:1+)보다 뒤. */
-.flowlines{position:absolute;left:0;right:0;top:-108px;width:100%;height:216px;z-index:-1;pointer-events:none;overflow:visible}
-.flowlines .fl-base{fill:none;stroke-width:1;opacity:.55}
-.flowlines .fl-pulse{fill:none;stroke:#dbe9ff;stroke-width:1.6;stroke-linecap:round;
-  stroke-dasharray:26 1000;stroke-dashoffset:0;filter:drop-shadow(0 0 5px rgba(150,195,255,.9));
-  animation-name:flPulse;animation-timing-function:linear;animation-iteration-count:infinite}
-@keyframes flPulse{from{stroke-dashoffset:0}to{stroke-dashoffset:-1026}}
-@media(prefers-reduced-motion:reduce){.flowlines .fl-pulse{animation:none;opacity:0}}
+/* --- 스크롤 반응형 세로 빛줄기 2개(ScrollBeams, cantor8 참고) --- */
+/* 화면 양쪽 고정 세로 라인. 스크롤할 때만 --op 로 나타나고 빛(i)이 스크롤 방향으로 이동. */
+.scrollbeams{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:var(--op,0);will-change:opacity}
+.scrollbeams .sb{position:absolute;top:0;bottom:0;width:1px;overflow:hidden;
+  background:linear-gradient(180deg,transparent,rgba(143,182,255,.16) 12%,rgba(143,182,255,.16) 88%,transparent)}
+.scrollbeams .sb-1{left:7.5%}
+.scrollbeams .sb-2{right:7.5%}
+.scrollbeams .sb i{position:absolute;left:-3px;top:0;width:7px;height:var(--len,300px);border-radius:6px;will-change:transform;
+  background:linear-gradient(180deg,transparent,#8fb6ff 20%,#f2f7ff 50%,#8fb6ff 80%,transparent);
+  filter:drop-shadow(0 0 14px rgba(150,195,255,1)) drop-shadow(0 0 3px rgba(235,243,255,.9))}
+@media(max-width:640px){.scrollbeams .sb-1{left:4%}.scrollbeams .sb-2{right:4%}}
 /* --- 커스텀 히어로들도 다크로(각 페이지 상단이 밝게 남지 않게) --- */
 /* 소개(/about) */
 .site-dark .about-hero{background:linear-gradient(180deg,#062a80,#04236c)}
