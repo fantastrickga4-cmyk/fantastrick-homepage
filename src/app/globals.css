@@ -225,10 +225,9 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   background-size:22px 22px;
   -webkit-mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%);
           mask-image:radial-gradient(70% 66% at 50% 46%,#000 22%,transparent 100%)}
-/* 성좌 단서망(3D) — cantor8 네트워크 그래픽의 방탈출 번안. canvas 로 3D 구를 원근투영해 그린다
-   (HeroWeb.tsx). 자동 회전 + 마우스 시점 반응. 중앙(워드마크 자리)은 마스크로 살짝만 눌러 가독성 유지. */
-/* opacity 는 고정(.55) — 페이드인을 없애 캔버스가 '그려지는 과정'이 처음부터 보이게(그리기 자체가 등장 연출). */
-.hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.55;mix-blend-mode:screen;
+/* 플로우 필드(HeroWeb.tsx) — 노이즈 벡터필드를 따라 흐르는 미세 입자 궤적.
+   screen 블렌드로 파랑 배경 위에 옅은 광류(光流)처럼 얹힘. 중앙(워드마크 자리)은 마스크로 눌러 가독성 유지. */
+.hero-t .ht-web{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.72;mix-blend-mode:screen;
   -webkit-mask-image:radial-gradient(58% 56% at 50% 46%,rgba(0,0,0,.32) 0%,#000 58%);
           mask-image:radial-gradient(58% 56% at 50% 46%,rgba(0,0,0,.32) 0%,#000 58%)}
 .hero-t .ht-web-canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -720,6 +719,9 @@ footer ul li{padding:3px 0}
 .field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px;color:var(--text)}
 .field input,.field select,.field textarea{width:100%;background:#fff;border:1px solid #dfe3ec;border-radius:var(--r-sm);
   padding:12px 13px;color:var(--text);font-size:15px;font-family:inherit}
+/* 다크 테마의 흰 입력창 — 글자를 어둡게(다크 --text 가 밝아서 흰 배경에 묻히는 것 방지) + placeholder 회색 */
+.site-dark .field input,.site-dark .field select,.site-dark .field textarea{color:#16181d}
+.site-dark .field input::placeholder,.site-dark .field textarea::placeholder{color:#8a93a3}
 /* 포커스: outline:none 제거 → :focus-visible 링으로 대체(키보드 접근성) */
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan)}
 .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}

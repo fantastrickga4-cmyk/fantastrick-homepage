@@ -21,8 +21,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#062a80",
-  // 우리가 직접 칠하는 다크(파란) 테마. colorScheme:light 는 모바일 브라우저의 "자동 다크 반전"을 막기 위한 것.
-  colorScheme: "light",
+  // ⚠️ 페이지가 이미 다크(파란)이므로 반드시 "dark" 로 선언해야 한다.
+  //    예전(흰 배경)엔 "light" 로 두어 삼성 인터넷의 강제 다크모드를 막았지만,
+  //    지금처럼 다크 페이지에 "light" 를 두면 브라우저가 "밝은 페이지"로 오인해
+  //    강제로 색을 반전시킨다(로고 검게·버튼 글씨 초록 등 저퀄 현상).
+  //    "dark" 로 선언하면 삼성/크롬의 강제 다크모드가 "이미 다크"로 보고 손대지 않는다.
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

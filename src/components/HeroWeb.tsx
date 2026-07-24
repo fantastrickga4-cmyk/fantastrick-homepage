@@ -1,9 +1,30 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-// 히어로 배경 3D 성좌 단서망 — cantor8 네트워크 그래픽의 방탈출 번안.
-// 연출: ① 마법진처럼 선이 천천히 그려지며 완성되고(draw-in) → ② 완성 후에는 지구 자전하듯
-//       천천히 회전하는 3D 구(球). 마우스 반응 없음(요청). 장식이라 aria-hidden.
+// 히어로 배경 — 플로우 필드(Flow Field) 파티클.
+// 수백 개 미세 입자가 '보이지 않는 흐름장(노이즈 벡터필드)'을 따라 흐르며 옅은 궤적을 남긴다.
+// 생성예술(generative) 감성의 지적인 움직임. 도형이 튀지 않게 아주 옅게 깔아 워드마크를 방해하지 않음.
+// (마우스 반응 없음 · reduced-motion 시 정적 프레임 · 장식이라 aria-hidden)
+
+// 값 노이즈(Perlin 유사) — 흐름 방향을 부드럽게 만든다
+function makeNoise(seed: number) {
+  const perm = [...Array(256).keys()];
+  let s = seed >>> 0;
+  const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1));[perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const p = new Uint8Array(512);
+  for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+  const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const grad = (h: number, x: number, y: number) => ((h & 1) ? x : -x) + ((h & 2) ? y : -y);
+  return (x: number, y: number) => {
+    const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+    x -= Math.floor(x); y -= Math.floor(y);
+    const u = fade(x), v = fade(y), a = p[X] + Y, b = p[X + 1] + Y;
+    return lerp(lerp(grad(p[a], x, y), grad(p[b], x - 1, y), u), lerp(grad(p[a + 1], x, y - 1), grad(p[b + 1], x - 1, y - 1), u), v);
+  };
+}
+
 export default function HeroWeb() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -13,38 +34,11 @@ export default function HeroWeb() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // 결정적 시드 난수(매번 같은 배치)
-    let seed = 20260723;
-    const rnd = () => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed / 0x7fffffff;
-    };
-
-    // 3D 구 표면에 점 배치(정돈: 26개)
-    const N = 26;
-    const pts = Array.from({ length: N }, () => {
-      const u = rnd(), v = rnd();
-      const theta = 2 * Math.PI * u;
-      const phi = Math.acos(2 * v - 1);
-      const r = 0.86 + rnd() * 0.16;
-      return {
-        x: r * Math.sin(phi) * Math.cos(theta),
-        y: r * Math.sin(phi) * Math.sin(theta),
-        z: r * Math.cos(phi),
-        tw: rnd() * Math.PI * 2,
-      };
-    });
-    // 가까운 점끼리 연결(3D 거리)
-    const edges: [number, number][] = [];
-    for (let i = 0; i < N; i++)
-      for (let j = i + 1; j < N; j++) {
-        const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y, pts[i].z - pts[j].z);
-        if (d < 0.62) edges.push([i, j]);
-      }
-    const E = edges.length;
+    const noise = makeNoise(20260724);
 
     let W = 0, H = 0, dpr = 1;
+    let pts: { x: number; y: number }[] = [];
+
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = canvas.clientWidth;
@@ -52,79 +46,47 @@ export default function HeroWeb() {
       canvas.width = Math.max(1, Math.round(W * dpr));
       canvas.height = Math.max(1, Math.round(H * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // 입자 수 = 화면 넓이에 비례(모바일은 자동으로 적게), 상한 900
+      const N = Math.min(900, Math.max(120, Math.round((W * H) / 2400)));
+      pts = Array.from({ length: N }, () => ({ x: Math.random() * W, y: Math.random() * H }));
+      ctx.clearRect(0, 0, W, H);
     };
     resize();
     window.addEventListener("resize", resize);
 
-    const DRAW_DUR = 6.5;                    // 그려지는 시간(초) — 더 천천히
-    const ROT_SPEED = (2 * Math.PI) / 55;    // 완성 후 회전(약 55초에 한 바퀴, 자전처럼)
-    const BASE_Y = 0.2;                      // 초기 방향
-    const TILT = 0.34;                       // 지구 축 기울기 느낌(고정)
-
-    // dp: 그리기 진행률 0..1, rot: 완성 후 누적 회전각, t: 경과초(반짝임용)
-    const render = (dp: number, rot: number, t: number) => {
-      const ry = BASE_Y + rot;
-      const rx = TILT;
-      const cosY = Math.cos(ry), sinY = Math.sin(ry);
-      const cosX = Math.cos(rx), sinX = Math.sin(rx);
-      const scale = Math.min(W, H) * 0.46; // 살짝 크게
-      const cx = W / 2, cy = H * 0.46;
-      const f = 3.2;
-
-      const proj = pts.map((p) => {
-        const x = p.x * cosY - p.z * sinY;
-        let z = p.x * sinY + p.z * cosY;
-        const y = p.y * cosX - z * sinX;
-        z = p.y * sinX + z * cosX;
-        const persp = f / (f - z);
-        return { sx: cx + x * scale * persp, sy: cy + y * scale * persp, z };
-      });
-
-      ctx.clearRect(0, 0, W, H);
-
-      // 선 — 마법진 그려지듯 순서대로(인덱스 스태거) 각 선이 a→b 로 자라난다
-      for (let i = 0; i < E; i++) {
-        const st = (i / E) * 0.82;
-        const local = Math.min(1, Math.max(0, (dp - st) / 0.22));
-        if (local <= 0) continue;
-        const a = proj[edges[i][0]], b = proj[edges[i][1]];
-        const x2 = a.sx + (b.sx - a.sx) * local;
-        const y2 = a.sy + (b.sy - a.sy) * local;
-        const k = ((a.z + b.z) / 2 + 1) / 2; // 뒤=0 앞=1
-        ctx.strokeStyle = `rgba(200,222,255,${0.08 + k * 0.28})`;
-        ctx.lineWidth = 1.1 + k * 1.6; // 더 굵게
-        ctx.beginPath();
-        ctx.moveTo(a.sx, a.sy);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
+    // 한 프레임: 옛 궤적을 조금 지우고(페이드) → 새 궤적 한 겹 그리기
+    const step = (t: number) => {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = "rgba(0,0,0,0.055)"; // 서서히 사라지는 잔상
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = "rgba(140,190,255,0.17)";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (const q of pts) {
+        const a = noise(q.x * 0.0017, q.y * 0.0017 + t * 0.03) * Math.PI * 3; // 흐름 각도
+        const nx = q.x + Math.cos(a) * 1.6, ny = q.y + Math.sin(a) * 1.6;
+        ctx.moveTo(q.x, q.y);
+        ctx.lineTo(nx, ny);
+        q.x = nx; q.y = ny;
+        // 화면 밖으로 나가거나 가끔 랜덤으로 다시 태어남(뭉침 방지)
+        if (q.x < 0 || q.x > W || q.y < 0 || q.y > H || Math.random() < 0.0022) {
+          q.x = Math.random() * W; q.y = Math.random() * H;
+        }
       }
-      // 노드 — 그려질 때 하나씩 켜지고, 완성 후엔 아주 은은하게만 반짝
-      for (let i = 0; i < N; i++) {
-        const st = (i / N) * 0.82;
-        const rev = Math.min(1, Math.max(0, (dp - st) / 0.12));
-        if (rev <= 0) continue;
-        const pr = proj[i];
-        const k = (pr.z + 1) / 2;
-        const tw = 0.9 + 0.1 * Math.sin(t * 1.6 + pts[i].tw);
-        const r = 1.3 + k * 3.2;
-        ctx.fillStyle = `rgba(210,226,255,${(0.3 + k * 0.62) * rev * tw})`;
-        ctx.beginPath();
-        ctx.arc(pr.sx, pr.sy, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.stroke();
+      ctx.globalCompositeOperation = "source-over";
     };
 
     let raf = 0;
-    let startTime: number | null = null;
     if (reduce) {
-      render(1, 0, 0); // 모션 최소화: 완성된 정적 1프레임
+      // 모션 최소화: 잔상 없이 정적 흐름 무늬 한 장만 만들어 둔다
+      for (let k = 0; k < 90; k++) step(k * 0.04);
     } else {
+      let start: number | null = null;
       const loop = (now: number) => {
-        if (startTime == null) startTime = now;
-        const t = (now - startTime) / 1000;
-        const dp = Math.min(1, t / DRAW_DUR);
-        const rot = t > DRAW_DUR ? (t - DRAW_DUR) * ROT_SPEED : 0; // 완성 후부터 자전
-        render(dp, rot, t);
+        if (start == null) start = now;
+        step((now - start) / 1000);
         raf = requestAnimationFrame(loop);
       };
       raf = requestAnimationFrame(loop);
