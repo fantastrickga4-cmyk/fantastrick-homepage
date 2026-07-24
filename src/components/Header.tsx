@@ -47,6 +47,7 @@ export default function Header() {
   const overDark = !scrolled;
 
   return (
+    <>
     <header className={(scrolled ? "scrolled" : "") + (overDark ? " over-hero" : "")}>
       <div className="hdr-in">
         <Link href="/" className="brand" aria-label="FANTASTRICK 홈">
@@ -72,8 +73,11 @@ export default function Header() {
           <IconMenu />
         </button>
       </div>
+    </header>
 
-      {/* 모바일 드로어 */}
+      {/* 모바일 드로어 — ⚠️ 반드시 <header> 밖에 둔다.
+          header.scrolled 의 backdrop-filter:blur 가 position:fixed 자식의 기준(containing block)을
+          header 박스로 바꿔, 드로어가 상단 얇은 띠(header 높이)로 갇혀 첫 항목만 보이던 버그(NAVER·삼성 인앱브라우저) 방지. */}
       <div id="mobile-drawer" className={"drawer" + (open ? " open" : "")}>
         <div className="drawer-scrim" onClick={() => setOpen(false)} aria-hidden="true" />
         <div className="drawer-panel" role="dialog" aria-modal="true" aria-label="메뉴">
@@ -99,6 +103,6 @@ export default function Header() {
           </div>
         </div>
       </div>
-    </header>
+    </>
   );
 }

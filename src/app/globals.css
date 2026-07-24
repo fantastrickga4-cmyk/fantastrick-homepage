@@ -439,7 +439,9 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .cflow .cf-rail{fill:none;stroke-width:1.2;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .cflow .cf-pulse{fill:none;stroke:#eaf3ff;stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke;
   filter:drop-shadow(0 0 5px #8fb6ff) drop-shadow(0 0 2px rgba(234,243,255,.9))}
-@media(max-width:640px){.cflow{opacity:.6;top:-120px;height:400px}}
+/* 모바일: 세로 트레이스로 전환(컴포넌트가 .m 부여). 높이=viewBox(760)와 1:1이라 안 뭉개짐. */
+.cflow.m{top:-180px;height:760px;opacity:.7}
+.cflow.m .cf-pulse{stroke-width:2.8}
 /* 모션 최소화: 펄스 숨기고 은은한 트레이스만 */
 @media(prefers-reduced-motion:reduce){.cflow .cf-pulse{display:none}}
 /* --- 커스텀 히어로들도 다크로(각 페이지 상단이 밝게 남지 않게) --- */
@@ -459,6 +461,25 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   radial-gradient(700px 460px at 18% 90%,rgba(120,170,255,.12),transparent 62%)}
 /* 테마 상세(/rooms) — 하단이 밝게 페이드되던 베일을 딥블루로 */
 .site-dark .room-hero .rh-veil{background:linear-gradient(180deg,rgba(4,20,60,.5),rgba(4,29,87,.95))}
+/* --- 다크 테마인데 '밝은 배경 + var(--text)(다크서 밝은색)'라 글자가 안 보이던 폼/달력/카드 요소들 ---
+   흰 배경을 다크 글라스로 바꿔 밝은 글자가 보이게(예약·후기필터·달력·서비스카드·경고박스). */
+/* 예약: 테마·인원·시간 선택 버튼(.opt), 후기 테마 필터(.chip) */
+.site-dark .opt,.site-dark .chip{background:rgba(255,255,255,.055);border-color:var(--line);color:var(--text)}
+.site-dark .opt.on,.site-dark .chip.on{background:rgba(143,178,255,.16);color:#dbe9ff;border-color:var(--brand-bright)}
+/* 예약 인라인 달력 */
+.site-dark .rcal{background:rgba(255,255,255,.04);border-color:var(--line)}
+.site-dark .rcal-cell{color:var(--text)}
+.site-dark .rcal-cell.sun,.site-dark .rcal-dow.sun{color:#ff8a94}
+.site-dark .rcal-cell.sat,.site-dark .rcal-dow.sat{color:#9cc2ff}
+.site-dark .rcal-cell:hover:not(:disabled):not(.on){background:rgba(143,178,255,.14);border-color:var(--brand-bright)}
+.site-dark .rcal-cell.today:not(.on){border-color:rgba(143,178,255,.5)}
+.site-dark .rcal-cell.locked{border-color:rgba(255,255,255,.24);
+  background:repeating-linear-gradient(-45deg,rgba(255,255,255,.07) 0 6px,rgba(255,255,255,.02) 6px 12px)}
+/* 서비스 카드(비즈니스 페이지) */
+.site-dark .svc .s{background:rgba(255,255,255,.05);border-color:var(--line)}
+/* 안내박스 경고/성공(정보는 위에서 이미 처리) */
+.site-dark .notice.warn{background:rgba(255,120,110,.1);border-color:rgba(255,120,110,.32);color:#ffc9c4}
+.site-dark .notice.ok{background:rgba(90,210,150,.1);border-color:rgba(90,210,150,.32);color:#bff0d5}
 .shead{margin-bottom:42px;position:relative;padding-top:22px}
 /* 섹션 헤더 미니 브랜드 룰 — '새 챕터 시작' 신호(히어로 룰과 호응, 좌측 정렬 제목 위) */
 .shead::before{content:"";position:absolute;top:0;left:0;width:46px;height:3px;border-radius:2px;
