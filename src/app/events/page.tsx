@@ -8,21 +8,45 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // 옵저버 카드를 누르면 팝업 안에서 테마 포스터 4장을 ‹ › 로 하나씩 넘겨봐요.
 type Theme = { theme: string; store: string; poster: string; roomId: string; rule: string; notes: string[] };
 
+// 이벤트 진행 상태 배지 — 상시진행 또는 마감날짜(예: "~08.31 마감")
+type Schedule = { type: "always" } | { type: "until"; date: string };
+function StatusBadge({ schedule }: { schedule: Schedule }) {
+  if (schedule.type === "always") {
+    return (
+      <span className="ev-status">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+          <path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" />
+        </svg>
+        상시 진행
+      </span>
+    );
+  }
+  return (
+    <span className="ev-status ev-status-until">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+      </svg>
+      {schedule.date} 마감
+    </span>
+  );
+}
+
 const OBSERVER_THEMES: Theme[] = [
   {
     theme: "태초의 신부", store: "1호점", roomId: "firstfoundbride", poster: "/images/poster-bride.jpg",
     rule: "신규 2인과 함께 오면 옵저버 인원 무료 플레이",
-    notes: ["주말·공휴일에는 적용되지 않아요.", "옵저버는 진행에 개입하지 않고 옆에서 관전하는 참여예요."],
+    notes: ["주말·공휴일에는 적용되지 않아요.", "옵저버는 같이 플레이해도 되고 관전만 해도 괜찮습니다."],
   },
   {
     theme: "사자의 서", store: "2호점", roomId: "bookofduat", poster: "/images/poster-duat.png",
     rule: "신규 2인과 함께 오면 옵저버 인원 무료 플레이",
-    notes: ["주말·공휴일에는 적용되지 않아요.", "옵저버는 진행에 개입하지 않고 옆에서 관전하는 참여예요."],
+    notes: ["주말·공휴일에는 적용되지 않아요.", "옵저버는 같이 플레이해도 되고 관전만 해도 괜찮습니다."],
   },
   {
     theme: "락다운시티", store: "3호점 · TGC", roomId: "ldc", poster: "/images/poster-ldc.png",
     rule: "인원과 상관없이 무조건 3인 가격 (4인·5인이 와도 3인 가격)",
-    notes: ["주말·공휴일에도 적용돼요.", "옵저버는 옆에서 관전하는 참여예요."],
+    notes: ["주말·공휴일에도 적용돼요.", "옵저버는 같이 플레이해도 되고 관전만 해도 괜찮습니다."],
   },
   {
     theme: "시간의 영속성", store: "3호점 · TGC", roomId: "time", poster: "/images/poster-time.jpg",
@@ -36,16 +60,16 @@ const REVIEW = {
   summary: "후기 남기고 테마 5,000원 할인 + 굿즈 받아가세요!",
   body: [
     { h: "이런 이벤트예요", items: [
-      "테마를 플레이하고 블로그·네이버 카페에 리뷰를 남기면, 테마 5,000원 할인과 굿즈를 드려요!",
+      "테마를 플레이하고 블로그·네이버 카페에 리뷰를 남기면, 테마 5,000원 할인과 굿즈를 드립니다!",
     ] },
     { h: "참여 방법", items: [
       "테마 플레이 후 블로그 또는 네이버 카페에 리뷰 작성",
-      "리뷰는 10줄 이상 + 네이버 플레이스 주소 첨부",
+      "리뷰는 10줄 이상 + 블로그 주소 첨부",
       "작성한 리뷰 링크를 인스타그램 DM으로 보내주기",
       "DM에 혜택 받으실 분의 성함·연락처를 함께 남겨주세요",
     ] },
     { h: "혜택 · 유의", items: [
-      "테마 5,000원 할인 + 굿즈 제공",
+      "테마 5,000원 할인 + 굿즈 제공 (전 지점 원하는 테마 사용 가능, 굿즈는 TGC점 테마 키링 중 택 1)",
       "실제 플레이하신 후기만 인정됩니다.",
     ] },
   ],
@@ -89,7 +113,7 @@ export default function EventsPage() {
       <div className="wrap">
         <div className="shead">
           <h1 className="title">이벤트 · Events</h1>
-          <p className="lead">지금 판타스트릭에서 진행 중인 이벤트 — 카드를 눌러 확인하세요.</p>
+          <p className="lead">판타스트릭에서 진행 중인 이벤트입니다.</p>
         </div>
 
         <div className="ev-grid">
@@ -110,7 +134,10 @@ export default function EventsPage() {
               <span className="ev-thumb-store">테마 4</span>
             </div>
             <div className="ev-cap">
-              <span className="ev-tag">#옵저버제도</span>
+              <div className="ev-cap-top">
+                <span className="ev-tag">#옵저버제도</span>
+                <StatusBadge schedule={{ type: "always" }} />
+              </div>
               <p className="ev-summary">테마별 옵저버 혜택 — 카드를 넘겨 확인하세요</p>
               <span className="ev-more">자세히 보기 →</span>
             </div>
@@ -125,7 +152,10 @@ export default function EventsPage() {
               <span className="ev-thumb-title">{REVIEW.title}</span>
             </div>
             <div className="ev-cap">
-              <span className="ev-tag">#리뷰이벤트</span>
+              <div className="ev-cap-top">
+                <span className="ev-tag">#리뷰이벤트</span>
+                <StatusBadge schedule={{ type: "always" }} />
+              </div>
               <p className="ev-summary">{REVIEW.summary}</p>
               <span className="ev-more">자세히 보기 →</span>
             </div>

@@ -403,6 +403,9 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
   /* --- 토큰 다크화(모든 자손에 적용) --- */
   --text:#e9f0ff; --muted:#a9b8d6; --faint:#8ea0c4;
   --surface:rgba(255,255,255,.05); --surface2:rgba(255,255,255,.10);
+  /* ⚠️ --bg2 를 빠뜨리면 이 값을 쓰는 박스(입금계좌 .rm-acct·환불 .refund-box)가
+     밝은 배경(#e9ecf1) 그대로라 밝은 글자와 겹쳐 안 보인다(2026-07-25 수정). */
+  --bg2:rgba(143,178,255,.10);
   --line:rgba(255,255,255,.14); --line2:rgba(255,255,255,.24);
   --cyan:#8fb6ff; --brand-bright:#8fb6ff; --brand:#6ea8ff;
   --gold:#c9b6ff; --violet:#8a6fd0;
@@ -739,7 +742,13 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .ev-thumb-title{position:absolute;left:16px;bottom:14px;z-index:2;font-family:var(--font-display);font-weight:800;
   font-size:clamp(20px,2.6vw,28px);color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45)}
 .ev-cap{padding:14px 16px 16px}
+.ev-cap-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ev-tag{font-size:12px;font-weight:700;color:var(--cyan)}
+/* 이벤트 진행 상태 배지 — 상시진행(초록) / 마감(앰버) */
+.ev-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;white-space:nowrap;
+  color:#79e7b6;background:rgba(80,220,160,.13);border:1px solid rgba(80,220,160,.3);padding:3px 9px;border-radius:999px}
+.ev-status svg{flex:0 0 auto}
+.ev-status-until{color:#ffce7a;background:rgba(255,190,90,.13);border-color:rgba(255,190,90,.32)}
 .ev-summary{margin:7px 0 10px;font-size:13.5px;color:var(--muted);line-height:1.55}
 .ev-more{font-size:12.5px;font-weight:700;color:var(--brand-bright)}
 /* 상세 모달 */
