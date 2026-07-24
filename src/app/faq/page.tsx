@@ -112,7 +112,7 @@ export default async function FaqPage() {
         <summary>예약을 확인하거나 바꾸고 싶어요.</summary>
         <div className="faq-b">
           <p><Link href="/reservation" className="tlink">예약 조회·취소</Link> 에서 <b>이름 · 전화번호 · 예약 시 정한 비밀번호 4자리</b>로 확인하실 수 있어요.</p>
-          <p>날짜나 시간을 바꾸고 싶으시면 <b>매장으로 전화</b> 주세요. 취소하지 않고 옮겨드립니다.</p>
+          <p>날짜나 시간을 바꾸고 싶으시면 <Link href="/reservation" className="tlink">예약 조회</Link>에서 <b>1회</b> 직접 변경하실 수 있어요.<br />1회를 초과했을 때는 <b>매장으로 전화</b> 주세요.</p>
         </div>
       </details>
 
@@ -120,7 +120,7 @@ export default async function FaqPage() {
         <summary>늦으면 어떻게 되나요?</summary>
         <div className="faq-b">
           <p>정시 입장을 위해 <b>예약시간 10분 전</b>에 도착해 주세요.</p>
-          <p>지각 시 <b>플레이 시간이 차감</b>되며, <b>15분 이상 지각</b>하시면 테마 특성상 이용이 불가할 수 있습니다. 이 경우 당일 취소로 처리되어 <b>예약금 환불이 어렵습니다.</b></p>
+          <p>지각 시 <b>플레이 시간이 차감</b>되며, <b>15분 이상 지각</b>하시면 테마 특성상 이용이 불가할 수 있습니다.<br />이 경우 당일 취소로 처리되어 <b>예약금 환불이 어렵습니다.</b></p>
         </div>
       </details>
 
@@ -136,6 +136,7 @@ export default async function FaqPage() {
             ))}
           </ul>
           <p className="faq-note">테마마다 추천 인원이 달라요. 각 <Link href="/rooms/bookofduat" className="tlink">테마 페이지</Link>의 주의사항을 확인해 주세요.</p>
+          <p className="faq-note">1인 이용 시 <b>2인 가격</b>으로 결제 진행 후 플레이 가능합니다.</p>
         </div>
       </details>
 
