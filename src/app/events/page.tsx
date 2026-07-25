@@ -56,7 +56,7 @@ const OBSERVER_THEMES: Theme[] = [
 ];
 
 const REVIEW = {
-  title: "리뷰 이벤트", badge: "진행 중", mascot: "/images/mascot-tricky.png",
+  title: "리뷰 이벤트", badge: "진행 중", mascot: "/images/mascot-tricky-v4.png",
   summary: "후기 남기고 테마 5,000원 할인 + 굿즈 받아가세요!",
   body: [
     { h: "이런 이벤트예요", items: [

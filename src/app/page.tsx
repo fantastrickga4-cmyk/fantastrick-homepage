@@ -263,14 +263,14 @@ export default function Home() {
           <div className="ht-mascot-in">
             <span className="ht-name ht-name-blue">판타</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/mascot-fanta.png" alt="" />
+            <img src="/images/mascot-fanta-v4.png" alt="" />
           </div>
         </div>
         <div className="ht-mascot ht-m-tricky" aria-hidden="true">
           <div className="ht-mascot-in">
             <span className="ht-name ht-name-red">트리키</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/mascot-tricky.png" alt="" />
+            <img src="/images/mascot-tricky-v4.png" alt="" />
           </div>
         </div>
         <div className="ht-stack">

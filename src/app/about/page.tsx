@@ -200,7 +200,7 @@ export default function AboutPage() {
           </div>
           <div className="about-mascot reveal">
             <figure className="am-fig am-fanta">
-              <Image src="/images/mascot-fanta.png" alt="판타, 상상을 담은 흰 판다 마스코트" width={697} height={900} sizes="(max-width:600px) 42vw, 280px" />
+              <Image src="/images/mascot-fanta-v4.png" alt="판타, 상상을 담은 흰 판다 마스코트" width={703} height={920} sizes="(max-width:600px) 42vw, 280px" />
               <figcaption>판타 · Fantasy</figcaption>
             </figure>
             <p className="am-text">
@@ -210,7 +210,7 @@ export default function AboutPage() {
               Fantasy와 Trick을 그대로 대표합니다.
             </p>
             <figure className="am-fig am-tricky">
-              <Image src="/images/mascot-tricky.png" alt="트리키, 장치를 다루는 빨간 레서판다 마스코트" width={657} height={877} sizes="(max-width:600px) 42vw, 280px" />
+              <Image src="/images/mascot-tricky-v4.png" alt="트리키, 장치를 다루는 빨간 레서판다 마스코트" width={651} height={926} sizes="(max-width:600px) 42vw, 280px" />
               <figcaption>트리키 · Trick</figcaption>
             </figure>
           </div>
