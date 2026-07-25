@@ -1575,6 +1575,21 @@ function SettingsTab() {
   const [storeSlots, setStoreSlots] = useState<Record<string, StoreSlots>>({});
   const [leadMin, setLeadMin] = useState("10");
   const [deposits, setDeposits] = useState<Record<string, string>>({}); // 테마id → 예약금(문자열, 입력칸용)
+  // 자동 백업 목록/실행
+  const [backups, setBackups] = useState<{ name: string; size: number | null; created_at: string | null; url: string | null }[]>([]);
+  const [bkMsg, setBkMsg] = useState(""); const [bkRunning, setBkRunning] = useState(false);
+  const loadBackups = () => fetch("/api/admin/backups").then((r) => r.json()).then((j) => setBackups(j.backups || [])).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadBackups(); }, []);
+  async function runBackup() {
+    setBkRunning(true); setBkMsg("");
+    try {
+      const res = await fetch("/api/cron/backup", { method: "POST" });
+      const j = await res.json();
+      if (res.ok) { setBkMsg("백업 완료 ✅"); loadBackups(); } else setBkMsg(j.error || "백업 실패");
+    } catch { setBkMsg("백업 실패"); }
+    setBkRunning(false);
+  }
   useEffect(() => { fetch("/api/admin/settings").then((r) => r.json()).then((c) => {
     setSlots(c.timeSlots);
     setStoreSlots(c.storeSlots && typeof c.storeSlots === "object" ? c.storeSlots : {});
@@ -1670,6 +1685,30 @@ function SettingsTab() {
           <br /><IconWarn /> 손님 이름·전화가 들어있으니 아무 데나 올리지 마세요. (손님 비밀번호는 일부러 뺐어요)
         </p>
         <a className="btn sm" href="/api/admin/backup" download><IconDownload /> 전체 백업 받기 (JSON)</a>
+
+        {/* 자동 백업 (매주 월요일 · Supabase Storage 비공개 보관함) */}
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+          <h4 style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}><IconClock /> 자동 백업 (매주 월요일)</h4>
+          <p className="hint" style={{ marginTop: 0 }}>
+            매주 자동으로 전체 백업을 만들어 <b>안전한 보관함</b>에 올려둬요(최근 12개 보관). 실수로 지워도 아래에서 받아 되돌릴 수 있어요.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button className="btn ghost sm" onClick={runBackup} disabled={bkRunning}><IconRefresh /> {bkRunning ? "백업 중…" : "지금 백업 실행"}</button>
+            {bkMsg && <span className="hint" style={{ margin: 0 }}>{bkMsg}</span>}
+          </div>
+          {backups.length > 0 ? (
+            <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "flex", flexDirection: "column", gap: 6 }}>
+              {backups.map((b) => (
+                <li key={b.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 13, background: "var(--bg2)", border: "1px solid var(--line)", borderRadius: 8, padding: "8px 12px" }}>
+                  <span>{b.name.replace("backup_", "").replace(".json", "")}{b.size ? ` · ${Math.round(b.size / 1024)}KB` : ""}</span>
+                  {b.url && <a className="tlink" href={b.url} download>받기</a>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="hint" style={{ marginTop: 10 }}>아직 자동 백업이 없어요. 첫 백업은 다음 월요일에 생기고, 지금 바로 만들려면 “지금 백업 실행”을 눌러주세요.</p>
+          )}
+        </div>
       </div>
 
       {/* 저장 버튼은 항상 손 닿는 곳에 (설정이 길어서 맨 아래까지 스크롤해야 했음) */}

@@ -2,6 +2,15 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-26 — 자동 백업 (매주 1회 · Supabase Storage)
+- **저장 위치 = Supabase Storage 비공개 버킷 `backups`** (이미 쓰는 Supabase라 새 계정·설정 0, 무료 1GB, JSON은 KB단위. 실수 삭제 복구용). ⚠️ 한계: Supabase 프로젝트 통째로 유실 시 백업도 같이 감 → 필요하면 나중에 이메일/GitHub 사본 옵션 추가.
+- 구조: `src/lib/backup.ts`(공유 buildBackup) → 수동 다운로드(`/api/admin/backup`)와 자동 백업이 같은 로직. `/api/cron/backup`(GET/POST)이 백업 JSON을 만들어 Storage에 업로드 + 최근 12개만 보관(오래된 것 삭제). Vercel Cron `vercel.json`에 **매주 월요일 03:00 UTC(=월 12시 KST)** 등록.
+- 인증: Vercel Cron은 `Authorization: Bearer ${CRON_SECRET}`, 관리자는 세션으로 수동 "지금 백업 실행" 가능. 목록 조회 = `/api/admin/backups`(서명 URL 30분).
+- 관리자 UI: 설정 › 전체 백업 카드 아래 **자동 백업 패널**(설명 + "지금 백업 실행" + 최근 백업 목록·받기).
+- 로컬 테스트 통과(backup 파일 업로드·목록·다운로드 확인).
+- ⚠️ **배포 시 필요**: Vercel 환경변수 `CRON_SECRET` 존재해야 크론 인증됨. 크론은 **프로덕션 배포에서만** 동작. (Hobby 플랜은 크론 하루 1회·주간 OK)
+- 파일: `src/lib/backup.ts`, `src/app/api/cron/backup/route.ts`, `src/app/api/admin/backups/route.ts`, `src/app/api/admin/backup/route.ts`(리팩터), `src/app/admin/page.tsx`, `vercel.json`.
+
 ## 2026-07-25 — 관리자 로그인: 아이디 없이 비밀번호만
 - 관리자(/admin) 로그인을 **아이디 없이 비밀번호만**으로 변경(사장님 요청). UI에서 아이디 입력칸 제거, 라우트에서 아이디 검사 제거(비밀번호 상수시간 비교는 유지).
 - 비밀번호는 **환경변수 `ADMIN_PASSWORD`** 값. **로컬(.env.local)은 임시 `1234`로 설정**(⚠️ 실사용 전 어려운 값으로 변경 예정).
