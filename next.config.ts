@@ -62,3 +62,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Cloudflare(OpenNext) 로컬 개발용 바인딩 초기화 — Vercel/일반 dev 엔 영향 없음.
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();

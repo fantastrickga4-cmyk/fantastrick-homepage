@@ -2,6 +2,16 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-26 — Cloudflare Workers 이전 (OpenNext) — Vercel 한도 회피
+- **이유**: Vercel 무료 한도. → Cloudflare Workers 무료 한도가 넉넉해 이전.
+- **방법**: `@opennextjs/cloudflare` 어댑터로 Next.js 15를 Cloudflare Workers에 배포. `wrangler.jsonc`(nodejs_compat·global_fetch_strictly_public·ASSETS·IMAGES·WORKER_SELF_REFERENCE), `open-next.config.ts`, `next.config.ts`에 `initOpenNextCloudflareForDev()` 추가. 배포 스크립트 `npm run cf:deploy`(=opennextjs-cloudflare build && deploy).
+- **라이브**: https://fantastrick-homepage.tndn1102.workers.dev (전 페이지·이미지·Supabase API·관리자 1234·백업까지 검증 완료). Vercel(fantastrick-homepage.vercel.app)은 당분간 병행 유지.
+- **시크릿**: `wrangler secret bulk`로 6개(SUPABASE_URL·SERVICE_ROLE_KEY·ADMIN_PASSWORD·CRON_SECRET·BANK_WEBHOOK_SECRET·BANK_DRY_RUN) 등록.
+- **크론**: OpenNext 워커엔 scheduled가 없어 **별도 크론 워커 `fantastrick-cron-backup`**(`cron-backup/`)가 매주 월요일 메인 앱 `/api/cron/backup` 호출. (Vercel cron도 남아있어 병행 중엔 주 2회 백업 — 무해, 12개 초과분 자동삭제)
+- ⚠️ **배포 방법 2개로 갈림**: git push → Vercel(자동), `npm run cf:deploy` → Cloudflare(수동/내가). `initOpenNextCloudflareForDev()`는 Vercel 빌드엔 무영향.
+- **남은 것**: 공개 도메인을 Cloudflare로 연결(=진짜 전환, 도메인 붙이는 맨 마지막 단계). 그 전까진 두 URL 병행.
+- 파일: `wrangler.jsonc`, `open-next.config.ts`, `next.config.ts`, `package.json`, `.gitignore`, `cron-backup/worker.js`, `cron-backup/wrangler.toml`.
+
 ## 2026-07-26 — 자동 백업 (매주 1회 · Supabase Storage)
 - **저장 위치 = Supabase Storage 비공개 버킷 `backups`** (이미 쓰는 Supabase라 새 계정·설정 0, 무료 1GB, JSON은 KB단위. 실수 삭제 복구용). ⚠️ 한계: Supabase 프로젝트 통째로 유실 시 백업도 같이 감 → 필요하면 나중에 이메일/GitHub 사본 옵션 추가.
 - 구조: `src/lib/backup.ts`(공유 buildBackup) → 수동 다운로드(`/api/admin/backup`)와 자동 백업이 같은 로직. `/api/cron/backup`(GET/POST)이 백업 JSON을 만들어 Storage에 업로드 + 최근 12개만 보관(오래된 것 삭제). Vercel Cron `vercel.json`에 **매주 월요일 03:00 UTC(=월 12시 KST)** 등록.

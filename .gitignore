@@ -24,3 +24,9 @@ docs/_*.png
 shot.mjs
 
 .vercel
+
+# OpenNext / Cloudflare
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
+.dev.vars

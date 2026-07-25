@@ -1,0 +1,7 @@
+name = "fantastrick-cron-backup"
+main = "worker.js"
+compatibility_date = "2024-12-30"
+
+# 매주 월요일 03:00 UTC (= 월요일 12:00 KST) 자동 백업
+[triggers]
+crons = ["0 3 * * 1"]
