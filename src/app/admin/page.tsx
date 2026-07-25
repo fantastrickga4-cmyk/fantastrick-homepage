@@ -45,7 +45,7 @@ const TABS = [
 
 export default function AdminPage() {
   const [phase, setPhase] = useState<"checking" | "login" | "in">("checking");
-  const [id, setId] = useState(""); const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
+  const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
   const [tab, setTab] = useState("home");
 
   async function check() {
@@ -70,8 +70,8 @@ export default function AdminPage() {
 
   async function doLogin() {
     setLoginErr("");
-    const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, password: pw }) });
-    if (res.ok) { setId(""); setPw(""); setPhase("in"); } else { const j = await res.json(); setLoginErr(j.error || "로그인 실패"); }
+    const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) });
+    if (res.ok) { setPw(""); setPhase("in"); } else { const j = await res.json(); setLoginErr(j.error || "로그인 실패"); }
   }
   async function logout() { await fetch("/api/admin/logout", { method: "POST" }); setPhase("login"); }
 
@@ -80,13 +80,10 @@ export default function AdminPage() {
     return (
       <div className="admin-login">
         <h2 className="title" style={{ fontSize: 24 }}>판타스트릭 관리자</h2>
-        <p className="lead" style={{ margin: "8px auto 22px" }}>관리자 아이디와 비밀번호를 입력하세요.</p>
+        <p className="lead" style={{ margin: "8px auto 22px" }}>관리자 비밀번호를 입력하세요.</p>
         <div className="card" style={{ textAlign: "left" }}>
-          <div className="field"><label>아이디</label>
-            <input type="text" value={id} onChange={(e) => setId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} placeholder="fantastrick" autoComplete="username" autoFocus />
-          </div>
           <div className="field"><label>비밀번호</label>
-            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} autoComplete="current-password" />
+            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLogin()} autoComplete="current-password" autoFocus />
           </div>
           {loginErr && <div className="msg-err"><IconWarn /> {loginErr}</div>}
           <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={doLogin}>로그인</button>
