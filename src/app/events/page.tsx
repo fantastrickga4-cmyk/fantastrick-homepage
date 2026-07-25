@@ -201,14 +201,7 @@ export default function EventsPage() {
         <div className="ev-modal-overlay" onClick={close} role="dialog" aria-modal="true" aria-label={REVIEW.title}>
           <div className="ev-modal" onClick={(e) => e.stopPropagation()}>
             <button className="ev-modal-x" onClick={close} aria-label="닫기">✕</button>
-            <div className="ev-modal-head ev-coral">
-              <span className="ev-badge">{REVIEW.badge}</span>
-              <Image src={REVIEW.mascot} alt="" width={180} height={180} className="ev-masc" />
-              <div className="ev-modal-titles">
-                <span className="ev-sub">REVIEW EVENT</span>
-                <h2>{REVIEW.title}</h2>
-              </div>
-            </div>
+            <Image src="/images/review-event.png" alt="리뷰 이벤트 — 테마 5,000원 할인 + 굿즈" width={1080} height={1080} sizes="560px" className="ev-modal-poster" />
             <div className="ev-modal-body">
               <p className="ev-modal-lead">{REVIEW.summary}</p>
               {REVIEW.body.map((sec, j) => (
