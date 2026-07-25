@@ -145,11 +145,9 @@ export default function EventsPage() {
 
           {/* 리뷰 이벤트 카드 */}
           <button type="button" className="ev-card" onClick={() => setOpen("review")} aria-label="리뷰 이벤트 자세히 보기">
-            <div className="ev-thumb ev-coral">
-              <Image src={REVIEW.mascot} alt="" width={210} height={210} className="ev-masc" />
+            <div className="ev-thumb">
+              <Image src="/images/review-event.png" alt="리뷰 이벤트 — 테마 5,000원 할인 + 굿즈" fill sizes="(max-width:560px) 46vw, 260px" className="ev-poster" />
               <span className="ev-badge">{REVIEW.badge}</span>
-              <span className="ev-sub">REVIEW EVENT</span>
-              <span className="ev-thumb-title">{REVIEW.title}</span>
             </div>
             <div className="ev-cap">
               <div className="ev-cap-top">
