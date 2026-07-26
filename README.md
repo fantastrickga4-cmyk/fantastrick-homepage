@@ -2,6 +2,11 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-27 — 이벤트 탭에 '생일 이벤트' 추가 (상시진행)
+- 이벤트 탭에 **생일 이벤트 카드**(3번째) 추가. 내용: 테마 이용 시 동의서에 마케팅 수신 동의한 분께 생일 달 1일에 **전 테마 5,000원 할인 쿠폰**을 문자 발송, 사용기한=생일 해당 월 1일~마지막 날, 원하는 테마 사용 가능. 상시진행 배지.
+- **메인 이미지 = 제미나이(Nano Banana 웹 UI 자동화)로 생성**: 판타·트리키가 고깔모자 쓰고 생일 케이크·풍선·선물로 축하하는 딥블루 프리미엄 장면(텍스트 없음). `public/images/event-birthday.png`(1080²). 카드 썸네일 + 팝업 헤더에 적용.
+- 파일: `src/app/events/page.tsx`(BIRTHDAY 상수+카드+팝업, open 타입에 "birthday" 추가), `public/images/event-birthday.png`.
+
 ## 2026-07-26 — Cloudflare Workers 이전 (OpenNext) — Vercel 한도 회피
 - **이유**: Vercel 무료 한도. → Cloudflare Workers 무료 한도가 넉넉해 이전.
 - **방법**: `@opennextjs/cloudflare` 어댑터로 Next.js 15를 Cloudflare Workers에 배포. `wrangler.jsonc`(nodejs_compat·global_fetch_strictly_public·ASSETS·IMAGES·WORKER_SELF_REFERENCE), `open-next.config.ts`, `next.config.ts`에 `initOpenNextCloudflareForDev()` 추가. 배포 스크립트 `npm run cf:deploy`(=opennextjs-cloudflare build && deploy).

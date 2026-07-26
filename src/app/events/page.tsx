@@ -76,8 +76,26 @@ const REVIEW = {
   cta: { label: "예약하기 →", href: "/reserve" },
 };
 
+const BIRTHDAY = {
+  title: "생일 이벤트", badge: "진행 중", image: "/images/event-birthday.png",
+  summary: "생일 달엔 전 테마 5,000원 할인 쿠폰을 문자로 보내드려요!",
+  body: [
+    { h: "이런 이벤트예요", items: [
+      "테마 이용 시 작성한 동의서에 마케팅 수신 동의를 하신 분께, 생일이 있는 달에 쓸 수 있는 쿠폰을 그 달 1일에 문자로 보내드립니다!",
+    ] },
+    { h: "쿠폰 혜택", items: [
+      "판타스트릭 전 테마 5,000원 할인 쿠폰 (원하는 테마에 사용 가능)",
+    ] },
+    { h: "사용 기한 · 유의", items: [
+      "쿠폰은 생일 해당 월 1일부터 그 달 마지막 날까지 사용할 수 있어요.",
+      "테마 이용 시 동의서의 마케팅 수신 동의에 체크하셔야 발송됩니다.",
+    ] },
+  ],
+  cta: { label: "예약하기 →", href: "/reserve" },
+};
+
 export default function EventsPage() {
-  const [open, setOpen] = useState<null | "observer" | "review">(null);
+  const [open, setOpen] = useState<null | "observer" | "review" | "birthday">(null);
   const [sub, setSub] = useState(0); // 옵저버 팝업 안에서 몇 번째 테마인지
   const go = useCallback((d: number) => setSub((i) => (i + d + OBSERVER_THEMES.length) % OBSERVER_THEMES.length), []);
 
@@ -158,6 +176,25 @@ export default function EventsPage() {
               <span className="ev-more">자세히 보기 →</span>
             </div>
           </button>
+
+          {/* 생일 이벤트 카드 */}
+          <button type="button" className="ev-card" onClick={() => setOpen("birthday")} aria-label="생일 이벤트 자세히 보기">
+            <div className="ev-thumb">
+              <Image src={BIRTHDAY.image} alt="생일 이벤트" fill sizes="(max-width:560px) 46vw, 260px" className="ev-poster" />
+              <span className="ev-shade" />
+              <span className="ev-badge">{BIRTHDAY.badge}</span>
+              <span className="ev-sub">BIRTHDAY</span>
+              <span className="ev-thumb-title">생일 이벤트</span>
+            </div>
+            <div className="ev-cap">
+              <div className="ev-cap-top">
+                <span className="ev-tag">#생일이벤트</span>
+                <StatusBadge schedule={{ type: "always" }} />
+              </div>
+              <p className="ev-summary">{BIRTHDAY.summary}</p>
+              <span className="ev-more">자세히 보기 →</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -212,6 +249,28 @@ export default function EventsPage() {
               ))}
               <div className="ev-modal-cta">
                 <Link href={REVIEW.cta.href} className="btn primary" onClick={close}>{REVIEW.cta.label}</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 생일 이벤트 팝업 */}
+      {open === "birthday" && (
+        <div className="ev-modal-overlay" onClick={close} role="dialog" aria-modal="true" aria-label={BIRTHDAY.title}>
+          <div className="ev-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="ev-modal-x" onClick={close} aria-label="닫기">✕</button>
+            <Image src={BIRTHDAY.image} alt="생일 이벤트" width={1080} height={1080} sizes="560px" className="ev-modal-poster" />
+            <div className="ev-modal-body">
+              <p className="ev-modal-lead">{BIRTHDAY.summary}</p>
+              {BIRTHDAY.body.map((sec, j) => (
+                <div key={j} className="ev-sec">
+                  <h3>{sec.h}</h3>
+                  <ul>{sec.items.map((it, k) => <li key={k}>{it}</li>)}</ul>
+                </div>
+              ))}
+              <div className="ev-modal-cta">
+                <Link href={BIRTHDAY.cta.href} className="btn primary" onClick={close}>{BIRTHDAY.cta.label}</Link>
               </div>
             </div>
           </div>
