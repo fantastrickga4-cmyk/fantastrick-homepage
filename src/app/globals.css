@@ -716,6 +716,22 @@ header.over-hero .btn.ghost:hover{background:rgba(255,255,255,.12)}
 .biz-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:40px}
 .cap3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 @media(max-width:860px){.cap3{grid-template-columns:1fr}}
+/* 홈 '제작 역량' 3카드(cap3-mini)는 폰에서도 한 줄(3열)로 압축 — 스크롤 없이 한눈에.
+   내용이 짧은(번호+제목+키워드 한 줄) 컴팩트 카드라 좁아도 깔끔하게 들어간다.
+   ※ /business 페이지의 큰 역량카드(.cap3, 불릿 리스트)는 그대로 1열 유지. */
+@media(max-width:860px){
+  .cap3-mini{grid-template-columns:repeat(3,1fr);gap:9px}
+  .cap3-mini .cap{padding:16px 10px;text-align:center}
+  .cap3-mini .cap .cno{font-size:24px;margin-bottom:9px}
+  .cap3-mini .cap .en{font-size:9px;letter-spacing:.1em}
+  .cap3-mini .cap h4{font-size:14px;margin:7px 0 6px;word-break:keep-all}
+  .cap3-mini .cap .ckw{font-size:11px;line-height:1.45}
+}
+@media(max-width:380px){
+  .cap3-mini .cap{padding:14px 7px}
+  .cap3-mini .cap h4{font-size:13px}
+  .cap3-mini .cap .ckw{font-size:10px}
+}
 .cap{border:1px solid var(--line);border-radius:var(--r);padding:26px;background:var(--surface);transition:.25s}
 .cap:hover{border-color:rgba(143,106,224,.5);transform:translateY(-4px);box-shadow:0 16px 44px rgba(98,38,152,.28)}
 .cap .ci{width:46px;height:46px;border-radius:var(--r-sm);display:grid;place-items:center;font-size:22px;margin-bottom:16px;

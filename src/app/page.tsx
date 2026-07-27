@@ -370,7 +370,7 @@ export default function Home() {
             </div>
             <Link href="/business" className="btn gold">제작 역량 보기 →</Link>
           </div>
-          <div className="cap3">
+          <div className="cap3 cap3-mini">
             <div className="cap reveal" style={{ "--i": 0 } as CSSProperties}><span className="cno">01</span><div className="en">Contents</div><h4>콘텐츠 제작</h4><span className="ckw">시나리오 · 연출 · 운영 설계</span></div>
             <div className="cap reveal" style={{ "--i": 1 } as CSSProperties}><span className="cno">02</span><div className="en">Space</div><h4>공간 디자인</h4><span className="ckw">세트 · 인테리어 · 동선 시공</span></div>
             <div className="cap reveal" style={{ "--i": 2 } as CSSProperties}><span className="cno">03</span><div className="en">Tech / Device</div><h4>기술 · 장치</h4><span className="ckw">잠금장치 · 조명·음향 · 센서 기믹</span></div>
