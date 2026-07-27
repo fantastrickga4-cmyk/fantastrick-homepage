@@ -28,6 +28,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 const won = (n: number) => n.toLocaleString() + "원";
 
+// <스네이크>·[SYSTEM] 같은 짧은 괄호 묶음이 줄바꿈에서 쪼개져 '<' 만 줄 끝에 남는 걸 방지(글자는 그대로).
+function nb(text: string) {
+  return text.split(/(<[^<>]{1,24}>|\[[^[\]]{1,24}\])/g).map((p, i) =>
+    /^(<[^<>]+>|\[[^[\]]+\])$/.test(p) ? <span key={i} className="nb">{p}</span> : p,
+  );
+}
+
 export default async function RoomPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const theme = THEMES.find((t) => t.id === id);
@@ -75,14 +82,14 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
           <div className="rm-syn">
-            {content.synopsis.map((line, i) => <p key={i}>{line}</p>)}
+            {content.synopsis.map((line, i) => <p key={i}>{nb(line)}</p>)}
             <ul className="rm-notices">
               {content.notices.map((n, i) => {
                 // "머더룸 — 본문" 처럼 앞에 라벨이 붙은 줄은 라벨과 본문을 나눠 배치한다.
                 // 그냥 한 줄로 두면 본문이 길어질 때 라벨 아래까지 파고들어 읽기 어렵다
                 // (모바일에서 "…게임 테마입 / 니다. (방탈출 테마가…" 처럼 잘렸음).
                 const sep = n.indexOf(" — ");
-                if (sep === -1) return <li key={i}>※ {n}</li>;
+                if (sep === -1) return <li key={i}>※ {nb(n)}</li>;
                 return (
                   <li key={i} className="rm-tag">
                     <span className="rm-tag-l">※ {n.slice(0, sep)} —</span>

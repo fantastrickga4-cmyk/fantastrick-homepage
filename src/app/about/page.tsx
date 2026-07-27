@@ -43,7 +43,7 @@ export default function AboutPage() {
           <div className="eyebrow">PREMIUM ESCAPE ROOM</div>
           <h1 className="ah-title">상상을 기술로써 현실에 구현한다.</h1>
           <p className="ah-sub">
-            Fantasy와 Trick 사이. 판타스트릭은 이야기를 공간과 장치로 지어 올려,<br />
+            Fantasy와 Trick 사이. 판타스트릭은 이야기를 공간과 장치로 지어 올려, <br className="pc-br" />
             문을 여는 순간 당신을 다른 세계에 세웁니다.
           </p>
           <div className="ah-cta">
@@ -64,8 +64,8 @@ export default function AboutPage() {
           <div className="as-body reveal rv-right">
             <p>아무리 근사한 상상도, 눈앞에 실제로 펼쳐지지 않으면 이야기로 끝납니다.</p>
             <p>
-              판타스트릭은 그 사이를 잇는 브랜드입니다.<br />
-              머릿속의 판타지를 정교한 트릭(공간·장치·연출)으로 구현해,<br />
+              판타스트릭은 그 사이를 잇는 브랜드입니다. <br className="pc-br" />
+              머릿속의 판타지를 정교한 트릭(공간·장치·연출)으로 구현해, <br className="pc-br" />
               손님이 &lsquo;보는 이야기&rsquo;가 아닌 &lsquo;직접 경험하는 이야기&rsquo;로 만듭니다.
             </p>
             <p className="as-punch">문을 열면, 상상은 더 이상 상상이 아닙니다.</p>
@@ -117,8 +117,8 @@ export default function AboutPage() {
             <h2 className="title">기획부터 장치까지, 한 팀에서</h2>
             <p className="lead">콘텐츠 · 공간 · 기술을 따로 외주 주지 않는 인하우스 제작.</p>
             <p className="lead" style={{ marginTop: 10 }}>
-              대부분의 방탈출은 이야기·인테리어·장치를 각각 다른 업체에 맡깁니다.<br />
-              판타스트릭은 세 가지를 모두 직접 합니다.<br />
+              대부분의 방탈출은 이야기·인테리어·장치를 각각 다른 업체에 맡깁니다. <br className="pc-br" />
+              판타스트릭은 세 가지를 모두 직접 합니다. <br className="pc-br" />
               그래서 이음새가 없고, 몰입이 끊기지 않습니다.
             </p>
           </div>
@@ -204,9 +204,9 @@ export default function AboutPage() {
               <figcaption>판타 · Fantasy</figcaption>
             </figure>
             <p className="am-text">
-              상상을 담은 <b className="am-b-blue">판타</b>(흰 판다)와<br />
-              장치를 다루는 <b className="am-b-red">트리키</b>(레서판다).<br />
-              두 마스코트는 판타스트릭의 두 얼굴,<br />
+              상상을 담은 <b className="am-b-blue">판타</b>(흰 판다)와 <br className="pc-br" />
+              장치를 다루는 <b className="am-b-red">트리키</b>(레서판다). <br className="pc-br" />
+              두 마스코트는 판타스트릭의 두 얼굴, <br className="pc-br" />
               Fantasy와 Trick을 그대로 대표합니다.
             </p>
             <figure className="am-fig am-tricky">
