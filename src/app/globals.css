@@ -1012,6 +1012,37 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .cform .field input:focus,.cform .field select:focus,.cform .field textarea:focus{border-color:var(--gold)}
 .formnote{font-size:11.5px;color:var(--muted);margin-top:10px}
 
+/* ── 비즈니스(B2B) 페이지 모바일 함축 ──────────────────────────────
+   폰에서 서비스·프로세스·레퍼런스·역량이 전부 1열로 떨어지고 섹션 상하 여백(다크 116px)이
+   커서 세로 스크롤이 과하게 길어졌다. 폰에서도 2열을 유지하고 여백을 줄여 화면을 압축한다.
+   (site-dark 의 .block/.shead 여백은 specificity 가 높아, 같은 선택자로 다시 눌러줘야 이긴다) */
+@media(max-width:600px){
+  .block{padding:48px 0}
+  .site-dark .block{padding:48px 0}
+  .shead{margin-bottom:24px;padding-top:16px}
+  .site-dark .shead{margin-bottom:24px}
+  .site-dark .shead h2.title,.site-dark .biz-head h2.title{font-size:clamp(24px,7vw,32px)}
+  /* 서비스·프로세스·레퍼런스: 폰에서도 2열 유지(1열로 떨어뜨리지 않음) */
+  .svc{grid-template-columns:1fr 1fr;gap:10px}
+  .steps{grid-template-columns:1fr 1fr;gap:10px}
+  .ref-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .svc .s{padding:14px}
+  .svc .s b{font-size:14.5px}
+  .step{padding:14px}
+  .ref .rt{aspect-ratio:16/12}
+  .ref .rb{padding:10px 12px}
+  /* 역량 카드: 정보가 많아 1열은 두되, 카드 여백·카드 간격을 줄여 높이를 압축 */
+  .cap3{gap:12px}
+  .cap{padding:18px}
+  .cap ul li{padding:4px 0 4px 16px}
+  /* 히어로: 상단 여백과 통계 간격 축소 */
+  .biz-hero{min-height:auto}
+  .biz-hero .wrap{padding-top:88px;padding-bottom:36px}
+  .biz-hero .meta{gap:14px;margin-top:22px}
+  /* 문의 폼 카드 여백 축소 */
+  form.cform{padding:18px}
+}
+
 /* ---------- 모달(팝업) ---------- */
 .modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(20,22,42,.45);
   display:flex;align-items:center;justify-content:center;padding:20px}
