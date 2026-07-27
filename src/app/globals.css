@@ -859,6 +859,9 @@ footer ul li{padding:3px 0}
 .site-dark .field input,.site-dark .field select,.site-dark .field textarea{color:#16181d}
 .site-dark .field input::placeholder,.site-dark .field textarea::placeholder{color:#8a93a3}
 /* 포커스: outline:none 제거 → :focus-visible 링으로 대체(키보드 접근성) */
+/* 비활성 드롭다운(예: 지점 고르기 전 테마 선택) — 눌러도 안 열림을 눈에 보이게 */
+.field select:disabled{opacity:.55;cursor:not-allowed;background:#eef0f4}
+.site-dark .field select:disabled{color:#8a93a3}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan)}
 .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}
 .field .hint{font-size:var(--fs-xs);color:var(--muted);margin-top:5px}

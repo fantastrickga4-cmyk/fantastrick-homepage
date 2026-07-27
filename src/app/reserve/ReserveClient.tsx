@@ -24,7 +24,10 @@ type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; theme
 
 export default function ReserveClient({ preset }: { preset: string }) {
 
-  const [themeId, setThemeId] = useState(preset && THEMES.some((t) => t.id === preset) ? preset : "");
+  // 딥링크(preset)로 특정 테마가 지정돼 들어오면, 그 테마의 지점도 함께 골라둔다.
+  const presetTheme = preset ? THEMES.find((t) => t.id === preset) : undefined;
+  const [storeId, setStoreId] = useState(presetTheme?.store ?? "");
+  const [themeId, setThemeId] = useState(presetTheme ? preset : "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [people, setPeople] = useState(2);
@@ -85,6 +88,18 @@ export default function ReserveClient({ preset }: { preset: string }) {
   // 휴무·마감인 날은 시간을 고를 수 없으니 ④는 자연히 안 열린다
   const showInfo = showTime && !!time;
 
+  // 고른 지점에 속한 (예약 가능한) 테마들 — 테마 드롭다운에 이것만 보인다.
+  const storeThemes = useMemo(() => THEMES.filter((t) => t.store === storeId), [storeId]);
+
+  // 지점을 고르면 그 지점 테마만 남긴다. 테마가 하나뿐인 지점(1·2호점)은 자동으로 골라
+  // 손님이 쓸데없이 한 번 더 누르지 않게 하고, 바로 캘린더가 뜨게 한다. 여러 개(TGC)면 비워 둔다.
+  function pickStore(id: string) {
+    setStoreId(id);
+    const only = THEMES.filter((t) => t.store === id);
+    setThemeId(only.length === 1 ? only[0].id : "");
+    setTime("");
+  }
+
   // 테마를 바꾸면 고른 시간을 푼다 — 테마마다 시간표가 완전히 달라서(사자의 서 70분 간격 등)
   // 그대로 두면 그 테마에 없는 시간이 골라진 채로 남는다. 날짜는 그대로 둔다(보통 같은 날을 원함).
   function pickTheme(id: string) {
@@ -106,7 +121,8 @@ export default function ReserveClient({ preset }: { preset: string }) {
   }, [nowMs, time, date, leadMin]);
 
   useEffect(() => {
-    if (preset && THEMES.some((t) => t.id === preset)) setThemeId(preset);
+    const pt = preset ? THEMES.find((t) => t.id === preset) : undefined;
+    if (pt) { setStoreId(pt.store); setThemeId(pt.id); }
   }, [preset]);
 
   // 손님 기기가 휴대폰인지 (휴대폰이면 은행앱 딥링크, PC면 QR 안내)
@@ -298,30 +314,33 @@ export default function ReserveClient({ preset }: { preset: string }) {
       <h1 className="title" style={{ marginBottom: 22 }}>테마 예약</h1>
 
       <div className="card">
-        {/* ① 테마 선택 — 여기서부터 시작. 고르면 아래 날짜가 나타난다. */}
+        {/* ① 지점 선택 → ② 테마 선택. 지점을 고르면 그 지점 테마만 드롭다운에 뜨고,
+            테마가 하나뿐인 지점(1·2호점)은 자동으로 골라져 바로 아래 캘린더가 나타난다. */}
         <div className="field">
-          <label>① 테마 선택</label>
-          <div className="optrow">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={"opt" + (themeId === t.id ? " on" : "")}
-                aria-pressed={themeId === t.id}
-                onClick={() => pickTheme(t.id)}
-              >
-                {t.name}
-                <span style={{ display: "block", fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{t.storeTag}</span>
-              </button>
+          <label htmlFor="rv-store">① 지점 선택</label>
+          <select id="rv-store" value={storeId} onChange={(e) => pickStore(e.target.value)}>
+            <option value="" disabled>지점을 선택하세요</option>
+            {STORES.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
-          </div>
-          {!showDate && <div className="hint">테마를 선택하면 날짜를 고를 수 있어요.</div>}
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="rv-theme">② 테마 선택</label>
+          <select id="rv-theme" value={themeId} disabled={!storeId} onChange={(e) => pickTheme(e.target.value)}>
+            <option value="" disabled>{storeId ? "테마를 선택하세요" : "먼저 지점을 선택하세요"}</option>
+            {storeThemes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {storeId && !showDate && <div className="hint">테마를 선택하면 날짜를 고를 수 있어요.</div>}
         </div>
 
         {/* ② 날짜 — 테마를 골라야 나타남 */}
         {showDate && (
           <div className="field rstep">
-            <label>② 날짜</label>
+            <label>③ 날짜</label>
             <ReserveCalendar value={date} onChange={pickDate} />
             {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
             {date && notOpenSelected && (
@@ -343,7 +362,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
         {/* ③ 시간 — 날짜를 골라야 나타남 */}
         {showTime && (
         <div className="field rstep">
-          <label>③ 시간</label>
+          <label>④ 시간</label>
           {dayClosed || noSlotsDay ? (
             <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
           ) : (
@@ -391,7 +410,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
         {showInfo && (
         <div className="rstep">
         <div className="field">
-          <label htmlFor="rv-people">④ 인원</label>
+          <label htmlFor="rv-people">⑤ 인원</label>
           <select id="rv-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>{n}명</option>
