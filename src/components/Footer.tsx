@@ -42,6 +42,7 @@ export default function Footer() {
         <div className="foot-bottom">
           <span>
             © 2026 FANTASTRICK. All rights reserved.
+            <Link href="/privacy" className="foot-privacy">개인정보처리방침</Link>
             <Link href="/admin" className="foot-admin">관리자</Link>
           </span>
           <span className="slogan-foot">일상이 멈추고, 이야기가 시작된다</span>

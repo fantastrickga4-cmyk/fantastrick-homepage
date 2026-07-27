@@ -103,6 +103,14 @@ a{color:inherit;text-decoration:none}
 /* PC에서만 줄바꿈하는 <br>. 모바일(좁은 화면)에선 사라져 문장이 자연스럽게 이어짐
    (좁은 화면에서 억지 줄바꿈이 '으로 구현해,' 같은 짧은 조각을 외톨이로 남기던 것 방지). */
 @media(max-width:600px){br.pc-br{display:none}}
+/* 개인정보처리방침 등 법적 문서 */
+.legal .lg-sec{margin:22px 0}
+.legal .lg-sec h2{font-size:17px;font-weight:800;margin:0 0 8px;color:var(--text)}
+.legal .lg-sec p{color:var(--muted);font-size:14.5px;line-height:1.75;margin:6px 0}
+.legal .lg-sec ul{margin:8px 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.legal .lg-sec li{color:var(--muted);font-size:14.5px;line-height:1.7}
+.legal .lg-sec li b{color:var(--text)}
+.legal .lg-muted{color:var(--faint);font-size:13px}
 img{display:block;max-width:100%}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
 section{position:relative}
@@ -831,6 +839,8 @@ footer ul li{padding:3px 0}
 .foot-admin{margin-left:12px;font-size:12px;color:var(--faint);text-decoration:none;
   display:inline-block;padding:6px 4px}
 .foot-admin:hover{color:var(--text)}
+.foot-privacy{margin-left:12px;font-size:12.5px;color:var(--muted);text-decoration:none;display:inline-block;padding:6px 4px;font-weight:600}
+.foot-privacy:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px}
 
 /* floating reserve (mobile) */
 .float{position:fixed;right:16px;bottom:16px;z-index:120;display:none}

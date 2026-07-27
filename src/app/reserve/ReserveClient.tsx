@@ -31,6 +31,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
+  const [agree, setAgree] = useState(false); // 개인정보 수집·이용 동의(필수)
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -179,6 +180,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
     if (!isValidPhone(phone)) return setErr("전화번호 형식을 확인해 주세요. (예: 010-1234-5678)");
     if (!/^\d{4}$/.test(pin)) return setErr("비밀번호는 숫자 4자리로 입력해 주세요.");
+    if (!agree) return setErr("개인정보 수집·이용 동의가 필요합니다.");
     setLoading(true);
     try {
       const res = await fetch("/api/reservations", {
@@ -440,6 +442,11 @@ export default function ReserveClient({ preset }: { preset: string }) {
           <b>전화번호를 제대로 입력</b>해야만 예약금 관련 안내를 받으실 수 있습니다.<br />
           예약 조회·취소할 때 <b>비밀번호</b>가 필요해요. 잊지 않게 기억해 주세요.
         </div>
+
+        <label className="agree-row" style={{ marginTop: 4 }}>
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+          <span><b>[필수]</b> <Link href="/privacy" className="tlink" target="_blank" rel="noopener noreferrer">개인정보 수집·이용</Link>에 동의합니다. <span style={{ color: "var(--faint)" }}>(이름·전화번호를 예약 접수·확인·취소·안내 목적으로 이용)</span></span>
+        </label>
 
         {err && <div className="msg-err"><IconWarn /> {err}</div>}
 
