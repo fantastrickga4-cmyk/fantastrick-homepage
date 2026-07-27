@@ -1,6 +1,41 @@
+import crypto from "crypto";
 import { getSupabase } from "./supabase";
 import { formatDate, normalizePhone } from "./util";
 import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
+
+// ─── 솔라피(Solapi) 발송 공통 ──────────────────────────────────────────────
+// Cloudflare(서버리스)라 IP 고정이 안 돼, IP 화이트리스트가 필요한 알리고 대신
+// API키+시크릿 HMAC 서명 방식인 솔라피를 쓴다(어느 IP에서든 발송 가능).
+//   env: SOLAPI_API_KEY, SOLAPI_API_SECRET, SOLAPI_SENDER(발신번호, 숫자),
+//        SOLAPI_PFID(카카오 발신프로필ID), SOLAPI_TPL_CONFIRM/CANCEL(알림톡 템플릿ID)
+function solapiAuthHeader(): string | null {
+  const key = process.env.SOLAPI_API_KEY, secret = process.env.SOLAPI_API_SECRET;
+  if (!key || !secret) return null;
+  const date = new Date().toISOString();
+  const salt = crypto.randomBytes(32).toString("hex");
+  const signature = crypto.createHmac("sha256", secret).update(date + salt).digest("hex");
+  return `HMAC-SHA256 apiKey=${key}, date=${date}, salt=${salt}, signature=${signature}`;
+}
+
+// 솔라피 단건 발송. message 안에 kakaoOptions 를 넣으면 알림톡(+SMS 자동대체)이 된다.
+async function solapiSend(message: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const auth = solapiAuthHeader();
+  if (!auth) return { ok: false, error: "SOLAPI 키 미설정" };
+  try {
+    const res = await fetch("https://api.solapi.com/messages/v4/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({ message }),
+    });
+    const j = await res.json().catch(() => ({}));
+    // 단건 접수 성공 = statusCode "2000"(정상 접수). 실패면 코드/메시지를 로그로.
+    const code = String(j.statusCode ?? "");
+    const ok = res.ok && (code === "2000" || (!!j.messageId && code.startsWith("2")));
+    return { ok, error: ok ? undefined : (j.statusMessage || j.errorMessage || JSON.stringify(j)).slice(0, 200) };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
 
 // ─── 테스트 데이터 문자 차단 ────────────────────────────────────────────
 // 기존 사이트(fantastrick.co.kr)에서 가져온 연습용 예약은 전화번호를 이 대역
@@ -78,90 +113,61 @@ async function writeLog(row: Record<string, unknown>) {
   if (error) console.error("[sms_log 기록 실패]", error.message, row.type);
 }
 
-// 문자 발송. 알리고(ALIGO) 키가 있으면 실제 발송, 없으면 발송 로그만 'skipped' 로 남김.
+// 문자(SMS) 발송. 솔라피 키가 있으면 실제 발송, 없으면 발송 로그만 'skipped' 로 남김.
 export async function sendSms(phone: string, body: string, type: string): Promise<{ ok: boolean; skipped?: boolean }> {
-  // 연습용 데이터에는 절대 발송하지 않는다 (알리고 키가 있어도).
+  // 연습용 데이터에는 절대 발송하지 않는다 (키가 있어도).
   if (isTestPhone(phone)) {
     await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "연습용 데이터(가져온 예약) — 발송 차단" });
     return { ok: false, skipped: true };
   }
 
-  const key = process.env.ALIGO_API_KEY;
-  const userId = process.env.ALIGO_USER_ID;
-  const sender = process.env.ALIGO_SENDER;
-
-  if (!key || !userId || !sender) {
-    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "ALIGO 키 미설정(미발송)" });
+  const from = process.env.SOLAPI_SENDER;
+  if (!process.env.SOLAPI_API_KEY || !process.env.SOLAPI_API_SECRET || !from) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "SOLAPI 키 미설정(미발송)" });
     return { ok: false, skipped: true };
   }
-  try {
-    const form = new URLSearchParams({ key, user_id: userId, sender, receiver: phone, msg: body });
-    const res = await fetch("https://apis.aligo.in/send/", { method: "POST", body: form });
-    const j = await res.json();
-    const ok = String(j.result_code) === "1";
-    await writeLog({ phone, body, type, status: ok ? "sent" : "failed", channel: "sms", error: ok ? null : String(j.message || "") });
-    return { ok };
-  } catch (e) {
-    await writeLog({ phone, body, type, status: "failed", channel: "sms", error: String(e) });
-    return { ok: false };
-  }
+  const r = await solapiSend({ to: normalizePhone(phone), from: normalizePhone(from), text: body });
+  await writeLog({ phone, body, type, status: r.ok ? "sent" : "failed", channel: "sms", error: r.ok ? null : r.error });
+  return { ok: r.ok };
 }
 
-// 알림톡 설정 완료 여부 (senderkey + 해당 타입 템플릿코드 존재)
+// 타입 → 카카오 알림톡 템플릿ID. 입금확인/확정=확정 템플릿, 취소=취소 템플릿.
 const KAKAO_TPL: Record<string, string | undefined> = {
-  confirm: process.env.ALIGO_KAKAO_TPL_CONFIRM,
-  cancel: process.env.ALIGO_KAKAO_TPL_CANCEL,
+  payment: process.env.SOLAPI_TPL_CONFIRM,
+  confirm: process.env.SOLAPI_TPL_CONFIRM,
+  cancel: process.env.SOLAPI_TPL_CANCEL,
+  admin_cancel: process.env.SOLAPI_TPL_CANCEL,
 };
 export function kakaoConfigured(type?: string): boolean {
-  const base = !!(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER && process.env.ALIGO_KAKAO_SENDERKEY);
+  const base = !!(process.env.SOLAPI_API_KEY && process.env.SOLAPI_API_SECRET && process.env.SOLAPI_SENDER && process.env.SOLAPI_PFID);
   if (!type) return base;
   return base && !!KAKAO_TPL[type];
 }
 
-// 알림톡 발송 토큰 (30초 유효). 실패 시 null.
-async function getKakaoToken(apikey: string, userid: string): Promise<string | null> {
-  try {
-    const form = new URLSearchParams({ apikey, userid });
-    const res = await fetch("https://kakaoapi.aligo.in/akv10/token/create/30/s/", { method: "POST", body: form });
-    const j = await res.json();
-    return String(j.code) === "0" && j.token ? String(j.token) : null;
-  } catch {
-    return null;
-  }
-}
-
-// 카카오 알림톡 발송. 실패 시 알리고가 자동으로 SMS 대체발송(failover). 미설정이면 null → 호출측이 SMS 폴백.
-export async function sendAlimtalk(phone: string, body: string, type: string): Promise<{ ok: boolean } | null> {
+// 카카오 알림톡 발송(솔라피). kakaoOptions.disableSms=false 라 알림톡 실패 시 솔라피가 SMS(text)로 자동 대체.
+//   미설정이면 null → 호출측이 SMS 폴백. body=SMS 대체 본문, vars=템플릿 치환(#{이름} 등).
+export async function sendAlimtalk(
+  phone: string, body: string, type: string, vars: Record<string, string>
+): Promise<{ ok: boolean } | null> {
   // 연습용 데이터 차단. null 이 아니라 {ok:false} 를 돌려줘야 호출측이 SMS 로 폴백하지 않는다.
   if (isTestPhone(phone)) {
     await writeLog({ phone, body, type, status: "skipped", channel: "alimtalk", error: "연습용 데이터(가져온 예약) — 발송 차단" });
     return { ok: false };
   }
 
-  const apikey = process.env.ALIGO_API_KEY;
-  const userid = process.env.ALIGO_USER_ID;
-  const sender = process.env.ALIGO_SENDER;
-  const senderkey = process.env.ALIGO_KAKAO_SENDERKEY;
-  const tpl_code = KAKAO_TPL[type];
-  if (!apikey || !userid || !sender || !senderkey || !tpl_code) return null; // 미설정 → SMS 폴백
+  const from = process.env.SOLAPI_SENDER;
+  const pfId = process.env.SOLAPI_PFID;
+  const templateId = KAKAO_TPL[type];
+  if (!process.env.SOLAPI_API_KEY || !from || !pfId || !templateId) return null; // 미설정 → SMS 폴백
 
-  const token = await getKakaoToken(apikey, userid);
-  if (!token) return null; // 토큰 실패 → SMS 폴백
-  try {
-    const form = new URLSearchParams({
-      apikey, userid, token, senderkey, tpl_code, sender,
-      receiver_1: phone, subject_1: "판타스트릭 예약 안내", message_1: body,
-      failover: "Y", fsubject_1: "판타스트릭", fmessage_1: body, // 알림톡 실패 시 SMS 자동대체
-    });
-    const res = await fetch("https://kakaoapi.aligo.in/akv10/alimtalk/send/", { method: "POST", body: form });
-    const j = await res.json();
-    const ok = String(j.code) === "0";
-    await writeLog({ phone, body, type, status: ok ? "sent" : "failed", channel: "alimtalk", error: ok ? null : String(j.message || "") });
-    return { ok };
-  } catch (e) {
-    await writeLog({ phone, body, type, status: "failed", channel: "alimtalk", error: String(e) });
-    return { ok: false };
-  }
+  const r = await solapiSend({
+    to: normalizePhone(phone),
+    from: normalizePhone(from),
+    text: body, // 알림톡 실패 시 이 문구로 SMS 자동 대체
+    kakaoOptions: { pfId, templateId, variables: vars, disableSms: false },
+  });
+  await writeLog({ phone, body, type, status: r.ok ? "sent" : "failed", channel: "alimtalk", error: r.ok ? null : r.error });
+  return { ok: r.ok };
 }
 
 // 예약 1건에 대해 특정 타입 문자 발송 (템플릿 렌더 포함)
@@ -175,8 +181,10 @@ export async function sendReservationSms(
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
     refundRate: r.refund_rate ?? undefined,
   });
-  // 1순위 알림톡(실패 시 알리고가 SMS 자동대체). 알림톡 미설정이면 기존 SMS 경로.
-  const kakao = await sendAlimtalk(r.phone, body, type);
+  // 알림톡 템플릿 치환 변수(#{이름}#{테마}#{날짜}#{시간} — 카카오 등록 템플릿과 일치해야 함)
+  const vars = { "#{이름}": r.name, "#{테마}": r.theme_name, "#{날짜}": formatDate(r.date), "#{시간}": r.time };
+  // 1순위 알림톡(실패 시 솔라피가 SMS 자동대체). 알림톡 미설정이면 SMS 경로.
+  const kakao = await sendAlimtalk(r.phone, body, type, vars);
   if (kakao) return kakao;
   return sendSms(r.phone, body, type);
 }

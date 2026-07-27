@@ -2,6 +2,14 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-27 — 문자 발송 알리고 → 솔라피(Solapi) 전환
+- **이유**: 알리고는 **발송 서버 IP 화이트리스트**가 필수인데, Cloudflare Workers는 IP가 계속 바뀌어 등록 불가 → "인증오류-IP". 솔라피는 **API키+시크릿 HMAC 서명** 방식이라 IP 무관, Cloudflare에서 바로 작동.
+- `src/lib/sms.ts` 재작성: `solapiSend()`(HMAC 헤더 + `POST api.solapi.com/messages/v4/send`). 알림톡은 `kakaoOptions{pfId,templateId,variables,disableSms:false}` 로 보내 **실패 시 솔라피가 SMS 자동 대체**(알리고 failover 대체). 변수는 `#{이름}#{테마}#{날짜}#{시간}`. 테스트번호 차단·sms_log·템플릿 로직은 그대로.
+- env: `SOLAPI_API_KEY·SOLAPI_API_SECRET·SOLAPI_SENDER·SOLAPI_PFID·SOLAPI_TPL_CONFIRM·SOLAPI_TPL_CANCEL`. (알리고 env는 폐기, .env.local 주석)
+- 가격 참고: 솔라피 알림톡 8원·SMS 13원(알리고와 큰 차이 없음). 카카오 알림톡 템플릿 2종(확정·취소)=`Desktop\판타스트릭_카카오알림톡_템플릿.txt`.
+- **남은 것(사장님)**: 솔라피 가입·발신번호 등록·카카오채널 연동(pfId)·템플릿 심사(템플릿ID) → API키/시크릿 등 값 주면 내가 Cloudflare 시크릿 등록·발송 테스트.
+- 파일: `src/lib/sms.ts`, `.env.local`.
+
 ## 2026-07-27 — 개인정보처리방침 + 예약 동의 (출시 법적 요건)
 - **개인정보처리방침 페이지 신설** (`/privacy`): 실제 수집 항목(이름·전화·예약비번4자리·환불계좌·후기)·이용목적·보유기간(전자상거래법 5년/3년)·제3자제공·위탁(알리고·카카오·Supabase·Cloudflare)·마케팅 별도동의·정보주체 권리·보호책임자(대표 승현수·연락처). BIZ_INFO 연동. `.legal` 스타일.
 - **예약폼에 개인정보 수집·이용 동의 체크박스**(필수): 최종 단계(showInfo, 제출 버튼 앞)에 추가. `agree` 상태 + 미동의 시 제출 차단(submit()에서 검사). /privacy 링크 포함.
