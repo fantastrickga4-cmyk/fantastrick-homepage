@@ -1,5 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "//": "Vercel 자동 배포 끔 — 라이브는 Cloudflare Workers 하나로 간다(npm run cf:deploy). git push 는 소스 보관용이라, 그때마다 Vercel 이 빌드되지 않게 막는다.",
+  "git": { "deploymentEnabled": { "main": false } },
   "regions": ["icn1"],
   "crons": [
     { "path": "/api/cron/backup", "schedule": "0 3 * * 1" }
