@@ -56,20 +56,26 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, themeSlots: THEME_SLOTS });
   // 사장님이 관리자 화면에서 시간표를 바꿨을 수도 있으므로, 답이 오기 전엔 고르지 못하게 한다.
   const [cfgLoaded, setCfgLoaded] = useState(false);
-  // 마감/예약된 시간을 페이지 열 때 '한 번에' 미리 받아둔다(앞으로의 모든 날짜·테마).
-  //   전에는 테마·날짜를 고른 뒤에야 그 날 마감정보를 물어봐서 "조금 로딩"이 생겼다.
-  //   이제 열자마자 통째로 받아 두고, 고르는 순간 계산만 하므로 기다림이 없다.
-  //   ※ 실제 이중예약은 서버가 막는다(uq_res_slot). 이 미리불러오기는 손님 헛고생 방지용이라
-  //     조금 낡은 값이어도 안전하다. 60초마다 조용히(로딩표시 없이) 새로고침해 최신으로 유지한다.
+  // ── 마감/예약 시간: '즉시 표시(미리불러오기)' + '그 슬롯만 신선하게(조용히 재확인)' 2단 ──
+  //   ※ 이중예약 자체는 DB 유니크 인덱스(uq_res_slot: store·theme·date·time, 취소 제외)가
+  //     물리적으로 막는다. 아래 값들은 "이미 찬 칸을 손님이 안 고르게" 하는 화면 안내용일 뿐,
+  //     조금 낡아도 이중예약으로 이어지지 않는다(신청 시 서버가 최종 거절).
+  // (1) 페이지 열 때 앞으로의 모든 날짜·테마 마감/예약을 통째로 받아 '즉시 표시'용으로 둔다(로딩 제거).
   const [allSlots, setAllSlots] = useState<{ blockedSlots: SlotRow[]; reservations: SlotRow[] } | null>(null);
   const [allLoaded, setAllLoaded] = useState(false);
-  // 예전 코드가 쓰던 이름 유지 — 이제 '최초 로딩 전'에만 true(그 뒤 새로고침은 조용히 처리).
+  // (2) 고른 그 (테마·날짜)만 서버에서 콕 집어 신선하게 받아온 값. 있으면 이걸 우선한다.
+  const [freshSlots, setFreshSlots] = useState<Record<string, { blocked: string[]; dayClosed: boolean }>>({});
+  // 예전 코드가 쓰던 이름 유지 — '최초 로딩 전'에만 true(그 뒤 재확인은 조용히 처리, 로딩표시 없음).
   const slotsLoading = !allLoaded;
+  const slotKey = themeId && date ? `${themeId}|${date}` : "";
 
-  // 고른 테마·날짜의 마감/예약 시간 — 미리 받아둔 allSlots 에서 즉시 계산(네트워크 없음).
-  //   서버(/api/slots)와 똑같은 규칙: 그 날 blocked_slots(테마일치 또는 전체차단) + 이미 잡힌 예약시간.
+  // 고른 테마·날짜의 마감/예약 시간 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
+  //   1순위: 방금 그 슬롯만 콕 집어 받아온 신선값(freshSlots)
+  //   2순위: 없으면 미리 받아둔 allSlots 로 즉시 계산(네트워크 대기 없음)
   const { blocked, dayClosed } = useMemo(() => {
-    if (!themeId || !date || !allSlots) return { blocked: [] as string[], dayClosed: false };
+    if (!themeId || !date) return { blocked: [] as string[], dayClosed: false };
+    if (freshSlots[slotKey]) return freshSlots[slotKey];
+    if (!allSlots) return { blocked: [] as string[], dayClosed: false };
     const bs = allSlots.blockedSlots.filter((b) => b.date === date && (!b.theme_id || b.theme_id === themeId));
     const closed = bs.some((b) => !b.time);
     const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
@@ -77,7 +83,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
       .filter((r) => r.theme_id === themeId && r.date === date && r.time)
       .map((r) => r.time as string);
     return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
-  }, [themeId, date, allSlots]);
+  }, [themeId, date, slotKey, allSlots, freshSlots]);
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
@@ -180,24 +186,35 @@ export default function ReserveClient({ preset }: { preset: string }) {
       .finally(() => setCfgLoaded(true));
   }, []);
 
-  // 페이지 열 때 앞으로의 모든 마감/예약 시간을 한 번에 받아두고, 60초마다 조용히 새로고침.
-  //   최초 1회만 로딩 표시(slotsLoading)가 뜨고, 그 뒤 새로고침은 화면을 건드리지 않는다.
+  // (1) 페이지 열 때: 앞으로의 모든 마감/예약을 한 번에 받아 '즉시 표시'용으로 둔다(로딩 제거).
   useEffect(() => {
     let alive = true;
-    const load = () =>
-      fetch("/api/slots?all=1")
-        .then((r) => r.json())
-        .then((d) => {
-          if (alive && d?.all) setAllSlots({ blockedSlots: d.blockedSlots || [], reservations: d.reservations || [] });
-        })
-        .catch(() => {})
-        .finally(() => { if (alive) setAllLoaded(true); });
-    load();
-    const iv = setInterval(load, 60000);
-    return () => { alive = false; clearInterval(iv); };
+    fetch("/api/slots?all=1")
+      .then((r) => r.json())
+      .then((d) => { if (alive && d?.all) setAllSlots({ blockedSlots: d.blockedSlots || [], reservations: d.reservations || [] }); })
+      .catch(() => {})
+      .finally(() => { if (alive) setAllLoaded(true); });
+    return () => { alive = false; };
   }, []);
 
-  // 미리 받아둔 정보상 이미 마감된 시간을 골라두고 있었다면(새로고침으로 방금 찼다면) 선택을 푼다.
+  // (2) 테마·날짜를 고르면: 그 슬롯만 서버에서 콕 집어 '조용히' 다시 확인한다(화면은 이미 떠 있어 로딩 없음).
+  //     그 화면에 머무는 동안 60초마다 같은 슬롯을 재확인해, 오래 켜둬도 최신 마감상태를 본다.
+  //     ※ 이중예약 방지는 서버(uq_res_slot)가 최종적으로 담당 — 이 재확인은 '헛수고 방지'용 안내 갱신.
+  useEffect(() => {
+    if (!themeId || !date) return;
+    let alive = true;
+    const key = `${themeId}|${date}`;
+    const refresh = () =>
+      fetch(`/api/slots?theme=${themeId}&date=${date}`)
+        .then((r) => r.json())
+        .then((d) => { if (alive && d) setFreshSlots((prev) => ({ ...prev, [key]: { blocked: d.blocked || [], dayClosed: !!d.dayClosed } })); })
+        .catch(() => {});
+    refresh();
+    const iv = setInterval(refresh, 60000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [themeId, date]);
+
+  // 이미 마감된 시간을 골라두고 있었다면(재확인으로 방금 찼다면) 선택을 자동으로 푼다.
   useEffect(() => {
     if (time && blocked.includes(time)) setTime("");
   }, [blocked, time]);
