@@ -22,6 +22,9 @@ type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; theme
   // 손님이 틀린 금액을 입금하고 자동매칭(금액 정확일치)이 실패해 30분 뒤 자동취소된다.
   themeDeposits?: Record<string, number> };
 
+// 미리 받아두는 마감/예약 시간 한 줄 (time 이 null 이면 그 날 통째 휴무=dayClosed)
+type SlotRow = { theme_id: string | null; date: string; time: string | null };
+
 export default function ReserveClient({ preset }: { preset: string }) {
 
   // 딥링크(preset)로 특정 테마가 지정돼 들어오면, 그 테마의 지점도 함께 골라둔다.
@@ -53,13 +56,28 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [cfg, setCfg] = useState<Cfg>({ timeSlots: TIME_SLOTS, themeSlots: THEME_SLOTS });
   // 사장님이 관리자 화면에서 시간표를 바꿨을 수도 있으므로, 답이 오기 전엔 고르지 못하게 한다.
   const [cfgLoaded, setCfgLoaded] = useState(false);
-  const [blocked, setBlocked] = useState<string[]>([]);
-  const [dayClosed, setDayClosed] = useState(false);
-  // 마감된 칸이 어디인지 서버에 물어보는 중인가.
-  //   이걸 안 두면: 날짜를 고른 순간 모든 칸이 "예약 가능"처럼 보이다가 2~3초 뒤 🚫 가 붙는다.
-  //   그 사이에 이미 찬 칸을 고른 손님은 이름·전화까지 다 입력하고 나서야 거절당한다(헛수고).
-  //   ※ 실제 이중예약은 서버가 막는다(uq_res_slot). 이건 손님을 헛고생시키지 않기 위한 것.
-  const [slotsLoading, setSlotsLoading] = useState(false);
+  // 마감/예약된 시간을 페이지 열 때 '한 번에' 미리 받아둔다(앞으로의 모든 날짜·테마).
+  //   전에는 테마·날짜를 고른 뒤에야 그 날 마감정보를 물어봐서 "조금 로딩"이 생겼다.
+  //   이제 열자마자 통째로 받아 두고, 고르는 순간 계산만 하므로 기다림이 없다.
+  //   ※ 실제 이중예약은 서버가 막는다(uq_res_slot). 이 미리불러오기는 손님 헛고생 방지용이라
+  //     조금 낡은 값이어도 안전하다. 60초마다 조용히(로딩표시 없이) 새로고침해 최신으로 유지한다.
+  const [allSlots, setAllSlots] = useState<{ blockedSlots: SlotRow[]; reservations: SlotRow[] } | null>(null);
+  const [allLoaded, setAllLoaded] = useState(false);
+  // 예전 코드가 쓰던 이름 유지 — 이제 '최초 로딩 전'에만 true(그 뒤 새로고침은 조용히 처리).
+  const slotsLoading = !allLoaded;
+
+  // 고른 테마·날짜의 마감/예약 시간 — 미리 받아둔 allSlots 에서 즉시 계산(네트워크 없음).
+  //   서버(/api/slots)와 똑같은 규칙: 그 날 blocked_slots(테마일치 또는 전체차단) + 이미 잡힌 예약시간.
+  const { blocked, dayClosed } = useMemo(() => {
+    if (!themeId || !date || !allSlots) return { blocked: [] as string[], dayClosed: false };
+    const bs = allSlots.blockedSlots.filter((b) => b.date === date && (!b.theme_id || b.theme_id === themeId));
+    const closed = bs.some((b) => !b.time);
+    const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
+    const taken = allSlots.reservations
+      .filter((r) => r.theme_id === themeId && r.date === date && r.time)
+      .map((r) => r.time as string);
+    return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
+  }, [themeId, date, allSlots]);
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
@@ -162,28 +180,27 @@ export default function ReserveClient({ preset }: { preset: string }) {
       .finally(() => setCfgLoaded(true));
   }, []);
 
-  // 테마·날짜 선택 시 마감(차단/예약된) 시간 조회
+  // 페이지 열 때 앞으로의 모든 마감/예약 시간을 한 번에 받아두고, 60초마다 조용히 새로고침.
+  //   최초 1회만 로딩 표시(slotsLoading)가 뜨고, 그 뒤 새로고침은 화면을 건드리지 않는다.
   useEffect(() => {
-    if (!themeId || !date) { setBlocked([]); setDayClosed(false); setSlotsLoading(false); return; }
-    // 답이 오기 전까지는 "모른다" 상태로 둔다 — 지난 날짜의 마감정보를 그대로 쓰면 안 된다.
     let alive = true;
-    setSlotsLoading(true);
-    setBlocked([]);
-    setDayClosed(false);
-    fetch(`/api/slots?theme=${themeId}&date=${date}`)
-      .then((r) => r.json())
-      .then((d) => {
-        // 답을 기다리는 사이 손님이 다른 날짜를 골랐으면 이 답은 버린다.
-        // (안 버리면 늦게 도착한 옛 날짜의 마감정보가 새 날짜 위에 덮인다)
-        if (!alive) return;
-        setBlocked(d.blocked || []);
-        setDayClosed(!!d.dayClosed);
-        if (d.blocked?.includes(time)) setTime("");
-      })
-      .catch(() => {})
-      .finally(() => { if (alive) setSlotsLoading(false); });
-    return () => { alive = false; };
-  }, [themeId, date]); // eslint-disable-line react-hooks/exhaustive-deps
+    const load = () =>
+      fetch("/api/slots?all=1")
+        .then((r) => r.json())
+        .then((d) => {
+          if (alive && d?.all) setAllSlots({ blockedSlots: d.blockedSlots || [], reservations: d.reservations || [] });
+        })
+        .catch(() => {})
+        .finally(() => { if (alive) setAllLoaded(true); });
+    load();
+    const iv = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(iv); };
+  }, []);
+
+  // 미리 받아둔 정보상 이미 마감된 시간을 골라두고 있었다면(새로고침으로 방금 찼다면) 선택을 푼다.
+  useEffect(() => {
+    if (time && blocked.includes(time)) setTime("");
+  }, [blocked, time]);
 
   async function submit() {
     setErr("");
