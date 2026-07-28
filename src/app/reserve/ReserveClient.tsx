@@ -503,7 +503,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
 
         {err && <div className="msg-err"><IconWarn /> {err}</div>}
 
-        <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading}>
+        <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={submit} disabled={loading || !agree}>
           {loading ? "접수 중…" : "예약 신청하기"}
         </button>
         </div>
