@@ -1524,6 +1524,130 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .about-final p{color:var(--muted);font-size:clamp(14.5px,1.8vw,16.5px);margin:14px auto 0;max-width:520px}
 .af-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 
+/* ===========================================================
+   예약 페이지(/reserve) — 포스터 배너 + [달력 | 시간] 2열
+   -----------------------------------------------------------
+   왜 이렇게 바꿨나 (2026-07-29):
+     전에는 [지점 드롭다운 → 테마 드롭다운 → 달력 → 시간] 4단계였다. 경쟁사가 지점을 먼저 묻는 건
+     테마가 20~30개라 한 화면에 못 담기 때문인데, 우리는 테마가 4개고 3지점 모두 강남이라
+     지점을 먼저 물을 이유가 없다. 포스터로 고르고, 달력과 시간을 나란히 놓는다.
+   ⚠️ 세로 포스터(2:3)를 폭 100%로 두면 휴대폰 첫 화면이 포스터만으로 차서 달력이 접힘선 아래로
+     밀린다. 그래서 고른 뒤에는 포스터를 **가로 배너로 눕힌다**(.rv-banner).
+   =========================================================== */
+.rv-wrap{max-width:940px}
+
+.rv-lab{margin:0 0 10px;font-size:13.5px;font-weight:800;color:var(--text);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rv-lab span{font-weight:600;font-size:12px;color:var(--faint)}
+
+/* ── 테마 고르기(포스터 카드) ───────────────────────────── */
+.rv-pick{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.rv-pick-card{position:relative;display:grid;grid-template-columns:88px 1fr;gap:12px;text-align:left;
+  padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  font-family:inherit;color:var(--text);cursor:pointer;overflow:hidden;transition:border-color .2s,transform .2s}
+.rv-pick-card:hover{border-color:var(--brand-bright);transform:translateY(-2px)}
+.rv-pick-card:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}
+/* 지점 = 상단 액센트 레일. 테마 카드(.tcard)와 같은 언어를 쓴다 */
+.rv-pick-card::before{content:"";position:absolute;left:10px;right:10px;top:0;height:2px;border-radius:0 0 2px 2px;background:var(--rv-store,var(--brand))}
+.rv-pick-card[data-store="s1"],.rv-banner[data-store="s1"]{--rv-store:var(--brand)}
+.rv-pick-card[data-store="s2"],.rv-banner[data-store="s2"]{--rv-store:var(--violet)}
+.rv-pick-card[data-store="s3"],.rv-banner[data-store="s3"]{--rv-store:var(--blood)}
+/* ⚠️ 딥블루(#05236c) 위에서 --blood(#b20e19)는 대비가 2:1대로 떨어져 안 보인다. 밝은 변형으로 갈아끼운다. */
+.site-dark .rv-pick-card[data-store="s1"],.site-dark .rv-banner[data-store="s1"]{--rv-store:#8fb6ff}
+.site-dark .rv-pick-card[data-store="s2"],.site-dark .rv-banner[data-store="s2"]{--rv-store:#c9b6ff}
+.site-dark .rv-pick-card[data-store="s3"],.site-dark .rv-banner[data-store="s3"]{--rv-store:#ff8a80}
+.rv-pick-poster{position:relative;display:block;aspect-ratio:2/3;border-radius:var(--r-sm);overflow:hidden;background:#0b1020}
+.rv-pick-poster img{object-fit:cover}
+/* 포스터 4장의 톤이 제각각이라(이집트 골드·재난 시안 등) 안쪽 헤어라인으로 액자처럼 끊어준다 */
+.rv-pick-poster::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.06)}
+.rv-pick-body{display:flex;flex-direction:column;gap:3px;padding-top:4px;min-width:0}
+.rv-pick-body b{font-size:15.5px;font-weight:800;line-height:1.25}
+.rv-pick-store{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--rv-store,var(--brand));
+  border:1px solid currentColor;border-radius:var(--r-full);padding:1px 8px;align-self:flex-start}
+.rv-pick-meta{font-size:12px;color:var(--muted)}
+.rv-pick-dep{font-size:12.5px;font-weight:800;color:var(--text);font-feature-settings:"tnum";margin-top:auto}
+
+/* ── 고른 테마 배너(포스터를 눕힌 형태) ─────────────────── */
+.rv-banner{display:grid;grid-template-columns:108px 1fr auto;gap:16px;align-items:center;
+  padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+.rv-b-poster{position:relative;display:block;width:108px;aspect-ratio:2/3;border-radius:var(--r-sm);overflow:hidden;background:#0b1020}
+.rv-b-poster img{object-fit:cover}
+.rv-b-poster::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.06)}
+.rv-b-txt{min-width:0}
+.rv-b-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.rv-b-store{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--rv-store,var(--brand));
+  border:1px solid currentColor;border-radius:var(--r-full);padding:1.5px 8px}
+/* 머더미스터리 — 지점색을 그대로 물려받는다. 브랜드 3색이 이미 지점에 배정돼 있어 새 색을 만들면 의미가 충돌한다 */
+.rv-b-murder{font-size:10.5px;font-weight:800;letter-spacing:.02em;color:var(--rv-store,var(--brand));
+  border:1px solid currentColor;border-radius:var(--r-full);padding:1.5px 8px}
+.rv-b-meta{margin-top:6px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rv-gauge{display:inline-flex;align-items:center;gap:3px;color:var(--rv-store,var(--brand));font-size:12px;font-weight:700}
+.rv-gauge i{width:7px;height:7px;border-radius:2px;background:var(--line2);display:block;margin-left:1px}
+.rv-gauge i.f{background:currentColor}
+.rv-b-dep{margin-top:7px;font-size:13px;color:var(--muted);font-feature-settings:"tnum"}
+.rv-b-dep b{color:var(--text);font-weight:800;font-size:14px}
+.rv-b-swap{align-self:flex-start;white-space:nowrap}
+
+/* ── 달력 | 시간 2열 ────────────────────────────────────── */
+.rv-2col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.rv-col{min-width:0}
+.rv-empty{border:1px dashed var(--line2);border-radius:var(--r);padding:26px 16px;text-align:center;
+  font-size:13px;color:var(--muted)}
+.rv-empty b{color:var(--text)}
+/* 예약자 정보 — 2열(달력·시간)과 선으로 끊어 "여기부터는 입력"임을 알린다 */
+.rv-form{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+
+/* ── 시간칩 ──────────────────────────────────────────────
+   ⚠️ 기존 .opt 는 마감칸을 opacity:.45 로 흐리게 하는데, 딥블루 위에서 대비 3.43:1(AA 미달)이다.
+      여기서는 투명도 대신 **색 + 빗금 + 취소선 + 아이콘**으로 알린다(색만으로 구분하지 않음). */
+.rv-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.rv-slot{min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:8px 5px;font-family:inherit;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:var(--r-sm);
+  cursor:pointer;position:relative;transition:border-color .15s,background .15s}
+.rv-slot b{font-weight:inherit}
+.rv-slot em{font-style:normal;font-size:10px;font-weight:700;display:flex;align-items:center;gap:3px}
+.rv-slot:hover:not(:disabled){border-color:var(--brand-bright)}
+.rv-slot:focus-visible{outline:2px solid var(--brand-bright);outline-offset:2px}
+.rv-slot.on{background:rgba(47,111,224,.12);border-color:var(--brand-bright);color:var(--cyan);font-weight:800}
+.site-dark .rv-slot.on{background:rgba(143,178,255,.18);color:#dbe9ff}
+.rv-slot.on::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--brand-bright)}
+.rv-slot:disabled{cursor:not-allowed}
+.rv-slot.full{color:var(--faint);text-decoration:line-through;text-decoration-thickness:1px;
+  background:repeating-linear-gradient(-45deg,rgba(20,22,42,.055) 0 5px,transparent 5px 10px)}
+.site-dark .rv-slot.full{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.06) 0 5px,transparent 5px 10px)}
+.rv-slot.soon{color:var(--amber);background:rgba(181,137,31,.1);border-color:rgba(181,137,31,.32)}
+.site-dark .rv-slot.soon{color:#ffce7a;background:rgba(255,190,90,.12);border-color:rgba(255,190,90,.34)}
+/* 확인 중 — 아직 어느 칸이 찼는지 모르는 상태. 깜빡이지 않고 점선으로만 알린다 */
+.rv-slot.wait{color:var(--faint);border-style:dashed;cursor:progress}
+/* 손가락이 굵은 기기에선 칩을 키운다 */
+@media (pointer:coarse){.rv-slots{gap:10px}.rv-slot{min-height:48px}}
+
+/* ── 달력 칸의 "남은 N칸" ────────────────────────────────
+   .rcal-cell 이 grid(place-items:center) 였는데 숫자 아래에 칸 수를 넣으려고 flex 세로로 바꿨다.
+   자식이 하나뿐인 기존 화면(예약 시간변경 팝업)에서는 결과가 같다. */
+.rcal-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.rcal-n{font-size:9.5px;font-weight:700;line-height:1.1;margin-top:1px;color:var(--cyan)}
+.rcal-cell.on .rcal-n{color:#fff}
+.rcal-cell.soldout .rcal-n{color:var(--faint)}
+.rcal-cell.soldout .rcal-d{color:var(--faint)}
+
+@media(max-width:860px){
+  .rv-2col{grid-template-columns:1fr;gap:20px}
+}
+@media(max-width:640px){
+  .rv-pick{grid-template-columns:1fr}
+  .rv-pick-card{grid-template-columns:76px 1fr}
+  /* 배너: 포스터를 더 눕히고 [다른 테마]는 아래 줄로 — 첫 화면에 달력이 들어오게 */
+  .rv-banner{grid-template-columns:76px 1fr;gap:12px;padding-bottom:14px;margin-bottom:14px}
+  .rv-b-poster{width:76px}
+  .rv-b-title{font-size:16.5px}
+  .rv-b-meta,.rv-b-dep{font-size:12px}
+  .rv-b-swap{grid-column:1/-1;justify-self:start}
+  .rv-slots{grid-template-columns:repeat(auto-fill,minmax(74px,1fr))}
+}
+
 /* ---------- 모션 최소화 선호 시 전부 정지 ---------- */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;

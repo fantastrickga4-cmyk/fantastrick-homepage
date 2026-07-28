@@ -21,7 +21,20 @@ function pad2(n: number) {
 }
 
 // 상시 표시되는 인라인 월 달력 (클릭 팝업 없이 항상 떠 있음)
-export function ReserveCalendar({ value, onChange }: { value: string; onChange: (d: string) => void }) {
+//
+// countFor — 날짜 칸에 "그 날 남은 칸 수"를 함께 그린다(선택). 안 넘기면 예전처럼 숫자만 나온다.
+//   왜 필요한가: 월 전체를 띄우면 손님은 "어느 날이 여유 있는지"를 하루씩 눌러봐야만 안다.
+//   칸 수를 미리 보여주면 누르기 전에 고를 수 있다. 0이면 '마감'으로 표시하되 **막지는 않는다**
+//   (설정을 아직 못 받아온 사이 잘못 계산될 수 있어, 막으면 멀쩡한 날을 못 고르게 된다).
+export function ReserveCalendar({
+  value,
+  onChange,
+  countFor,
+}: {
+  value: string;
+  onChange: (d: string) => void;
+  countFor?: (date: string) => number | null;
+}) {
   const kst = new Date(Date.now() + 9 * 3600 * 1000);
   const now = new Date(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
@@ -62,6 +75,11 @@ export function ReserveCalendar({ value, onChange }: { value: string; onChange: 
           const notOpen = state === "not_open";
           const openHint = `${openDateLabel(ds)} 저녁 9시 오픈`;
           const dow = new Date(view.y, view.m, d).getDay();
+          // 남은 칸 — 지난 날짜·오픈 전에는 계산하지 않는다(보여줄 의미가 없고 오해만 부른다).
+          const left = !past && !notOpen && countFor ? countFor(ds) : null;
+          const label =
+            `${view.m + 1}월 ${d}일` +
+            (notOpen ? ` · ${openHint}` : left == null ? "" : left === 0 ? " · 예약 마감" : ` · 남은 ${left}칸`);
           return (
             <button
               key={ds}
@@ -72,15 +90,17 @@ export function ReserveCalendar({ value, onChange }: { value: string; onChange: 
                 (ds === todayS ? " today" : "") +
                 (past ? " past" : "") +
                 (notOpen ? " locked" : "") +
+                (left === 0 ? " soldout" : "") +
                 (dow === 0 ? " sun" : dow === 6 ? " sat" : "")
               }
               disabled={past}
               aria-pressed={value === ds}
-              aria-label={notOpen ? `${view.m + 1}월 ${d}일 · ${openHint}` : `${view.m + 1}월 ${d}일`}
+              aria-label={label}
               title={notOpen ? openHint : undefined}
               onClick={() => { if (!past) onChange(ds); }}
             >
               <span className="rcal-d">{d}</span>
+              {left != null && <span className="rcal-n">{left === 0 ? "마감" : `${left}칸`}</span>}
               {notOpen && <span className="rcal-lk" aria-hidden="true"><IconLock /></span>}
             </button>
           );
@@ -88,6 +108,7 @@ export function ReserveCalendar({ value, onChange }: { value: string; onChange: 
       </div>
       <div className="rcal-legend">
         <span><span className="lk"><IconLock /></span> 아직 예약 오픈 전</span>
+        {countFor && <span><b>숫자</b> = 그 날 예약 가능한 칸</span>}
         <span>예약은 이용일 <b>일주일 전 저녁 9시</b>에 열립니다</span>
       </div>
     </div>

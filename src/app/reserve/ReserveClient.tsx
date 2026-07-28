@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule } from "@/lib/data";
+import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule, type Theme } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 import { depositOf } from "@/lib/settings";
 import { IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
@@ -27,9 +28,8 @@ type SlotRow = { theme_id: string | null; date: string; time: string | null };
 
 export default function ReserveClient({ preset }: { preset: string }) {
 
-  // 딥링크(preset)로 특정 테마가 지정돼 들어오면, 그 테마의 지점도 함께 골라둔다.
+  // 딥링크(preset)로 특정 테마가 지정돼 들어오면 그 테마를 바로 골라둔다(포스터 고르는 단계를 건너뜀).
   const presetTheme = preset ? THEMES.find((t) => t.id === preset) : undefined;
-  const [storeId, setStoreId] = useState(presetTheme?.store ?? "");
   const [themeId, setThemeId] = useState(presetTheme ? preset : "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -67,23 +67,33 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [freshSlots, setFreshSlots] = useState<Record<string, { blocked: string[]; dayClosed: boolean }>>({});
   // 예전 코드가 쓰던 이름 유지 — '최초 로딩 전'에만 true(그 뒤 재확인은 조용히 처리, 로딩표시 없음).
   const slotsLoading = !allLoaded;
-  const slotKey = themeId && date ? `${themeId}|${date}` : "";
 
-  // 고른 테마·날짜의 마감/예약 시간 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
+  // 어떤 날짜든 그 테마의 마감/예약 시간을 계산한다 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
   //   1순위: 방금 그 슬롯만 콕 집어 받아온 신선값(freshSlots)
   //   2순위: 없으면 미리 받아둔 allSlots 로 즉시 계산(네트워크 대기 없음)
-  const { blocked, dayClosed } = useMemo(() => {
-    if (!themeId || !date) return { blocked: [] as string[], dayClosed: false };
-    if (freshSlots[slotKey]) return freshSlots[slotKey];
-    if (!allSlots) return { blocked: [] as string[], dayClosed: false };
-    const bs = allSlots.blockedSlots.filter((b) => b.date === date && (!b.theme_id || b.theme_id === themeId));
-    const closed = bs.some((b) => !b.time);
-    const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
-    const taken = allSlots.reservations
-      .filter((r) => r.theme_id === themeId && r.date === date && r.time)
-      .map((r) => r.time as string);
-    return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
-  }, [themeId, date, slotKey, allSlots, freshSlots]);
+  //   ※ 예전에는 '고른 날짜' 하나만 계산했는데, 달력 칸마다 남은 칸 수를 그리려면
+  //     임의의 날짜에 대해 같은 계산이 필요해 함수로 뺐다.
+  const blockedForDate = useCallback(
+    (d: string): { blocked: string[]; dayClosed: boolean } => {
+      if (!themeId || !d) return { blocked: [], dayClosed: false };
+      const fresh = freshSlots[`${themeId}|${d}`];
+      if (fresh) return fresh;
+      if (!allSlots) return { blocked: [], dayClosed: false };
+      const bs = allSlots.blockedSlots.filter((b) => b.date === d && (!b.theme_id || b.theme_id === themeId));
+      const closed = bs.some((b) => !b.time);
+      const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
+      const taken = allSlots.reservations
+        .filter((r) => r.theme_id === themeId && r.date === d && r.time)
+        .map((r) => r.time as string);
+      return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
+    },
+    [themeId, allSlots, freshSlots],
+  );
+
+  const { blocked, dayClosed } = useMemo(
+    () => (date ? blockedForDate(date) : { blocked: [] as string[], dayClosed: false }),
+    [date, blockedForDate],
+  );
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
@@ -103,31 +113,21 @@ export default function ReserveClient({ preset }: { preset: string }) {
   // 그 요일은 아예 예약을 안 받는 테마(휴무) 인지
   const noSlotsDay = useMemo(() => !!(themeId && date && activeSlots.length === 0), [themeId, date, activeSlots]);
 
-  // ── 단계별 열림 ──────────────────────────────────────────────────
-  // 손님이 한 번에 모든 걸 보고 헤매지 않도록, 앞 단계를 고르면 다음 단계가 나타난다.
-  //   ① 테마 → ② 날짜 → ③ 시간 → ④ 인원·예약자 정보
-  // 고른 것은 계속 보이고 다시 바꿀 수 있다(뒤로 갈 수 있어야 함).
-  const showDate = !!themeId;
-  const showTime = showDate && !!date && !notOpenSelected;
-  // 휴무·마감인 날은 시간을 고를 수 없으니 ④는 자연히 안 열린다
-  const showInfo = showTime && !!time;
+  // ── 예약자 정보가 열리는 조건 ────────────────────────────────────
+  // 테마·날짜·시간이 다 정해져야 이름·전화를 묻는다. 달력과 시간은 처음부터 함께 보이지만
+  // (2열), 입력 폼까지 미리 펼치면 화면이 길어지기만 하고 아직 채울 수 없다.
+  const showInfo = !!themeId && !!date && !notOpenSelected && !!time;
 
-  // 고른 지점에 속한 (예약 가능한) 테마들 — 테마 드롭다운에 이것만 보인다.
-  const storeThemes = useMemo(() => THEMES.filter((t) => t.store === storeId), [storeId]);
-
-  // 지점을 고르면 그 지점 테마만 남긴다. 테마가 하나뿐인 지점(1·2호점)은 자동으로 골라
-  // 손님이 쓸데없이 한 번 더 누르지 않게 하고, 바로 캘린더가 뜨게 한다. 여러 개(TGC)면 비워 둔다.
-  function pickStore(id: string) {
-    setStoreId(id);
-    const only = THEMES.filter((t) => t.store === id);
-    setThemeId(only.length === 1 ? only[0].id : "");
-    setTime("");
-  }
-
+  // 포스터 카드에서 테마를 고른다. 지점은 테마가 이미 알고 있어 따로 묻지 않는다(3지점 모두 강남).
   // 테마를 바꾸면 고른 시간을 푼다 — 테마마다 시간표가 완전히 달라서(사자의 서 70분 간격 등)
   // 그대로 두면 그 테마에 없는 시간이 골라진 채로 남는다. 날짜는 그대로 둔다(보통 같은 날을 원함).
-  function pickTheme(id: string) {
-    setThemeId(id);
+  function pickThemeCard(t: Theme) {
+    setThemeId(t.id);
+    setTime("");
+  }
+  // [← 다른 테마] — 포스터 고르는 화면으로 돌아간다. 고른 날짜는 남겨 둔다(같은 날 다른 테마를 보는 경우가 많음).
+  function resetTheme() {
+    setThemeId("");
     setTime("");
   }
   function pickDate(d: string) {
@@ -144,9 +144,24 @@ export default function ReserveClient({ preset }: { preset: string }) {
     if (time && date && isTooSoon(date, time, leadMin, nowMs)) setTime("");
   }, [nowMs, time, date, leadMin]);
 
+  // 달력 칸에 찍을 "그 날 남은 칸" — 시간칩을 만드는 규칙과 **똑같은 규칙**으로 센다.
+  //   (그 요일 시간표) − (마감·이미 찬 시간) − (임박해서 못 누르는 시간)
+  //   아직 설정·마감정보를 못 받았으면 null → 달력은 숫자를 안 그린다(0으로 잘못 표시하는 것보다 안전).
+  const remainingFor = useCallback(
+    (d: string): number | null => {
+      if (!theme || !allLoaded || !cfgLoaded) return null;
+      const list = slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme.id, theme.store, d);
+      if (list.length === 0) return 0; // 그 요일은 아예 안 여는 테마(휴무)
+      const { blocked: bl, dayClosed: closed } = blockedForDate(d);
+      if (closed) return 0;
+      return list.filter((tm) => !bl.includes(tm) && !isTooSoon(d, tm, leadMin, nowMs)).length;
+    },
+    [theme, allLoaded, cfgLoaded, cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, blockedForDate, leadMin, nowMs],
+  );
+
   useEffect(() => {
     const pt = preset ? THEMES.find((t) => t.id === preset) : undefined;
-    if (pt) { setStoreId(pt.store); setThemeId(pt.id); }
+    if (pt) setThemeId(pt.id);
   }, [preset]);
 
   // 손님 기기가 휴대폰인지 (휴대폰이면 은행앱 딥링크, PC면 QR 안내)
@@ -343,115 +358,155 @@ export default function ReserveClient({ preset }: { preset: string }) {
   }
 
   return (
-    <div className="formwrap">
+    // rv-wrap — 달력·시간을 2열로 놓아야 해서 예약 폼(560px)보다 넓게 쓴다.
+    <div className="formwrap rv-wrap">
       <div className="page-top" />
-      <h1 className="title" style={{ marginBottom: 22 }}>테마 예약</h1>
+      <h1 className="title" style={{ marginBottom: 18 }}>테마 예약</h1>
 
-      <div className="card">
-        {/* ① 지점 선택 → ② 테마 선택. 지점을 고르면 그 지점 테마만 드롭다운에 뜨고,
-            테마가 하나뿐인 지점(1·2호점)은 자동으로 골라져 바로 아래 캘린더가 나타난다. */}
-        <div className="field">
-          <label htmlFor="rv-store">① 지점 선택</label>
-          <select id="rv-store" value={storeId} onChange={(e) => pickStore(e.target.value)}>
-            <option value="" disabled>지점을 선택하세요</option>
-            {STORES.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field">
-          <label htmlFor="rv-theme">② 테마 선택</label>
-          <select id="rv-theme" value={themeId} disabled={!storeId} onChange={(e) => pickTheme(e.target.value)}>
-            <option value="" disabled>{storeId ? "테마를 선택하세요" : "먼저 지점을 선택하세요"}</option>
-            {storeThemes.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          {storeId && !showDate && <div className="hint">테마를 선택하면 날짜를 고를 수 있어요.</div>}
-        </div>
-
-        {/* ② 날짜 — 테마를 골라야 나타남 */}
-        {showDate && (
-          <div className="field rstep">
-            <label>③ 날짜</label>
-            <ReserveCalendar value={date} onChange={pickDate} />
-            {date && <div className="rcal-sel">선택한 날짜: <b>{formatDate(date)}</b></div>}
-            {date && notOpenSelected && (
-              <div className="rcal-sel" style={{ marginTop: 4 }}>
-                예약창 오픈 날짜: <b>{openDateLabel(date)} 저녁 9시</b>
+      <div className="card rv-card">
+        {/* 테마를 아직 안 골랐으면 포스터로 고르게 한다.
+            예전엔 [지점 드롭다운 → 테마 드롭다운] 2단이었는데, 우리는 테마가 4개뿐이라
+            지점을 먼저 물을 이유가 없다(3지점 모두 강남). 포스터가 곧 상품이라 포스터로 고르는 게 빠르다. */}
+        {!themeId ? (
+          <>
+            <p className="rv-lab">테마 선택 <span>3개 지점 · 4개 테마</span></p>
+            <div className="rv-pick">
+              {THEMES.map((t) => (
+                <button key={t.id} type="button" className="rv-pick-card" data-store={t.store} onClick={() => pickThemeCard(t)}>
+                  <span className="rv-pick-poster">
+                    <Image src={t.poster} alt={`${t.name} 포스터`} fill sizes="(max-width:640px) 42vw, 170px" />
+                  </span>
+                  <span className="rv-pick-body">
+                    <b>{t.name}</b>
+                    <span className="rv-pick-store">{t.storeTag}</span>
+                    <span className="rv-pick-meta">{t.minutes}분 · 난이도 {t.difficulty}</span>
+                    <span className="rv-pick-dep">예약금 {depositOf({ themeDeposits: cfg.themeDeposits ?? {} }, t.id, t.deposit).toLocaleString()}원</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 가로 배너 — 세로 포스터를 그대로 두면 휴대폰 첫 화면이 포스터만으로 차서
+                달력이 접힘선 아래로 밀린다. 눕혀서 달력을 첫 화면 안으로 올린다. */}
+            <div className="rv-banner" data-store={theme?.store}>
+              <span className="rv-b-poster">
+                {theme && <Image src={theme.poster} alt={`${theme.name} 포스터`} fill sizes="(max-width:640px) 76px, 108px" />}
+              </span>
+              <div className="rv-b-txt">
+                <div className="rv-b-title">
+                  {theme?.name}
+                  <span className="rv-b-store">{theme?.storeTag}</span>
+                  {theme?.murder && <span className="rv-b-murder">머더미스터리</span>}
+                </div>
+                <div className="rv-b-meta">
+                  {theme?.genres.join(" · ")} · {theme?.minutes}분
+                  <span className="rv-gauge" aria-label={`난이도 ${theme?.difficulty}단계`}>
+                    난이도
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <i key={n} className={n <= (theme?.difficulty ?? 0) ? "f" : ""} />
+                    ))}
+                  </span>
+                </div>
+                <div className="rv-b-dep">
+                  예약금 <b>{deposit.toLocaleString()}원</b>
+                  <span> · 시작 24시간 전까지 취소 시 100% 환불</span>
+                </div>
               </div>
-            )}
-            {!date && <div className="hint">날짜를 선택하면 시간을 고를 수 있어요.</div>}
-          </div>
-        )}
-
-        {/* 오픈 전 날짜: 다음 단계로 넘어가지 않고 안내만 */}
-        {showDate && date && notOpenSelected && (
-          <div className="notice warn rstep">
-            이 날짜는 아직 예약 오픈 전이에요. <b>{openDateLabel(date)} 저녁 9시</b>부터 예약 가능합니다.
-          </div>
-        )}
-
-        {/* ③ 시간 — 날짜를 골라야 나타남 */}
-        {showTime && (
-        <div className="field rstep">
-          <label>④ 시간</label>
-          {dayClosed || noSlotsDay ? (
-            <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
-          ) : (
-            <div className="optrow">
-              {activeSlots.map((tm) => {
-                const isBlocked = blocked.includes(tm);
-                // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
-                const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
-                // 아직 확실하지 않은 동안에는 전부 못 누르게 한다.
-                //   slotsLoading — 어느 칸이 찼는지 모름
-                //   !cfgLoaded   — 사장님이 시간표를 바꿨는지 모름
-                // 모르는 상태에서 누르게 두면 "이미 찬 칸"이나 "없는 시간"을 고른 채로 끝까지 입력하게 된다.
-                const off = isBlocked || soon || slotsLoading || !cfgLoaded;
-                return (
-                  <button
-                    key={tm}
-                    type="button"
-                    className={"opt" + (time === tm ? " on" : "") + (off ? " soon" : "")}
-                    aria-pressed={time === tm}
-                    disabled={off}
-                    style={{ minWidth: 64, flex: "0 0 auto" }}
-                    onClick={() => { if (!off) setTime(tm); }}
-                    title={slotsLoading ? "확인 중" : isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
-                  >
-                    {tm}{!slotsLoading && (isBlocked ? <>{" "}<IconBan /></> : soon ? <>{" "}<IconClock /></> : null)}
-                  </button>
-                );
-              })}
+              <button type="button" className="btn ghost sm rv-b-swap" onClick={resetTheme}>← 다른 테마</button>
             </div>
-          )}
-          {(slotsLoading || !cfgLoaded) && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
-          {!slotsLoading && cfgLoaded && !(dayClosed || noSlotsDay) && (
-            <div className="hint">
-              ※ <IconBan /> 표시는 마감(예약 불가)된 시간입니다.
-              {leadMin > 0 && <> <IconClock /> 표시는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요. 매장으로 전화 주시면 도와드립니다.</>}
+
+            {/* 달력 | 시간 2열 — 휴대폰에서는 위아래로 접히되 순서(날짜 → 시간)는 그대로 유지된다. */}
+            <div className="rv-2col">
+              <div className="rv-col">
+                <p className="rv-lab">날짜 <span>숫자 = 그 날 남은 칸</span></p>
+                {/* 고른 날짜를 아래에 또 쓰지 않는다 — 오른쪽 '시간' 제목에 이미 같은 날짜가 있어
+                    두 번 적으면 폼 시작 지점과 붙어 지저분해진다. */}
+                <ReserveCalendar value={date} onChange={pickDate} countFor={remainingFor} />
+              </div>
+
+              <div className="rv-col">
+                <p className="rv-lab">
+                  시간
+                  {date && !notOpenSelected && <span>{formatDate(date)} · {theme?.minutes}분 진행</span>}
+                </p>
+
+                {!date ? (
+                  <div className="rv-empty">왼쪽 달력에서 <b>날짜</b>를 먼저 골라 주세요.</div>
+                ) : notOpenSelected ? (
+                  <div className="notice warn">
+                    이 날짜는 아직 예약 오픈 전이에요. <b>{openDateLabel(date)} 저녁 9시</b>부터 예약 가능합니다.
+                  </div>
+                ) : dayClosed || noSlotsDay ? (
+                  <div className="notice warn">선택하신 날짜는 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.</div>
+                ) : (
+                  <>
+                    <div className="rv-slots">
+                      {activeSlots.map((tm) => {
+                        const isBlocked = blocked.includes(tm);
+                        // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
+                        const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
+                        // 아직 확실하지 않은 동안에는 전부 못 누르게 한다.
+                        //   slotsLoading — 어느 칸이 찼는지 모름 / !cfgLoaded — 사장님이 시간표를 바꿨는지 모름
+                        // 모르는 상태에서 누르게 두면 "이미 찬 칸"이나 "없는 시간"을 고른 채로 끝까지 입력하게 된다.
+                        const waiting = slotsLoading || !cfgLoaded;
+                        const off = isBlocked || soon || waiting;
+                        return (
+                          <button
+                            key={tm}
+                            type="button"
+                            className={
+                              "rv-slot" +
+                              (time === tm ? " on" : "") +
+                              (!waiting && isBlocked ? " full" : "") +
+                              (!waiting && soon ? " soon" : "") +
+                              (waiting ? " wait" : "")
+                            }
+                            aria-pressed={time === tm}
+                            disabled={off}
+                            onClick={() => { if (!off) setTime(tm); }}
+                            title={waiting ? "확인 중" : isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
+                          >
+                            <b>{tm}</b>
+                            {!waiting && (isBlocked
+                              ? <em><IconBan /> 마감</em>
+                              : soon
+                              ? <em><IconClock /> {leadMin > 0 ? "곧 시작" : "지난 시간"}</em>
+                              : null)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(slotsLoading || !cfgLoaded) && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
+                    {!slotsLoading && cfgLoaded && (
+                      <div className="hint">
+                        ※ <IconBan /> 는 마감된 시간입니다.
+                        {leadMin > 0 && <> <IconClock /> 는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요. 매장으로 전화 주시면 도와드립니다.</>}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* 인원 — 시간을 고른 뒤 같은 열에서 이어 고른다(아래 정보 입력까지 한 흐름) */}
+                {showInfo && (
+                  <div className="field rstep" style={{ marginTop: 16 }}>
+                    <label htmlFor="rv-people">인원</label>
+                    <select id="rv-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                        <option key={n} value={n}>{n}명</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          {!slotsLoading && cfgLoaded && !time && !(dayClosed || noSlotsDay) && (
-            <div className="hint">시간을 선택하면 예약자 정보를 입력할 수 있어요.</div>
-          )}
-        </div>
+          </>
         )}
 
-        {/* ④ 인원·예약자 정보 — 시간을 골라야 나타남 */}
+        {/* 예약자 정보 — 시간을 골라야 나타남 */}
         {showInfo && (
-        <div className="rstep">
-        <div className="field">
-          <label htmlFor="rv-people">⑤ 인원</label>
-          <select id="rv-people" value={people} onChange={(e) => setPeople(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <option key={n} value={n}>{n}명</option>
-            ))}
-          </select>
-        </div>
-
+        <div className="rstep rv-form">
         {/* 예약자 정보 */}
         <div className="grid2">
           <div className="field">
