@@ -62,11 +62,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 이용하신 예약은 취소할 수 없습니다. 매장으로 문의해 주세요." }, { status: 409 });
   }
 
-  // 🔴 입금이 확정된 예약만 환불이 발생하고 환불 계좌가 필요하다.
-  //    미입금(대기) 건은 돌려줄 돈이 없어 계좌 없이 그냥 취소한다 — 환불율도 남기지 않는다.
-  //    (전엔 입금 안 했는데도 "100% 환불" 안내가 나가고 계좌 입력을 강요했다.)
   const paid = !!found.deposit_paid;
-  if (paid) {
+  // 미입금이면 환불율은 null(환불 없음), 입금건이면 규정대로 계산.
+  const refundRate = paid ? refundRateFor(found.date, found.time) : null;
+
+  // 🔴 환불 계좌는 **실제로 돌려줄 돈이 있을 때만** 받는다.
+  //    - 미입금(대기) 건 : 돌려줄 돈 없음
+  //    - 당일 취소(0%)   : 규정상 환불 없음  ← 예전엔 여기서도 계좌를 강요했다
+  //    0원을 보낼 계좌를 받는 건 손님에게 이상하게 보이고, 쓸데없는 금융정보를 남기는 일이다.
+  const needsAccount = (refundRate ?? 0) > 0;
+  if (needsAccount) {
     if (!refundBank || !refundAccount || !refundHolder) {
       return NextResponse.json({ error: "환불받으실 은행·계좌번호·예금주를 모두 입력해 주세요." }, { status: 400 });
     }
@@ -79,16 +84,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 미입금이면 환불율은 null(환불 없음), 입금건이면 규정대로 계산.
-  const refundRate = paid ? refundRateFor(found.date, found.time) : null;
-
   const { error } = await db
     .from("reservations")
     .update({
       status: "cancelled",
-      refund_bank: paid ? refundBank : null,
-      refund_account: paid ? refundAccount : null,
-      refund_holder: paid ? refundHolder : null,
+      refund_bank: needsAccount ? refundBank : null,
+      refund_account: needsAccount ? refundAccount : null,
+      refund_holder: needsAccount ? refundHolder : null,
       refund_rate: refundRate,
       cancelled_at: new Date().toISOString(),
     })

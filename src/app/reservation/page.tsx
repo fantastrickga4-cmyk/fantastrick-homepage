@@ -300,9 +300,12 @@ export default function ReservationLookup() {
 
                 {ri.rate === 0 ? (
                   // 당일 취소 — 돌려받는 돈이 0원이라 가장 강하게 알려준다.
+                  // ⚠️ 한 문장으로 길게 쓰면 폰 화면에서 "환불 규정에 따라 / 예약금이" 처럼
+                  //    문장 한가운데가 잘려 읽기 나쁘다. 줄을 직접 끊어 어디서 바뀌는지 고정한다.
                   <p className="modal-policy">
-                    <b>오늘 이용하시는 예약</b>이라, 환불 규정에 따라{" "}
-                    <b style={{ color: "var(--danger)" }}>예약금이 환불되지 않습니다.</b>
+                    <b>오늘 이용하시는 예약</b>이에요.
+                    <br />환불 규정에 따라{" "}
+                    <b style={{ color: "var(--danger)" }}>예약금은 환불되지 않습니다.</b>
                     <br />그래도 취소하시겠어요?
                   </p>
                 ) : need ? (
@@ -332,11 +335,20 @@ export default function ReservationLookup() {
                   </label>
                 )}
 
+                {/* 당일 취소(0%)는 돌려줄 돈이 없다 → 계좌를 묻지 않고 여기서 바로 끝낸다.
+                    예전엔 0원인데도 "확인을 위해" 계좌를 받았는데, 손님 입장에선 이상하고
+                    받을 이유도 없는 금융정보였다. */}
                 <div className="modal-btns" style={{ marginTop: 16 }}>
                   <button className="btn ghost" onClick={closeModal} disabled={submitting}>닫기</button>
-                  <button className="btn primary" onClick={() => { setModalErr(""); setStep("account"); }} disabled={need && !agree}>
-                    {ri.rate === 0 ? "취소 진행 →" : "동의 · 환불 계좌 입력 →"}
-                  </button>
+                  {ri.rate === 0 ? (
+                    <button className="btn danger" onClick={confirmCancel} disabled={!agree || submitting}>
+                      {submitting ? "처리 중…" : "예약 취소"}
+                    </button>
+                  ) : (
+                    <button className="btn primary" onClick={() => { setModalErr(""); setStep("account"); }} disabled={need && !agree}>
+                      동의 · 환불 계좌 입력 →
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
