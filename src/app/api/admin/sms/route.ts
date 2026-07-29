@@ -24,7 +24,7 @@ function fallbackBody(type: string, themeId: string): string {
   return DEFAULT_TEMPLATES[type] || "";
 }
 
-// 템플릿(종류별·테마별) + 최근 발송내역 + 알리고 연동여부
+// 템플릿(종류별·테마별) + 최근 발송내역 + 문자 연동여부
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   }
 
   const res = await sendSms(row.phone as string, row.body as string, row.type as string);
-  if (res.skipped) return NextResponse.json({ error: "문자 발송 키(알리고)가 아직 없어서 실제로 나가지 않았어요. 기록만 남았습니다." }, { status: 400 });
+  if (res.skipped) return NextResponse.json({ error: "문자 발송 키(NHN Cloud)가 아직 없어서 실제로 나가지 않았어요. 기록만 남았습니다." }, { status: 400 });
   if (!res.ok) return NextResponse.json({ error: "재발송에 실패했어요. 잠시 후 다시 시도해 주세요." }, { status: 502 });
   return NextResponse.json({ ok: true });
 }

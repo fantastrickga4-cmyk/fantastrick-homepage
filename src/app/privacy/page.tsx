@@ -52,7 +52,9 @@ export default function PrivacyPage() {
         <h2>5. 개인정보 처리의 위탁</h2>
         <p>회사는 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 위탁할 수 있습니다.</p>
         <ul>
-          <li><b>예약 안내 문자·알림톡 발송</b> — 알리고(문자 발송 대행), 카카오(카카오 알림톡) <span className="lg-muted">(안내 메시지 발송 목적)</span></li>
+          {/* ⚠️ 실제로 쓰는 업체와 반드시 일치해야 한다(위탁 고지). 발송 업체를 바꾸면 여기도 같이 고칠 것.
+              2026-07-29: 알리고 → (솔라피) → NHN Cloud 로 바뀌는 동안 이 줄만 알리고로 남아 있었다. */}
+          <li><b>예약 안내 문자·알림톡 발송</b> — NHN Cloud(문자·알림톡 발송 대행), 카카오(카카오 알림톡) <span className="lg-muted">(안내 메시지 발송 목적)</span></li>
           <li><b>데이터 보관·서비스 운영(호스팅)</b> — Supabase, Cloudflare <span className="lg-muted">(예약 데이터의 안전한 저장·처리)</span></li>
         </ul>
       </section>

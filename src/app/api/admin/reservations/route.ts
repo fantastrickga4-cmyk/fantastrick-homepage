@@ -255,7 +255,7 @@ export async function PATCH(req: NextRequest) {
   if (patch.refund_account) logs.push({ reservation_id: id, action: "환불 계좌 입력", detail: `${patch.refund_bank || ""} ${patch.refund_account}`.trim() });
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 안내 문자 (알리고 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
+  // 안내 문자 (문자 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
   const r = { ...before, refund_rate: before.refund_rate };
   if (nowPaid) {
     // 입금확인 → 예약확정 안내 (기존 payment 문자)

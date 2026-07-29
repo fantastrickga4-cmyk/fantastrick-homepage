@@ -1,40 +1,102 @@
-import crypto from "crypto";
 import { getSupabase } from "./supabase";
 import { formatDate, normalizePhone } from "./util";
 import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
 
-// ─── 솔라피(Solapi) 발송 공통 ──────────────────────────────────────────────
-// Cloudflare(서버리스)라 IP 고정이 안 돼, IP 화이트리스트가 필요한 알리고 대신
-// API키+시크릿 HMAC 서명 방식인 솔라피를 쓴다(어느 IP에서든 발송 가능).
-//   env: SOLAPI_API_KEY, SOLAPI_API_SECRET, SOLAPI_SENDER(발신번호, 숫자),
-//        SOLAPI_PFID(카카오 발신프로필ID), SOLAPI_TPL_CONFIRM/CANCEL(알림톡 템플릿ID)
-function solapiAuthHeader(): string | null {
-  const key = process.env.SOLAPI_API_KEY, secret = process.env.SOLAPI_API_SECRET;
-  if (!key || !secret) return null;
-  const date = new Date().toISOString();
-  const salt = crypto.randomBytes(32).toString("hex");
-  const signature = crypto.createHmac("sha256", secret).update(date + salt).digest("hex");
-  return `HMAC-SHA256 apiKey=${key}, date=${date}, salt=${salt}, signature=${signature}`;
+// ─── NHN Cloud 발송 공통 (Notification > SMS / KakaoTalk Bizmessage) ──────
+// 왜 NHN Cloud 인가 (2026-07-29):
+//   Cloudflare Workers 는 나가는 IP 가 매번 바뀐다. 그래서 **발송 서버 IP 를 미리 등록해야 하는
+//   업체는 원천적으로 못 쓴다** — 알리고에서 실제로 "인증오류-IP" 를 맞았고, 뿌리오도 문서상
+//   IP 등록이 필수다(미등록 시 3003 invalid ip).
+//   NHN Cloud 는 appKey + Secret Key 두 개로만 인증해서 어느 IP 에서든 발송된다.
+//   (솔라피도 IP 무관이었지만 발신번호 등록이 끝내 안 돼 갈아탐)
+//
+//   env: NHN_SMS_APPKEY, NHN_SMS_SECRET, NHN_SENDER(발신번호, 숫자만)
+//        NHN_ALIMTALK_APPKEY, NHN_ALIMTALK_SECRET, NHN_SENDER_KEY(카카오 발신프로필 senderKey),
+//        NHN_TPL_CONFIRM / NHN_TPL_CANCEL(알림톡 템플릿코드)
+const SMS_HOST = "https://sms.api.nhncloudservice.com";
+const ALIMTALK_HOST = "https://kakaotalk-bizmessage.api.nhncloudservice.com";
+// LMS(장문)에는 제목이 필요하다. 손님 화면에 제목으로 뜬다.
+const LMS_TITLE = "판타스트릭 예약 안내";
+
+// ⚠️ 솔라피는 본문 길이를 보고 SMS/LMS 를 알아서 골라줬지만 **NHN 은 경로가 갈린다**
+//    (/sender/sms 는 90바이트까지, 넘으면 /sender/mms).
+//    긴 본문을 sms 로 보내면 잘리거나 실패하므로 여기서 직접 판단한다.
+//    통신사 기준대로 한글은 2바이트로 센다(UTF-8 바이트가 아님).
+export function smsByteLength(s: string): number {
+  let n = 0;
+  for (const ch of s) n += ch.charCodeAt(0) < 128 ? 1 : 2;
+  return n;
 }
 
-// 솔라피 단건 발송. message 안에 kakaoOptions 를 넣으면 알림톡(+SMS 자동대체)이 된다.
-async function solapiSend(message: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
-  const auth = solapiAuthHeader();
-  if (!auth) return { ok: false, error: "SOLAPI 키 미설정" };
+type SendResult = { ok: boolean; error?: string };
+
+// NHN 공통 POST — 성공 판정은 header.isSuccessful 하나로 통일(SMS·알림톡 응답 형태가 같다).
+async function nhnPost(url: string, secretKey: string, payload: unknown): Promise<SendResult> {
   try {
-    const res = await fetch("https://api.solapi.com/messages/v4/send", {
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: auth },
-      body: JSON.stringify({ message }),
+      headers: { "Content-Type": "application/json;charset=UTF-8", "X-Secret-Key": secretKey },
+      body: JSON.stringify(payload),
     });
-    const j = await res.json().catch(() => ({}));
-    // 단건 접수 성공 = statusCode "2000"(정상 접수). 실패면 코드/메시지를 로그로.
-    const code = String(j.statusCode ?? "");
-    const ok = res.ok && (code === "2000" || (!!j.messageId && code.startsWith("2")));
-    return { ok, error: ok ? undefined : (j.statusMessage || j.errorMessage || JSON.stringify(j)).slice(0, 200) };
+    const j = (await res.json().catch(() => ({}))) as {
+      header?: { isSuccessful?: boolean; resultCode?: number; resultMessage?: string };
+    };
+    const ok = res.ok && j?.header?.isSuccessful === true;
+    if (ok) return { ok: true };
+    const code = j?.header?.resultCode;
+    const msg = j?.header?.resultMessage || `HTTP ${res.status}`;
+    return { ok: false, error: `${code ?? ""} ${msg}`.trim().slice(0, 200) };
   } catch (e) {
     return { ok: false, error: String(e) };
   }
+}
+
+// 문자 한 통. 90바이트를 넘으면 자동으로 LMS(mms 경로)로 보낸다.
+async function nhnSendSms(to: string, body: string): Promise<SendResult> {
+  const appKey = process.env.NHN_SMS_APPKEY;
+  const secret = process.env.NHN_SMS_SECRET;
+  const from = process.env.NHN_SENDER;
+  if (!appKey || !secret || !from) return { ok: false, error: "NHN SMS 키 미설정" };
+
+  const long = smsByteLength(body) > 90;
+  const payload: Record<string, unknown> = {
+    body,
+    sendNo: normalizePhone(from),
+    recipientList: [{ recipientNo: normalizePhone(to) }],
+  };
+  if (long) payload.title = LMS_TITLE;
+  return nhnPost(`${SMS_HOST}/sms/v3.0/appKeys/${appKey}/sender/${long ? "mms" : "sms"}`, secret, payload);
+}
+
+// 알림톡 한 통. resendParameter 로 "알림톡이 안 가면 문자로 대체발송"을 함께 요청한다
+// (솔라피의 kakaoOptions.disableSms=false 와 같은 역할).
+//   params 의 키는 **#{} 없이** 넣는다 — 카카오 템플릿의 #{이름} 자리에 params.이름 이 들어간다.
+async function nhnSendAlimtalk(
+  to: string, templateCode: string, params: Record<string, string>, resendBody: string,
+): Promise<SendResult> {
+  const appKey = process.env.NHN_ALIMTALK_APPKEY;
+  const secret = process.env.NHN_ALIMTALK_SECRET;
+  const senderKey = process.env.NHN_SENDER_KEY;
+  const from = process.env.NHN_SENDER;
+  if (!appKey || !secret || !senderKey) return { ok: false, error: "NHN 알림톡 키 미설정" };
+
+  const long = smsByteLength(resendBody) > 90;
+  const recipient: Record<string, unknown> = { recipientNo: normalizePhone(to), templateParameter: params };
+  // 발신번호가 있어야 문자 대체발송이 가능하다. 없으면 알림톡만 보낸다(실패 시 호출측이 처리).
+  if (from) {
+    recipient.resendParameter = {
+      isResend: true,
+      resendType: long ? "LMS" : "SMS",
+      ...(long ? { resendTitle: LMS_TITLE } : {}),
+      resendContent: resendBody,
+      resendSendNo: normalizePhone(from),
+    };
+  }
+  return nhnPost(`${ALIMTALK_HOST}/alimtalk/v2.1/appkeys/${appKey}/messages`, secret, {
+    senderKey,
+    templateCode,
+    recipientList: [recipient],
+  });
 }
 
 // ─── 테스트 데이터 문자 차단 ────────────────────────────────────────────
@@ -121,31 +183,36 @@ export async function sendSms(phone: string, body: string, type: string): Promis
     return { ok: false, skipped: true };
   }
 
-  const from = process.env.SOLAPI_SENDER;
-  if (!process.env.SOLAPI_API_KEY || !process.env.SOLAPI_API_SECRET || !from) {
-    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "SOLAPI 키 미설정(미발송)" });
+  if (!process.env.NHN_SMS_APPKEY || !process.env.NHN_SMS_SECRET || !process.env.NHN_SENDER) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "NHN SMS 키 미설정(미발송)" });
     return { ok: false, skipped: true };
   }
-  const r = await solapiSend({ to: normalizePhone(phone), from: normalizePhone(from), text: body });
+  const r = await nhnSendSms(phone, body);
   await writeLog({ phone, body, type, status: r.ok ? "sent" : "failed", channel: "sms", error: r.ok ? null : r.error });
   return { ok: r.ok };
 }
 
-// 타입 → 카카오 알림톡 템플릿ID. 입금확인/확정=확정 템플릿, 취소=취소 템플릿.
-const KAKAO_TPL: Record<string, string | undefined> = {
-  payment: process.env.SOLAPI_TPL_CONFIRM,
-  confirm: process.env.SOLAPI_TPL_CONFIRM,
-  cancel: process.env.SOLAPI_TPL_CANCEL,
-  admin_cancel: process.env.SOLAPI_TPL_CANCEL,
-};
+// 타입 → 카카오 알림톡 템플릿코드. 입금확인/확정=확정 템플릿, 취소=취소 템플릿.
+// ⚠️ process.env 를 모듈 로드 시점에 한 번만 읽으면 워커에서 값이 늦게 붙는 경우 undefined 로 굳는다.
+//    함수로 감싸 호출할 때마다 읽는다.
+function kakaoTemplateCode(type: string): string | undefined {
+  const confirm = process.env.NHN_TPL_CONFIRM;
+  const cancel = process.env.NHN_TPL_CANCEL;
+  return { payment: confirm, confirm, cancel, admin_cancel: cancel }[type];
+}
 export function kakaoConfigured(type?: string): boolean {
-  const base = !!(process.env.SOLAPI_API_KEY && process.env.SOLAPI_API_SECRET && process.env.SOLAPI_SENDER && process.env.SOLAPI_PFID);
+  const base = !!(
+    process.env.NHN_ALIMTALK_APPKEY &&
+    process.env.NHN_ALIMTALK_SECRET &&
+    process.env.NHN_SENDER_KEY &&
+    process.env.NHN_SENDER // 알림톡 실패 시 문자 대체발송에 필요
+  );
   if (!type) return base;
-  return base && !!KAKAO_TPL[type];
+  return base && !!kakaoTemplateCode(type);
 }
 
-// 카카오 알림톡 발송(솔라피). kakaoOptions.disableSms=false 라 알림톡 실패 시 솔라피가 SMS(text)로 자동 대체.
-//   미설정이면 null → 호출측이 SMS 폴백. body=SMS 대체 본문, vars=템플릿 치환(#{이름} 등).
+// 카카오 알림톡 발송(NHN Cloud). resendParameter 로 알림톡 실패 시 문자 대체발송까지 함께 요청한다.
+//   미설정이면 null → 호출측이 SMS 폴백. body=문자 대체 본문, vars=템플릿 치환값(키는 #{} 없이).
 export async function sendAlimtalk(
   phone: string, body: string, type: string, vars: Record<string, string>
 ): Promise<{ ok: boolean } | null> {
@@ -155,17 +222,10 @@ export async function sendAlimtalk(
     return { ok: false };
   }
 
-  const from = process.env.SOLAPI_SENDER;
-  const pfId = process.env.SOLAPI_PFID;
-  const templateId = KAKAO_TPL[type];
-  if (!process.env.SOLAPI_API_KEY || !from || !pfId || !templateId) return null; // 미설정 → SMS 폴백
+  const templateCode = kakaoTemplateCode(type);
+  if (!kakaoConfigured() || !templateCode) return null; // 미설정 → SMS 폴백
 
-  const r = await solapiSend({
-    to: normalizePhone(phone),
-    from: normalizePhone(from),
-    text: body, // 알림톡 실패 시 이 문구로 SMS 자동 대체
-    kakaoOptions: { pfId, templateId, variables: vars, disableSms: false },
-  });
+  const r = await nhnSendAlimtalk(phone, templateCode, vars, body);
   await writeLog({ phone, body, type, status: r.ok ? "sent" : "failed", channel: "alimtalk", error: r.ok ? null : r.error });
   return { ok: r.ok };
 }
@@ -181,9 +241,11 @@ export async function sendReservationSms(
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
     refundRate: r.refund_rate ?? undefined,
   });
-  // 알림톡 템플릿 치환 변수(#{이름}#{테마}#{날짜}#{시간} — 카카오 등록 템플릿과 일치해야 함)
-  const vars = { "#{이름}": r.name, "#{테마}": r.theme_name, "#{날짜}": formatDate(r.date), "#{시간}": r.time };
-  // 1순위 알림톡(실패 시 솔라피가 SMS 자동대체). 알림톡 미설정이면 SMS 경로.
+  // 알림톡 템플릿 치환값. 카카오 템플릿 본문의 #{이름}#{테마}#{날짜}#{시간} 자리에 들어간다.
+  // ⚠️ NHN 은 키를 **#{} 없이** 받는다(솔라피는 "#{이름}" 형태였음). 여기서 형태가 어긋나면
+  //    치환이 안 된 채 "#{이름}님" 그대로 손님에게 나간다.
+  const vars = { 이름: r.name, 테마: r.theme_name, 날짜: formatDate(r.date), 시간: r.time };
+  // 1순위 알림톡(실패 시 NHN 이 문자로 대체발송). 알림톡 미설정이면 SMS 경로.
   const kakao = await sendAlimtalk(r.phone, body, type, vars);
   if (kakao) return kakao;
   return sendSms(r.phone, body, type);

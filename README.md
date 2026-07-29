@@ -2,6 +2,21 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-29 — 문자 발송 솔라피 → NHN Cloud 전환
+- **이유**: 솔라피는 **발신번호 등록**이 끝내 안 됐다(개인 명의·본인인증 완료 상태인데도 등록 단계에서 진행 불가). 발송 코드 문제가 아니라 계정 쪽 관문이라, 업체를 바꾼다.
+- **왜 NHN Cloud 인가**: Cloudflare Workers 는 나가는 IP 가 매번 바뀐다 → **발송 서버 IP 등록이 필요한 업체는 원천적으로 못 쓴다**(알리고 "인증오류-IP", 뿌리오도 문서상 필수 `3003 invalid ip`). NHN Cloud 는 `appKey` + `X-Secret-Key` 두 개로만 인증한다.
+- `src/lib/sms.ts` 재작성:
+  - 문자 = `POST sms.api.nhncloudservice.com/sms/v3.0/appKeys/{appKey}/sender/sms|mms`
+  - 알림톡 = `POST kakaotalk-bizmessage.api.nhncloudservice.com/alimtalk/v2.1/appkeys/{appkey}/messages`, `resendParameter.isResend=true` 로 **실패 시 문자 대체발송**(솔라피 `disableSms:false` 와 같은 역할)
+  - 성공 판정은 `header.isSuccessful` 하나로 통일
+- ⚠️ **솔라피와 다른 점 두 가지 — 안 맞추면 사고난다**
+  1. **길이에 따라 경로가 갈린다.** 솔라피는 알아서 SMS/LMS 를 골랐지만 NHN 은 90바이트 초과 시 `/sender/mms`(title 필수)로 보내야 한다. 한글 2바이트(EUC-KR 기준)로 세는 `smsByteLength()` 추가 + `tests/sms-length.test.ts` 로 못 박음(UTF-8 3바이트로 세면 단문도 장문으로 나가 요금 3배).
+  2. **템플릿 치환 키에 `#{}` 를 붙이지 않는다.** 솔라피는 `{"#{이름}": "홍길동"}`, NHN 은 `{"이름": "홍길동"}`. 어긋나면 치환이 안 된 채 `#{이름}님` 그대로 손님에게 나간다.
+- env: `NHN_SMS_APPKEY·NHN_SMS_SECRET·NHN_SENDER` + (알림톡) `NHN_ALIMTALK_APPKEY·NHN_ALIMTALK_SECRET·NHN_SENDER_KEY·NHN_TPL_CONFIRM·NHN_TPL_CANCEL`. 솔라피·알리고 env 는 `.env.local` 에 주석으로 남김.
+- **개인정보처리방침 위탁업체 수정**: `알리고` → `NHN Cloud`. 솔라피로 옮길 때 이 줄만 안 고쳐져 실제와 달랐다(위탁 고지는 실제 업체와 일치해야 함). 관리자 화면 안내 문구의 "알리고"도 함께 정리.
+- **남은 것(사장님)**: NHN Cloud 가입 → 발신번호 등록 → 콘솔에서 appKey·SecretKey 발급. 값 주시면 `wrangler secret` 등록 + 발송 테스트.
+- 파일: `src/lib/sms.ts`, `tests/sms-length.test.ts`, `src/app/privacy/page.tsx`, `src/app/admin/page.tsx`, `src/app/api/admin/sms/route.ts`, `.env.local`.
+
 ## 2026-07-29 — 배포처를 Cloudflare 하나로 정리 (Vercel 자동배포·크론 제거)
 - **왜**: `git push` = Vercel 자동배포라 소스만 올려도 두 곳이 갈렸다. 라이브는 Cloudflare 하나로 간다.
 - `vercel.json`에 `git.deploymentEnabled:{main:false}` → 앞으로 push 해도 Vercel 이 빌드하지 않는다. **git push 는 소스 보관용**, 배포는 `npm run cf:deploy` 하나.

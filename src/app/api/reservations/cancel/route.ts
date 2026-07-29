@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     reservation_id: id, action: "손님 취소", detail: paid ? `환불율 ${refundRate}%` : "미입금 취소(환불 없음)",
   }).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 취소 안내 문자 (알리고 키 있을 때만 실제 발송) — 미입금은 환불 언급 없이(refund_rate=0)
+  // 취소 안내 문자 (문자 키 있을 때만 실제 발송) — 미입금은 환불 언급 없이(refund_rate=0)
   await sendReservationSms("cancel", {
     name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
     people: found.people, refund_rate: refundRate ?? 0,
