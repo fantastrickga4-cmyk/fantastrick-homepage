@@ -14,7 +14,12 @@ for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8
 }
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-const TEST_PHONE = "010-0000-";
+// ⚠️ 홈페이지가 저장하는 것과 **같은 모양**(하이픈 없는 숫자만)으로 넣는다.
+//    전엔 "010-0000-0001" 처럼 하이픈을 넣어서, 관리자 화면엔 보이는데
+//    손님 조회 화면(예약 조회·취소)에서는 같은 번호로 안 잡혔다 — 조회는 글자를 그대로 비교하는데
+//    홈페이지는 숫자만("01000000001") 저장하기 때문. 손님 화면까지 테스트하려면 모양이 같아야 한다.
+const TEST_PHONE = "0100000";
+const OLD_TEST_PHONE = "010-0000-"; // 옛 버전이 넣어둔 것도 --clean 으로 같이 지워주기 위해
 const TAG = "[테스트]";
 const KST = 9 * 3600 * 1000;
 const iso = (ms) => new Date(ms).toISOString();
@@ -28,17 +33,6 @@ const todayAt = (h, m) => {
   return iso(d.getTime() - KST);
 };
 const minsAgo = (n) => iso(now - n * 60000);
-
-if (process.argv.includes("--clean")) {
-  // 전화번호로만 고른다 — 미입금 자동취소가 돌면 메모를 "미입금으로 자동 취소"로 덮어써서
-  // [테스트] 표시가 지워지기 때문. 010-0000-**** 는 실제로 쓸 수 없는 번호라 이것만으로 충분히 안전하다.
-  const { data } = await db.from("reservations").select("id,name").like("phone", `${TEST_PHONE}%`);
-  if (!data?.length) { console.log("지울 테스트 예약이 없어요."); process.exit(0); }
-  await db.from("reservation_logs").delete().in("reservation_id", data.map((r) => r.id));
-  await db.from("reservations").delete().in("id", data.map((r) => r.id));
-  console.log(`테스트 예약 ${data.length}건 삭제 완료`);
-  process.exit(0);
-}
 
 // theme_id → store_id / theme_name
 const T = {
@@ -103,6 +97,29 @@ const CASES = [
     theme: "ldc", date: day(-2), time: "17:00", people: 3, name: "윤가온", phone: "0011",
     status: "confirmed", paid: true, created: minsAgo(9000), paid_at: minsAgo(8900) },
 ];
+
+// 이 스크립트가 만든 예약만 지운다.
+//   ⚠️ 앞자리로 뭉뚱그려 지우면 안 된다(like "0100000%").
+//      기존 사이트에서 옮겨온 **진짜 예약**들도 번호가 010-0000-**** 로 가려져 있어
+//      앞자리가 똑같다(01000007941 등). 통째로 지워진다.
+//   ⚠️ 메모의 [테스트] 표시로 고르는 것도 안 된다 — 미입금 자동취소가 메모를 덮어쓴다.
+//   → 그래서 아래 CASES 가 만드는 번호만 **정확히 그 목록으로** 지운다.
+//   ⚠️ 번호만 맞으면 지우는 것도 위험하다 — 예전에 딴 데서 만든 테스트 예약이 같은 번호를
+//      쓰고 있으면 그것까지 쓸어간다(실제로 010-0000-0002 짜리 한 건이 그렇게 지워졌다).
+//      그래서 **번호 + 이름**이 둘 다 맞는 것만 지운다.
+if (process.argv.includes("--clean")) {
+  const phones = [
+    ...CASES.map((c) => TEST_PHONE + c.phone),
+    ...CASES.map((c) => OLD_TEST_PHONE + c.phone), // 하이픈 넣던 옛 버전이 남긴 것까지
+  ];
+  const names = CASES.map((c) => c.name);
+  const { data } = await db.from("reservations").select("id,name").in("phone", phones).in("name", names);
+  if (!data?.length) { console.log("지울 테스트 예약이 없어요."); process.exit(0); }
+  await db.from("reservation_logs").delete().in("reservation_id", data.map((r) => r.id));
+  await db.from("reservations").delete().in("id", data.map((r) => r.id));
+  console.log(`테스트 예약 ${data.length}건 삭제 완료`);
+  process.exit(0);
+}
 
 let ok = 0;
 for (const c of CASES) {
