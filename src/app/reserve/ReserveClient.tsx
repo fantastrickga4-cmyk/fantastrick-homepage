@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule, type Theme } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
@@ -79,32 +79,22 @@ export default function ReserveClient({ preset }: { preset: string }) {
   // 예전 코드가 쓰던 이름 유지 — '최초 로딩 전'에만 true(그 뒤 재확인은 조용히 처리, 로딩표시 없음).
   const slotsLoading = !allLoaded;
 
-  // 어떤 날짜든 그 테마의 마감/예약 시간을 계산한다 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
+  // 고른 테마·날짜의 마감/예약 시간 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
   //   1순위: 방금 그 슬롯만 콕 집어 받아온 신선값(freshSlots)
   //   2순위: 없으면 미리 받아둔 allSlots 로 즉시 계산(네트워크 대기 없음)
-  //   ※ 예전에는 '고른 날짜' 하나만 계산했는데, 달력 칸마다 남은 칸 수를 그리려면
-  //     임의의 날짜에 대해 같은 계산이 필요해 함수로 뺐다.
-  const blockedForDate = useCallback(
-    (d: string): { blocked: string[]; dayClosed: boolean } => {
-      if (!themeId || !d) return { blocked: [], dayClosed: false };
-      const fresh = freshSlots[`${themeId}|${d}`];
-      if (fresh) return fresh;
-      if (!allSlots) return { blocked: [], dayClosed: false };
-      const bs = allSlots.blockedSlots.filter((b) => b.date === d && (!b.theme_id || b.theme_id === themeId));
-      const closed = bs.some((b) => !b.time);
-      const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
-      const taken = allSlots.reservations
-        .filter((r) => r.theme_id === themeId && r.date === d && r.time)
-        .map((r) => r.time as string);
-      return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
-    },
-    [themeId, allSlots, freshSlots],
-  );
-
-  const { blocked, dayClosed } = useMemo(
-    () => (date ? blockedForDate(date) : { blocked: [] as string[], dayClosed: false }),
-    [date, blockedForDate],
-  );
+  const { blocked, dayClosed } = useMemo(() => {
+    if (!themeId || !date) return { blocked: [] as string[], dayClosed: false };
+    const fresh = freshSlots[`${themeId}|${date}`];
+    if (fresh) return fresh;
+    if (!allSlots) return { blocked: [] as string[], dayClosed: false };
+    const bs = allSlots.blockedSlots.filter((b) => b.date === date && (!b.theme_id || b.theme_id === themeId));
+    const closed = bs.some((b) => !b.time);
+    const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
+    const taken = allSlots.reservations
+      .filter((r) => r.theme_id === themeId && r.date === date && r.time)
+      .map((r) => r.time as string);
+    return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
+  }, [themeId, date, allSlots, freshSlots]);
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
   const store = useMemo(() => STORES.find((s) => s.id === theme?.store), [theme]);
@@ -154,21 +144,6 @@ export default function ReserveClient({ preset }: { preset: string }) {
   useEffect(() => {
     if (time && date && isTooSoon(date, time, leadMin, nowMs)) setTime("");
   }, [nowMs, time, date, leadMin]);
-
-  // 달력 칸에 찍을 "그 날 남은 칸" — 시간칩을 만드는 규칙과 **똑같은 규칙**으로 센다.
-  //   (그 요일 시간표) − (마감·이미 찬 시간) − (임박해서 못 누르는 시간)
-  //   아직 설정·마감정보를 못 받았으면 null → 달력은 숫자를 안 그린다(0으로 잘못 표시하는 것보다 안전).
-  const remainingFor = useCallback(
-    (d: string): number | null => {
-      if (!theme || !allLoaded || !cfgLoaded) return null;
-      const list = slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme.id, theme.store, d);
-      if (list.length === 0) return 0; // 그 요일은 아예 안 여는 테마(휴무)
-      const { blocked: bl, dayClosed: closed } = blockedForDate(d);
-      if (closed) return 0;
-      return list.filter((tm) => !bl.includes(tm) && !isTooSoon(d, tm, leadMin, nowMs)).length;
-    },
-    [theme, allLoaded, cfgLoaded, cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, blockedForDate, leadMin, nowMs],
-  );
 
   useEffect(() => {
     const pt = preset ? THEMES.find((t) => t.id === preset) : undefined;
@@ -434,10 +409,10 @@ export default function ReserveClient({ preset }: { preset: string }) {
             {/* 달력 | 시간 2열 — 휴대폰에서는 위아래로 접히되 순서(날짜 → 시간)는 그대로 유지된다. */}
             <div className="rv-2col">
               <div className="rv-col">
-                <p className="rv-lab">날짜 <span>숫자 = 그 날 남은 칸</span></p>
+                <p className="rv-lab">날짜</p>
                 {/* 고른 날짜를 아래에 또 쓰지 않는다 — 오른쪽 '시간' 제목에 이미 같은 날짜가 있어
                     두 번 적으면 폼 시작 지점과 붙어 지저분해진다. */}
-                <ReserveCalendar value={date} onChange={pickDate} countFor={remainingFor} />
+                <ReserveCalendar value={date} onChange={pickDate} />
               </div>
 
               <div className="rv-col">

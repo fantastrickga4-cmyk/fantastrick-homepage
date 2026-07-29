@@ -1629,15 +1629,6 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 /* 손가락이 굵은 기기에선 칩을 키운다 */
 @media (pointer:coarse){.rv-slots{gap:10px}.rv-slot{min-height:48px}}
 
-/* ── 달력 칸의 "남은 N칸" ────────────────────────────────
-   .rcal-cell 이 grid(place-items:center) 였는데 숫자 아래에 칸 수를 넣으려고 flex 세로로 바꿨다.
-   자식이 하나뿐인 기존 화면(예약 시간변경 팝업)에서는 결과가 같다. */
-.rcal-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
-.rcal-n{font-size:9.5px;font-weight:700;line-height:1.1;margin-top:1px;color:var(--cyan)}
-.rcal-cell.on .rcal-n{color:#fff}
-.rcal-cell.soldout .rcal-n{color:var(--faint)}
-.rcal-cell.soldout .rcal-d{color:var(--faint)}
-
 @media(max-width:860px){
   .rv-2col{grid-template-columns:1fr;gap:20px}
 }

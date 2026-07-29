@@ -2,6 +2,12 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-29 — 예약 달력의 '남은 N칸' 표시 제거 (사장님 지시)
+- 달력 날짜 칸의 `N칸`/`마감` 숫자와 "숫자 = 그 날 남은 칸" 안내를 전부 뺐다. 달력은 다시 날짜 숫자만 보여준다.
+- `ReserveCalendar` 의 `countFor` prop, `.rcal-n`·`.rcal-cell.soldout` 스타일, `ReserveClient` 의 `remainingFor()` 삭제.
+- 이 기능 때문에 `blockedForDate()` 로 빼놨던 계산도 **원래대로 useMemo 안으로 되돌렸다**(호출부가 하나뿐이라 함수로 둘 이유가 없어짐). 마감·임박 시간칩 동작은 그대로.
+- 파일: `src/components/ReserveCalendar.tsx`, `src/app/reserve/ReserveClient.tsx`, `src/app/globals.css`.
+
 ## 2026-07-29 — 문자 발송 솔라피 → NHN Cloud 전환
 - **이유**: 솔라피는 **발신번호 등록**이 끝내 안 됐다(개인 명의·본인인증 완료 상태인데도 등록 단계에서 진행 불가). 발송 코드 문제가 아니라 계정 쪽 관문이라, 업체를 바꾼다.
 - **왜 NHN Cloud 인가**: Cloudflare Workers 는 나가는 IP 가 매번 바뀐다 → **발송 서버 IP 등록이 필요한 업체는 원천적으로 못 쓴다**(알리고 "인증오류-IP", 뿌리오도 문서상 필수 `3003 invalid ip`). NHN Cloud 는 `appKey` + `X-Secret-Key` 두 개로만 인증한다.
