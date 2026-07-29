@@ -200,12 +200,16 @@ function kakaoTemplateCode(type: string): string | undefined {
   const cancel = process.env.NHN_TPL_CANCEL;
   return { payment: confirm, confirm, cancel, admin_cancel: cancel }[type];
 }
+// ⚠️ 발신번호(NHN_SENDER)는 여기 조건에 넣지 않는다.
+//    알림톡 자체는 카카오 채널(senderKey)로 나가므로 발신번호가 없어도 발송된다.
+//    발신번호는 "알림톡이 실패했을 때 문자로 대신 보내는" 용도로만 쓰인다(nhnSendAlimtalk 의 resendParameter).
+//    발신번호 등록 심사는 오래 걸리는데, 그동안 카카오 심사가 먼저 끝나면
+//    알림톡만이라도 나가는 편이 낫다 — 여기에 발신번호를 넣어두면 그마저 막힌다.
 export function kakaoConfigured(type?: string): boolean {
   const base = !!(
     process.env.NHN_ALIMTALK_APPKEY &&
     process.env.NHN_ALIMTALK_SECRET &&
-    process.env.NHN_SENDER_KEY &&
-    process.env.NHN_SENDER // 알림톡 실패 시 문자 대체발송에 필요
+    process.env.NHN_SENDER_KEY
   );
   if (!type) return base;
   return base && !!kakaoTemplateCode(type);
