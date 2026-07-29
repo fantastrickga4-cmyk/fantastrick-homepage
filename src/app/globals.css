@@ -1565,7 +1565,12 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .rv-pick-store{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--rv-store,var(--brand));
   border:1px solid currentColor;border-radius:var(--r-full);padding:1px 8px;align-self:flex-start}
 .rv-pick-meta{font-size:12px;color:var(--muted)}
-.rv-pick-dep{font-size:12.5px;font-weight:800;color:var(--text);font-feature-settings:"tnum";margin-top:auto}
+/* 시놉시스 — 테마 상세와 같은 문장을 쓰되, 카드에서는 앞부분만 보여준다(넘치면 …).
+   줄 수를 고정해야 카드 4장 높이가 들쭉날쭉하지 않다. */
+.rv-pick-syn{margin-top:4px;font-size:12.5px;line-height:1.55;color:var(--muted);
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+/* 꺾쇠로 묶인 고유명사(<스네이크>)가 줄 끝에서 쪼개지지 않게 */
+.rv-pick-syn .nobr{white-space:nowrap}
 
 /* ── 고른 테마 배너(포스터를 눕힌 형태) ─────────────────── */
 .rv-banner{display:grid;grid-template-columns:108px 1fr auto;gap:16px;align-items:center;

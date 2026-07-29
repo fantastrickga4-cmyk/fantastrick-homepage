@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { THEMES, TIME_SLOTS, THEME_SLOTS, STORES, slotsForThemeDate, isTooSoon, type StoreSlots, type SlotSchedule, type Theme } from "@/lib/data";
 import { formatDate, formatPhone, isValidPhone, reservationDateState } from "@/lib/util";
 import { depositOf } from "@/lib/settings";
+import { THEME_CONTENT } from "@/lib/theme-content";
 import { IconCheck, IconWarn, IconBan, IconClock } from "@/components/Icon";
 import { ReserveCalendar, openDateLabel } from "@/components/ReserveCalendar";
 
@@ -25,6 +26,16 @@ type Cfg = { timeSlots: string[]; storeSlots?: Record<string, StoreSlots>; theme
 
 // 미리 받아두는 마감/예약 시간 한 줄 (time 이 null 이면 그 날 통째 휴무=dayClosed)
 type SlotRow = { theme_id: string | null; date: string; time: string | null };
+
+// 테마 카드에 넣을 짧은 소개 — 테마 상세와 같은 시놉시스를 한 문단으로 잇는다.
+// <스네이크> 처럼 꺾쇠로 묶인 고유명사는 줄 끝에서 "<스네이크 / >" 로 쪼개져 꺾쇠만 다음 줄에
+// 외톨이로 남는다(전에 다른 화면에서도 고쳤던 문제). 그 조각만 통째로 묶어 안 쪼개지게 한다.
+function synopsisOf(themeId: string) {
+  const text = THEME_CONTENT[themeId]?.synopsis.join(" ") ?? "";
+  return text.split(/(<[^>]+>)/).map((seg, i) =>
+    seg.startsWith("<") ? <span key={i} className="nobr">{seg}</span> : seg,
+  );
+}
 
 export default function ReserveClient({ preset }: { preset: string }) {
 
@@ -369,7 +380,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
             지점을 먼저 물을 이유가 없다(3지점 모두 강남). 포스터가 곧 상품이라 포스터로 고르는 게 빠르다. */}
         {!themeId ? (
           <>
-            <p className="rv-lab">테마 선택 <span>3개 지점 · 4개 테마</span></p>
+            <p className="rv-lab">테마 선택</p>
             <div className="rv-pick">
               {THEMES.map((t) => (
                 <button key={t.id} type="button" className="rv-pick-card" data-store={t.store} onClick={() => pickThemeCard(t)}>
@@ -380,7 +391,10 @@ export default function ReserveClient({ preset }: { preset: string }) {
                     <b>{t.name}</b>
                     <span className="rv-pick-store">{t.storeTag}</span>
                     <span className="rv-pick-meta">{t.minutes}분 · 난이도 {t.difficulty}</span>
-                    <span className="rv-pick-dep">예약금 {depositOf({ themeDeposits: cfg.themeDeposits ?? {} }, t.id, t.deposit).toLocaleString()}원</span>
+                    {/* 고르는 단계에서는 금액보다 "어떤 이야기인가"가 먼저다.
+                        문구는 지어내지 않고 테마 상세와 같은 시놉시스(theme-content.ts)를 그대로 쓴다 —
+                        두 곳에 다른 소개가 있으면 나중에 한쪽만 고쳐져 어긋난다. */}
+                    <span className="rv-pick-syn">{synopsisOf(t.id)}</span>
                   </span>
                 </button>
               ))}
