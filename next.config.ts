@@ -16,7 +16,11 @@ const nextConfig: NextConfig = {
   //   앱을 다시 설치하지 않고도 홈페이지가 받을 수 있게 여기서 진짜 문으로 넘겨준다.
   //   ⚠️ 이 줄을 지우면 이미 설치된 앱이 입금 알림을 못 보낸다 — 앱을 새로 깔기 전엔 지우지 말 것.
   async rewrites() {
-    return [{ source: "/webhook/deposit", destination: "/api/bank/deposit" }];
+    return [
+      { source: "/webhook/deposit", destination: "/api/bank/deposit" },
+      // 앱이 보내는 진단 기록(감시 서비스 생존·화면 읽기 결과)도 같은 방식으로 받는다.
+      { source: "/webhook/diag", destination: "/api/bank/diag" },
+    ];
   },
   // 모든 경로에 기본 보안 헤더 적용 (클릭재킹·MIME 스니핑·정보 유출 1차 방어)
   async headers() {
