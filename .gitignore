@@ -30,3 +30,4 @@ shot.mjs
 .wrangler/
 cloudflare-env.d.ts
 .dev.vars
+wp-sync.log

@@ -16,6 +16,16 @@
  *   npx tsx scripts/import-from-wp.mts            # 미리보기만 (아무것도 안 바꿈)
  *   npx tsx scripts/import-from-wp.mts --apply    # 실제로 넣기
  *   npx tsx scripts/import-from-wp.mts --apply --reset   # 전에 넣은 연습 데이터 지우고 새로
+ *   npx tsx scripts/import-from-wp.mts --apply --sync    # 실시간 동기화 1회(추가+변경+삭제)
+ *
+ * --sync (2026-07-30, 운영 병행 테스트용):
+ *   --apply 는 "새로 생긴 예약 추가"만 한다(기존 건은 memo 로 건너뜀). 그래서 기존
+ *   사이트에서 취소·시간변경·승인이 일어나도 새 사이트에 반영이 안 된다.
+ *   --sync 는 memo 속 예약 번호(#ID)를 열쇠로 세 방향을 다 맞춘다:
+ *     · 기존 사이트에서 사라진 예약(취소) → 여기서도 삭제
+ *     · 날짜·시간·상태가 달라진 예약(변경·승인) → 여기서도 수정
+ *     · 새로 생긴 예약 → 추가
+ *   5분마다 작업 스케줄러로 돌리면 준-실시간이 된다. 워드프레스에는 여전히 SELECT 만 한다.
  *
  * 넣은 데이터는 전부 source='wp-import' 로 표시된다. 나중에 실제 오픈 전에
  * 이 표시로 한 번에 지울 수 있다(--reset).
@@ -26,6 +36,7 @@ import { THEMES, THEME_SLOTS, TIME_SLOTS, slotsForThemeDate } from "../src/lib/d
 
 const APPLY = process.argv.includes("--apply");
 const RESET = process.argv.includes("--reset");
+const SYNC = process.argv.includes("--sync");
 
 // 이 표시가 붙은 예약 = 연습용으로 가져온 것
 const SOURCE_TAG = "wp-import";
@@ -119,7 +130,7 @@ try {
        AND tt.taxonomy='booked_custom_calendars'
      WHERE p.post_type='booked_appointments'
        AND p.post_status IN ('publish','draft')
-       AND CAST(ts.meta_value AS UNSIGNED) >= UNIX_TIMESTAMP(NOW())
+       AND CAST(ts.meta_value AS UNSIGNED) >= UNIX_TIMESTAMP(CURDATE())
      ORDER BY epoch ASC`
   );
   console.log(`기존 사이트에서 읽음: 앞으로 남은 예약 ${rows.length}건`);
@@ -197,6 +208,44 @@ try {
 
   if (!APPLY) {
     console.log("\n※ 미리보기만 했습니다. 실제로 넣으려면 --apply 를 붙이세요.");
+  } else if (SYNC) {
+    // ── 4-b) 실시간 동기화: 삭제 → 수정 → 추가 순 ─────────────────────
+    //   순서가 중요하다. 옮겨진 예약이 들어갈 칸(uq_res_slot)을 먼저 비워야 하므로
+    //   삭제·수정을 추가보다 앞에 둔다. 실패한 건은 다음 회차(5분 뒤)가 다시 맞춘다.
+    type Ex = { id: string; memo: string; date: string; time: string; status: string; deposit_paid: boolean; name: string };
+    const existing = (await sb(
+      `reservations?source=eq.${SOURCE_TAG}&select=id,memo,date,time,status,deposit_paid,name`
+    )) as Ex[];
+    const want = new Map(rowsToInsert.map((m) => [m.memo, m]));
+    const have = new Map(existing.map((e) => [e.memo, e]));
+
+    // 기존 사이트에서 사라진 예약(취소·삭제) → 여기서도 삭제
+    let delOk = 0;
+    for (const e of existing.filter((x) => !want.has(x.memo))) {
+      try { await sb(`reservations?id=eq.${e.id}`, { method: "DELETE" }); delOk++; }
+      catch (err) { console.log(`  ❌ 삭제 실패 ${e.name} ${e.date} ${e.time}: ${(err as Error).message.slice(0, 120)}`); }
+    }
+
+    // 날짜·시간·상태가 달라진 예약(변경·승인·되돌림) → 수정. 워드프레스가 항상 기준이다.
+    let upd = 0;
+    for (const [memo, m] of want) {
+      const e = have.get(memo);
+      if (!e) continue;
+      if (e.date === m.date && e.time === m.time && e.status === m.status && e.deposit_paid === m.deposit_paid && e.name === m.name) continue;
+      const patch: Record<string, unknown> = { date: m.date, time: m.time, status: m.status, deposit_paid: m.deposit_paid, name: m.name };
+      if (m.deposit_paid && !e.deposit_paid) { patch.confirmed_at = new Date().toISOString(); patch.paid_at = patch.confirmed_at; }
+      if (!m.deposit_paid && e.deposit_paid) { patch.confirmed_at = null; patch.paid_at = null; }
+      try { await sb(`reservations?id=eq.${e.id}`, { method: "PATCH", body: JSON.stringify(patch) }); upd++; }
+      catch (err) { console.log(`  ❌ 수정 실패 ${m.name} ${m.date} ${m.time}: ${(err as Error).message.slice(0, 120)}`); }
+    }
+
+    // 새로 생긴 예약 → 추가
+    let ok = 0;
+    for (const m of rowsToInsert.filter((x) => !have.has(x.memo))) {
+      try { await sb("reservations", { method: "POST", body: JSON.stringify(m) }); ok++; }
+      catch (e) { console.log(`  ❌ 추가 실패 ${m.name} ${m.date} ${m.time}: ${(e as Error).message.slice(0, 120)}`); }
+    }
+    console.log(`\n✅ 동기화: 추가 ${ok} · 수정 ${upd} · 삭제 ${delOk} (기존 사이트 기준 ${rowsToInsert.length}건)`);
   } else {
     // ── 4) 넣기 ──────────────────────────────────────────────────────
     if (RESET) {
