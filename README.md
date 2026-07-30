@@ -2,6 +2,13 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-07-30 — 입금 카톡알림 자동 매칭 가동 (BANK_DRY_RUN 해제)
+- **`BANK_DRY_RUN=false`(Cloudflare)** — 이름+금액 정확 일치 1건이면 실제로 입금확인을 누른다. 로컬 .env.local 은 true 유지(로컬 실험 안전).
+- **웹훅 매칭에서 wp-import 미러 제외**: 기존 사이트 복사본의 입금 상태는 5분 동기화가 기준이라, 웹훅이 같이 누르면 두 경로가 서로 덮어씀. `.or("source.is.null,source.neq.wp-import")` — ⚠️`.neq`만 쓰면 source가 NULL인 자체 예약까지 걸러져 자동확인이 전멸함.
+- **라이브 E2E 검증**: 연습 예약(입금테스트/3만) 생성 → `/webhook/deposit`(→ rewrites로 `/api/bank/deposit`)에 태블릿과 동일 형식 POST → `decision:"approved"` → 예약 `deposit_paid:true·confirmed` 확인 → 정리(입금해제+취소). 문자는 연습번호라 차단(정상).
+- **남은 것(사장님)**: 매장 태블릿 BankNotify 앱의 서버 주소를 Vercel 주소 → `https://fantastrick-homepage.tndn1102.workers.dev` 로 교체(시크릿은 그대로). 앱은 "주소+/webhook/deposit"으로 보내는데 next.config rewrites 가 받아준다.
+- 파일: `src/app/api/bank/deposit/route.ts`.
+
 ## 2026-07-30 — 시간표를 실제(Booked 원본)와 일치시킴 (신부 평일·사자 금)
 - **근거 수집**: 기존 사이트 DB에서 Booked 플러그인의 요일 기본값 원본(`booked_defaults_17/23/24/25`) + 최근 90일 실예약 분포(테마×요일×시각)를 직접 읽어 대조(임시 조사 스크립트, SELECT만·실행 후 삭제).
 - **태초의 신부**: 평일이 7칸(12:00,14:00,15:20…)이 아니라 **월~금 전부 8칸**(12:00,13:20,14:40,16:00,17:20,18:40,20:00,21:20)이 실제 기본값. 이번 주 월~목의 7칸은 사장님이 Booked에 날짜별 예외로 줄인 것(다음 주 월·화·수 실예약이 이미 14:40·17:20 등으로 들어와 있음). → default를 8칸으로, 요일 예외는 주말만 남김. 칸을 줄이는 날은 관리자 › 시간대 마감으로.

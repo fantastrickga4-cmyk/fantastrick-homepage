@@ -102,11 +102,16 @@ export async function POST(req: NextRequest) {
   // 만료 정리(30분 미입금·자정 유예)를 먼저 돌린다 — 이미 취소돼야 할 예약에 입금확인을 누르지 않도록.
   await sweepExpiredReservations(db).catch(() => {});
 
+  // 기존 사이트에서 복사된 예약(source='wp-import')은 후보에서 뺀다.
+  //   그 예약들의 입금·확정 상태는 5분 동기화가 기존 사이트 기준으로 맞추므로, 여기서
+  //   같이 누르면 두 경로가 서로 덮어쓴다. 자체 예약(웹=source 없음·전화=phone)만 자동확인.
+  //   ⚠️ .neq 는 NULL 행까지 걸러버리므로 .or 로 "없거나 wp-import 아님"을 써야 한다.
   const { data: rows, error: selErr } = await db
     .from("reservations")
     .select("id, name, phone, deposit, theme_name, date, time")
     .eq("status", "pending")
-    .eq("deposit_paid", false);
+    .eq("deposit_paid", false)
+    .or("source.is.null,source.neq.wp-import");
 
   if (selErr) {
     await finish({ status: "failed", error_message: `예약 조회 실패: ${selErr.message}` });
