@@ -63,8 +63,32 @@ export async function POST(req: NextRequest) {
   if (!depositorName || !amount) {
     const parsed = parseDeposit(rawText);
     if (!parsed) {
+      // 파싱 실패도 **기록으로 남긴다.** 예전엔 400 만 돌려주고 아무것도 안 남겨서,
+      // "태블릿이 안 보냈다" 와 "보냈는데 글자를 못 알아봤다" 가 서버에서 똑같아 보였다.
+      // 그 탓에 2026-07-30 원인 찾는 데 몇 시간을 썼다. 원문을 남겨야 카톡 화면의
+      // 글자가 어떻게 읽혔는지 그대로 볼 수 있다.
       console.warn("[입금] 파싱 실패:", rawText.slice(0, 200));
-      return jsonError(400, "parse_failed", { message: "알림에서 이름·금액을 못 뽑았습니다." });
+      const failEventId = deriveEventId(rawText, receivedAt);
+      const { error: failErr } = await db.from("deposits").insert({
+        event_id: failEventId,
+        depositor_name: "(파싱실패)", // NOT NULL 이라 자리표시자
+        amount: 0,
+        raw_text: rawText,
+        received_at: new Date(receivedAt).toISOString(),
+        status: "parse_failed",
+        error_message: "원문에서 이름·금액을 못 뽑음",
+      });
+      // 같은 원문이 또 와도(23505) 굳이 실패로 만들지 않는다 — 기록은 이미 있다.
+      if (failErr && failErr.code !== "23505") {
+        console.error("[입금] 파싱실패 기록 실패", failErr.message);
+      }
+      // build 표식: 배포가 실제로 반영됐는지 응답만 보고 확인하려고 둔다.
+      // (같은 400 이라 옛 코드/새 코드 구분이 안 돼서 원인 찾기가 막혔던 적이 있다)
+      return jsonError(400, "parse_failed", {
+        message: "알림에서 이름·금액을 못 뽑았습니다.",
+        build: "20260730-parsefail-log",
+        logged: !failErr || failErr.code === "23505",
+      });
     }
     depositorName = parsed.depositorName;
     amount = parsed.amount;
