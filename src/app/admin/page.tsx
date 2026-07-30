@@ -37,16 +37,16 @@ function Phone({ v }: { v: string }) {
     </span>
   );
 }
-// 로그인하면 "오늘 뭐 해야 하지"부터. 매일 하는 일(예약·돈)이 앞, 가끔 하는 일은 뒤.
+// 예약 탭이 기본 화면(사장님 지시 2026-07-30) — 로그인하면 바로 예약 목록부터.
 const TABS = [
-  { k: "home", label: "오늘" }, { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
+  { k: "res", label: "예약" }, { k: "home", label: "오늘" }, { k: "money", label: "입금·환불" },
   { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
 export default function AdminPage() {
   const [phase, setPhase] = useState<"checking" | "login" | "in">("checking");
   const [pw, setPw] = useState(""); const [loginErr, setLoginErr] = useState("");
-  const [tab, setTab] = useState("home");
+  const [tab, setTab] = useState("res");
 
   async function check() {
     const res = await fetch("/api/admin/reservations?status=__probe__");
@@ -266,6 +266,40 @@ function SettingsHub() {
   );
 }
 
+/* 한 줄 메모 — 예약 행에서 펼치지 않고 바로 적는 관리자 메모 (사장님 지시 2026-07-30).
+   Enter 또는 칸 밖 클릭이면 저장. 30초 자동 새로고침이 와도 입력 중엔 덮어쓰지 않는다. */
+function MemoLine({ id, memo, onSaved }: { id: string; memo?: string | null; onSaved: (m: string) => void }) {
+  const [v, setV] = useState(memo || "");
+  const [focus, setFocus] = useState(false);
+  const [st, setSt] = useState<"idle" | "saving" | "saved" | "err">("idle");
+  useEffect(() => { if (!focus) setV(memo || ""); }, [memo, focus]);
+  async function save() {
+    if (v.trim() === (memo || "").trim()) return;
+    setSt("saving");
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, memo: v.trim() }),
+    });
+    if (res.ok) { setSt("saved"); onSaved(v.trim()); setTimeout(() => setSt("idle"), 1500); }
+    else setSt("err");
+  }
+  return (
+    <span className="memoline" onClick={(e) => e.stopPropagation()}>
+      <IconPencil />
+      <input
+        value={v} placeholder="한 줄 메모" maxLength={120}
+        onChange={(e) => setV(e.target.value)}
+        onFocus={() => setFocus(true)}
+        onBlur={() => { setFocus(false); save(); }}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      />
+      {st === "saving" && <em className="ml-st">저장 중…</em>}
+      {st === "saved" && <em className="ml-st ok">저장됨</em>}
+      {st === "err" && <em className="ml-st err">저장 실패 — 다시 시도</em>}
+    </span>
+  );
+}
+
 function ListView() {
   const [list, setList] = useState<Reservation[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -388,6 +422,10 @@ function ListView() {
               <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
               <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
             </span>
+            {/* wp-import 복사본은 memo 가 동기화 열쇠라 편집 금지 — 고치면 동기화가 그 예약을 못 알아본다 */}
+            {r.source !== "wp-import" && (
+              <MemoLine id={r.id} memo={r.memo} onSaved={(m) => setList((l) => l.map((x) => (x.id === r.id ? { ...x, memo: m } : x)))} />
+            )}
           </div>
           <div className="detail">
             <div className="res-summary" style={{ margin: 0 }}>
@@ -568,6 +606,9 @@ function DayView() {
                         <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
                         <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
                       </span>
+                      {r.source !== "wp-import" && (
+                        <MemoLine id={r.id} memo={r.memo} onSaved={(m) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, memo: m } : x)))} />
+                      )}
                     </>
                   ) : bk ? (
                     <>
