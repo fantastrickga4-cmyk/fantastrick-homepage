@@ -733,6 +733,32 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
   );
 }
 
+/* 🔒 그 테마·그 날짜에 **고를 수 없는 시간**을 받아온다.
+   예약이 찬 칸을 고를 수 있게 두면 [옮기기]를 눌러야 실패를 알게 되고,
+   최악에는 한 칸에 두 팀이 들어간다. 아예 못 고르게 막고 이유를 글자로 보여준다. */
+function useBusySlots(themeId: string | undefined, date: string) {
+  const [busy, setBusy] = useState<{ taken: string[]; blocked: string[]; dayClosed: boolean }>({ taken: [], blocked: [], dayClosed: false });
+  useEffect(() => {
+    if (!themeId || !date) return;
+    let alive = true;
+    const q = "/api/slots?theme=" + encodeURIComponent(themeId) + "&date=" + encodeURIComponent(date);
+    fetch(q).then((r) => r.json())
+      .then((j) => { if (alive) setBusy({ taken: j.taken || [], blocked: j.blocked || [], dayClosed: !!j.dayClosed }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [themeId, date]);
+  return busy;
+}
+
+/** 시간 한 칸의 상태 — 고를 수 있나, 못 고른다면 뭐라고 적을까.
+    keep = 지금 이 예약이 쓰고 있는 시간(자기 자신은 "예약있음"으로 막으면 안 된다). */
+function slotState(t: string, busy: { taken: string[]; blocked: string[] }, keep?: string) {
+  if (keep && t === keep) return { off: false, label: t };
+  if (busy.taken.includes(t)) return { off: true, label: t + " — 예약있음" };
+  if (busy.blocked.includes(t)) return { off: true, label: t + " — 마감" };
+  return { off: false, label: t };
+}
+
 /* 예약 1건 상세·처리 (날짜별 보기에서 손님 이름 클릭 시) */
 function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -760,6 +786,10 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
     const list = cfg && theme ? slotsForThemeDate(cfg.themeSlots, cfg.storeSlots, cfg.timeSlots, theme.id, theme.store, mDate) : [];
     return Array.from(new Set([...list, mTime])).filter(Boolean).sort();
   })();
+  // 같은 날 안에서 옮길 땐 지금 쓰고 있는 시간은 계속 고를 수 있어야 한다(자기 자신).
+  const busySlots = useBusySlots(r.theme_id, mDate);
+  const keepTime = mDate === r.date ? r.time : undefined;
+  const mBlocked = slotState(mTime, busySlots, keepTime).off;
   const changed = mDate !== r.date || mTime !== r.time || mPeople !== r.people;
 
   async function doMove() {
@@ -793,16 +823,22 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
                   <input type="date" value={mDate} onChange={(e) => setMDate(e.target.value)} disabled={!cfg} />
                   {/* 시간표가 오기 전엔 못 고르게 — 후보가 현재 시간뿐인 걸 "옮길 데 없음"으로 오해하지 않게 */}
                   <select value={mTime} onChange={(e) => setMTime(e.target.value)} disabled={!cfg}>
-                    {moveSlots.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {moveSlots.map((t) => {
+                      const st = slotState(t, busySlots, keepTime);
+                      return <option key={t} value={t} disabled={st.off}>{st.label}</option>;
+                    })}
                   </select>
                   <select value={mPeople} onChange={(e) => setMPeople(Number(e.target.value))} disabled={!cfg}>
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}명</option>)}
                   </select>
-                  <button className="btn sm primary" disabled={busy || !changed || !cfg} onClick={doMove}>{busy ? "옮기는 중…" : "옮기기"}</button>
+                  {/* 막힌 칸이 골라져 있으면 버튼도 안 눌린다 — 눌러보고 실패로 알게 되면 안 된다 */}
+                  <button className="btn sm primary" disabled={busy || !changed || !cfg || mBlocked} onClick={doMove}>{busy ? "옮기는 중…" : "옮기기"}</button>
                   <button className="btn sm ghost" onClick={() => { setMove(false); setMDate(r.date); setMTime(r.time); setMPeople(r.people); }}>취소</button>
                 </div>
                 {!cfg ? <p className="hint" style={{ margin: "6px 0 0" }}>시간표 불러오는 중…</p>
-                  : <p className="hint" style={{ margin: "6px 0 0" }}>{THEMES.find((t) => t.id === r.theme_id)?.name}의 <b>{formatDate(mDate)}</b> 시간표예요. 이미 찬 칸으로는 못 옮겨요.</p>}
+                  : busySlots.dayClosed
+                    ? <p className="hint" style={{ margin: "6px 0 0", color: "#b3261e" }}><b>{formatDate(mDate)}</b> 은 휴무·마감된 날이에요.</p>
+                    : <p className="hint" style={{ margin: "6px 0 0" }}>{THEMES.find((t) => t.id === r.theme_id)?.name}의 <b>{formatDate(mDate)}</b> 시간표예요. <b>예약있음·마감</b>인 칸은 고를 수 없어요.</p>}
               </>
             )}
           </div>
@@ -841,6 +877,10 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
     return Array.from(new Set([...list, ...(time ? [time] : [])])).sort();
   }, [cfg, themeId, date, time]);
 
+  // 이미 찬·마감된 칸은 아예 못 고르게 (등록 눌러보고 실패로 알게 되면 안 된다)
+  const busySlots = useBusySlots(themeId, date);
+  const timeBlocked = slotState(time, busySlots).off;
+
   async function submit() {
     setErr(""); setBusy(true);
     const res = await fetch("/api/admin/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ themeId, date, time, people, name, phone, memo }) });
@@ -855,8 +895,16 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
         <div className="field"><label>테마</label><select value={themeId} onChange={(e) => setThemeId(e.target.value)}>{THEMES.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.storeTag})</option>)}</select></div>
         <div className="grid2">
           <div className="field"><label>날짜</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div className="field"><label>시간</label><select value={time} onChange={(e) => setTime(e.target.value)}>{timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+          <div className="field"><label>시간</label><select value={time} onChange={(e) => setTime(e.target.value)}>
+            {timeOptions.map((t) => {
+              const st = slotState(t, busySlots);
+              return <option key={t} value={t} disabled={st.off}>{st.label}</option>;
+            })}
+          </select></div>
         </div>
+        {busySlots.dayClosed
+          ? <div className="msg-err"><IconWarn /> 이 날짜는 휴무·마감입니다.</div>
+          : timeBlocked && <div className="msg-err"><IconWarn /> 이 시간은 이미 예약이 있거나 마감된 칸이라 등록할 수 없습니다. 다른 시간을 골라주세요.</div>}
         <div className="grid2">
           <div className="field"><label>인원</label><select value={people} onChange={(e) => setPeople(Number(e.target.value))}>{[1,2,3,4,5,6,7,8].map((n) => <option key={n} value={n}>{n}명</option>)}</select></div>
           <div className="field"><label>이름</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" /></div>
@@ -864,7 +912,7 @@ function ManualAdd({ onClose, onDone, preset }: { onClose: () => void; onDone: (
         <div className="field"><label>전화번호</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" /></div>
         <div className="field"><label>메모 (선택)</label><input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="요청사항 등" /></div>
         {err && <div className="msg-err"><IconWarn /> {err}</div>}
-        <div className="modal-btns" style={{ marginTop: 14 }}><button className="btn ghost" onClick={onClose}>닫기</button><button className="btn primary" onClick={submit} disabled={busy}>{busy ? "등록 중…" : "등록"}</button></div>
+        <div className="modal-btns" style={{ marginTop: 14 }}><button className="btn ghost" onClick={onClose}>닫기</button><button className="btn primary" onClick={submit} disabled={busy || timeBlocked || busySlots.dayClosed}>{busy ? "등록 중…" : "등록"}</button></div>
       </div>
     </div>
   );

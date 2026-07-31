@@ -45,5 +45,12 @@ export async function GET(req: NextRequest) {
     .neq("status", "cancelled");
   const takenTimes = (taken || []).map((t: { time: string }) => t.time);
 
-  return NextResponse.json({ dayClosed, blocked: Array.from(new Set([...blocked, ...takenTimes])) });
+  // blocked = 손님 화면이 쓰는 "고를 수 없는 시간" 전부(마감 + 예약참).
+  // taken 은 그중 **예약이 차서** 막힌 것만 따로 준다 — 관리자 화면이
+  // "마감"과 "예약있음"을 구분해 보여줘야 하기 때문이다(2026-07-31).
+  return NextResponse.json({
+    dayClosed,
+    blocked: Array.from(new Set([...blocked, ...takenTimes])),
+    taken: Array.from(new Set(takenTimes)),
+  });
 }
