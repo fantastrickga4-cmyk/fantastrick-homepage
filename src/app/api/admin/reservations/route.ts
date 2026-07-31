@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
@@ -147,6 +148,15 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.admin_note === "string") patch.admin_note = body.admin_note.slice(0, 120);
   if (typeof body.deposit_payer === "string") patch.deposit_payer = body.deposit_payer.trim() || null;
 
+  // 🔑 예약 비밀번호 재설정 — 손님이 4자리를 잊었을 때.
+  //   **"찾아주기"가 아니라 "새로 정해주기"다.** 옛 번호는 알려주지 않는다(다른 곳에서도
+  //   같은 번호를 쓰는 손님이 있다). 새 번호는 이 응답으로만 한 번 돌려주고, 이력에는 남기지 않는다.
+  let newPin: string | null = null;
+  if (body.reset_pin === true) {
+    newPin = String(randomInt(0, 10000)).padStart(4, "0");
+    patch.pin = newPin;
+  }
+
   // 손님 환불 계좌 입력 — 사장님이 취소한 건은 계좌를 모르므로, 손님에게 받아 여기서 채워 넣는다.
   //   계좌가 채워져야 [환불 처리] 큐에서 "바로 보낼 수 있는" 상태(isRefundReady)로 올라온다.
   if (typeof body.refund_bank === "string") patch.refund_bank = body.refund_bank.trim().slice(0, 30) || null;
@@ -258,6 +268,8 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.admin_note === "string" && body.admin_note !== (before.admin_note || "")) logs.push({ reservation_id: id, action: "메모", detail: body.admin_note.slice(0, 60) || "(지움)" });
   // 환불 계좌를 채워 넣었을 때 — 이제 [환불 처리] 큐에서 바로 보낼 수 있는 상태가 됐다는 흔적.
   if (patch.refund_account) logs.push({ reservation_id: id, action: "환불 계좌 입력", detail: `${patch.refund_bank || ""} ${patch.refund_account}`.trim() });
+  // ⚠️ 새 비밀번호는 이력에 적지 않는다 — 이력은 화면에 그대로 보이므로 적으면 저장한 의미가 없다.
+  if (newPin) logs.push({ reservation_id: id, action: "비밀번호 재설정", detail: "관리자가 새 4자리로 바꿈" });
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
   // 안내 문자 (문자 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
@@ -272,7 +284,7 @@ export async function PATCH(req: NextRequest) {
     // 관리자가 취소한 경우 (기존 admin_cancel 문자)
     await sendReservationSms("admin_cancel", r).catch(() => {});
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(newPin ? { ok: true, pin: newPin } : { ok: true });
 }
 
 // 수동 예약 등록 (전화 예약)

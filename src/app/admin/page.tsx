@@ -662,6 +662,7 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
   const [mDate, setMDate] = useState(r.date);
   const [mTime, setMTime] = useState(r.time);
   const [mPeople, setMPeople] = useState(r.people);
+  const [newPin, setNewPin] = useState<string | null>(null); // 재설정 직후 한 번만 보여준다
   const [cfg, setCfg] = useState<AdminCfg | null>(null);
   // 모달이 열릴 때 미리 시간표를 받아둔다.
   // ("옮기기"를 누른 뒤 받으면, 로딩되기 전 잠깐 후보가 현재 시간 하나만 보여 "옮길 데가 없네?"로 오해함)
@@ -674,6 +675,21 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
     });
     setBusy(false);
     if (res.ok) onDone(); else { const j = await res.json(); alert(j.error || "처리 실패"); }
+  }
+
+  // 🔑 예약 비밀번호 재설정 — 손님이 4자리를 잊었을 때.
+  //   옛 번호를 보여주지 않는 이유: 같은 4자리를 다른 곳에서도 쓰는 손님이 있다.
+  //   "찾아주기"가 아니라 "새로 정해주기"라 사고가 나도 피해가 작다.
+  //   화면을 닫지 않는다(onDone 호출 안 함) — 새 번호를 손님에게 불러줘야 하므로.
+  async function resetPin() {
+    if (!confirm(`${r.name}님의 예약 비밀번호를 새로 만들까요?\n\n지금 번호는 없어지고 새 4자리가 만들어져요.\n손님에게 새 번호를 꼭 알려주세요.`)) return;
+    setBusy(true);
+    const res = await fetch("/api/admin/reservations", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: r.id, reset_pin: true }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert(((await res.json()) as { error?: string }).error || "처리 실패"); return; }
+    setNewPin(((await res.json()) as { pin?: string }).pin || null);
   }
 
   // 옮길 수 있는 시간 후보 = 그 테마·그 날짜의 시간표 (+ 지금 시간은 목록에 없어도 유지)
@@ -745,9 +761,16 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
         {/* 메모칸은 뺐다(2026-07-31). 여기 보이던 건 사람 메모가 아니라 **시스템 memo** 였고
             (기존 사이트 예약은 그 문자열이 동기화 열쇠 #ID 다) 저장하면 예약이 삭제·재생성된다.
             사장님 메모는 예약 줄의 한 줄 메모(admin_note)에서 쓴다. */}
+        {newPin && (
+          <div className="notice ok" style={{ marginBottom: 10 }}>
+            새 비밀번호 <b style={{ fontSize: 20, letterSpacing: 3, fontFeatureSettings: '"tnum"' }}>{newPin}</b>
+            {" — "}손님에게 알려주세요. 이 창을 닫으면 다시 볼 수 없어요.
+          </div>
+        )}
         <div className="act-row">
           {/* [입금 취소] 없앰 — 실제로 쓸 일이 없고, 잘못 눌리면 확정된 예약이 미입금으로 돌아간다. */}
           {!r.deposit_paid && <button className="btn sm primary" disabled={busy} onClick={() => patch({ deposit_paid: true })}>입금 확인</button>}
+          <button className="btn sm ghost" disabled={busy} onClick={resetPin}>비밀번호 재설정</button>
           {/* 지금 해야 할 일 하나만 파랗게 — 미입금이면 [입금 확인], 입금됐으면 [예약 확정] */}
           {r.status !== "confirmed" && r.status !== "cancelled" && <button className={"btn sm " + (r.deposit_paid ? "primary" : "ok")} disabled={busy} onClick={() => patch({ status: "confirmed" })}>예약 확정</button>}
           {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" disabled={busy} onClick={() => patch({ status: "noshow" })}>노쇼 처리</button>}
