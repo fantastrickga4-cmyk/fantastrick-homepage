@@ -9,7 +9,7 @@ import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations, maybePurgeOldReservations } from "@/lib/expire";
 
 const COLS =
-  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
+  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, admin_note, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
 
 // 변경 이력에 쓸 한국어 상태명
 const ST_KO: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
@@ -126,7 +126,7 @@ export async function PATCH(req: NextRequest) {
   // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내고, 변경 이력에 "뭐가 뭐로" 남기기 위해 필요
   const { data: before } = await db
     .from("reservations")
-    .select("status, deposit_paid, refunded, name, phone, store_id, theme_id, theme_name, date, time, people, refund_rate, deposit, memo")
+    .select("status, deposit_paid, refunded, name, phone, store_id, theme_id, theme_name, date, time, people, refund_rate, deposit, memo, admin_note")
     .eq("id", id)
     .single();
   if (!before) return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });
@@ -141,6 +141,10 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.deposit_paid === "boolean") patch.deposit_paid = body.deposit_paid;
   if (typeof body.refunded === "boolean") patch.refunded = body.refunded;
   if (typeof body.memo === "string") patch.memo = body.memo;
+  // 🔑 사장님이 손으로 쓰는 메모는 memo 가 아니라 admin_note 다.
+  //   memo 는 시스템 칸 — 기존 사이트 예약의 동기화 열쇠(#ID)가 들어 있고,
+  //   30분 자동취소가 "미입금으로 자동 취소"로 덮어쓴다. 섞으면 예약이 삭제·재생성된다.
+  if (typeof body.admin_note === "string") patch.admin_note = body.admin_note.slice(0, 120);
   if (typeof body.deposit_payer === "string") patch.deposit_payer = body.deposit_payer.trim() || null;
 
   // 손님 환불 계좌 입력 — 사장님이 취소한 건은 계좌를 모르므로, 손님에게 받아 여기서 채워 넣는다.
@@ -251,6 +255,7 @@ export async function PATCH(req: NextRequest) {
   if (moved) logs.push({ reservation_id: id, action: "시간 옮김", detail: `${moved.from} → ${moved.to}` });
   if (patch.people != null) logs.push({ reservation_id: id, action: "인원 변경", detail: `${before.people}명 → ${patch.people}명` });
   if (typeof body.memo === "string" && body.memo !== (before.memo || "")) logs.push({ reservation_id: id, action: "메모", detail: body.memo.slice(0, 60) || "(지움)" });
+  if (typeof body.admin_note === "string" && body.admin_note !== (before.admin_note || "")) logs.push({ reservation_id: id, action: "메모", detail: body.admin_note.slice(0, 60) || "(지움)" });
   // 환불 계좌를 채워 넣었을 때 — 이제 [환불 처리] 큐에서 바로 보낼 수 있는 상태가 됐다는 흔적.
   if (patch.refund_account) logs.push({ reservation_id: id, action: "환불 계좌 입력", detail: `${patch.refund_bank || ""} ${patch.refund_account}`.trim() });
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });

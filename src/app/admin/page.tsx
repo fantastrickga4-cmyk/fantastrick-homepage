@@ -12,7 +12,9 @@ type Reservation = {
   date: string; time: string; people: number; name: string; phone: string;
   deposit: number; deposit_paid: boolean; deposit_payer: string | null; status: string;
   refund_bank: string | null; refund_account: string | null; refund_holder: string | null;
-  refund_rate: number | null; refunded: boolean; memo: string | null; source: string;
+  refund_rate: number | null; refunded: boolean; memo: string | null;
+  admin_note: string | null; // 사장님이 손으로 쓰는 한 줄 메모 (memo 는 시스템 칸 — 섞지 말 것)
+  source: string;
   created_at: string; confirmed_at: string | null; cancelled_at: string | null;
   paid_at: string | null; refunded_at: string | null; // 돈이 실제로 오간 시각
   paid_source: string | null; // 입금확인을 처리한 주체: manual(사장님 버튼) / auto(자동매칭) / null(이 기능 전 기록)
@@ -268,17 +270,22 @@ function SettingsHub() {
 
 /* 한 줄 메모 — 예약 행에서 펼치지 않고 바로 적는 관리자 메모 (사장님 지시 2026-07-30).
    Enter 또는 칸 밖 클릭이면 저장. 30초 자동 새로고침이 와도 입력 중엔 덮어쓰지 않는다. */
-function MemoLine({ id, memo, onSaved }: { id: string; memo?: string | null; onSaved: (m: string) => void }) {
-  const [v, setV] = useState(memo || "");
+/* ✏️ 한 줄 메모 — **admin_note 칸에 쓴다. memo 가 아니다.**
+   memo 는 시스템 칸이다: 기존 사이트에서 온 예약은 memo 통째로가 동기화 열쇠(#ID)라
+   사람이 고치면 그 예약이 삭제·재생성되고, 30분 자동취소는 memo 를 덮어쓴다.
+   그래서 사람 메모는 별도 칸으로 뺐다(2026-07-31). 덕분에 기존 사이트 예약에도 쓸 수 있다. */
+function MemoLine({ id, note, onSaved }: { id: string; note?: string | null; onSaved: (m: string) => void }) {
+  const [v, setV] = useState(note || "");
   const [focus, setFocus] = useState(false);
   const [st, setSt] = useState<"idle" | "saving" | "saved" | "err">("idle");
-  useEffect(() => { if (!focus) setV(memo || ""); }, [memo, focus]);
+  // 30초 자동새로고침이 입력 중인 글자를 덮어쓰지 않게 — 포커스가 있으면 그대로 둔다.
+  useEffect(() => { if (!focus) setV(note || ""); }, [note, focus]);
   async function save() {
-    if (v.trim() === (memo || "").trim()) return;
+    if (v.trim() === (note || "").trim()) return;
     setSt("saving");
     const res = await fetch("/api/admin/reservations", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, memo: v.trim() }),
+      body: JSON.stringify({ id, admin_note: v.trim() }),
     });
     if (res.ok) { setSt("saved"); onSaved(v.trim()); setTimeout(() => setSt("idle"), 1500); }
     else setSt("err");
@@ -424,7 +431,7 @@ function ListView() {
             </span>
             {/* wp-import 복사본은 memo 가 동기화 열쇠라 편집 금지 — 고치면 동기화가 그 예약을 못 알아본다 */}
             {r.source !== "wp-import" && (
-              <MemoLine id={r.id} memo={r.memo} onSaved={(m) => setList((l) => l.map((x) => (x.id === r.id ? { ...x, memo: m } : x)))} />
+              <MemoLine id={r.id} note={r.admin_note} onSaved={(m) => setList((l) => l.map((x) => (x.id === r.id ? { ...x, admin_note: m } : x)))} />
             )}
           </div>
           <div className="detail">
@@ -601,14 +608,14 @@ function DayView() {
                       </button>
                       {/* 전화는 버튼 밖에 — 버튼 안에 링크를 넣을 수 없음 */}
                       <Phone v={r.phone} />
+                      {/* 이름·전화 다음 빈 자리에 메모를 한 줄로. 눌러서 바로 고친다.
+                          예전엔 기존 사이트 예약에 숨겼지만, 이제 admin_note 라 안전하다. */}
+                      <MemoLine id={r.id} note={r.admin_note} onSaved={(m) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, admin_note: m } : x)))} />
                       <span className="rt">
                         {r.source === "phone" && <span className="src-tag">전화</span>}
                         <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
                         <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
                       </span>
-                      {r.source !== "wp-import" && (
-                        <MemoLine id={r.id} memo={r.memo} onSaved={(m) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, memo: m } : x)))} />
-                      )}
                     </>
                   ) : bk ? (
                     <>
