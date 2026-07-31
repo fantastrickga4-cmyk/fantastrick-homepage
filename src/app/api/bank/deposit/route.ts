@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       // (같은 400 이라 옛 코드/새 코드 구분이 안 돼서 원인 찾기가 막혔던 적이 있다)
       return jsonError(400, "parse_failed", {
         message: "알림에서 이름·금액을 못 뽑았습니다.",
-        build: "20260731-wpimport-auto",
+        build: "20260731-expire-guard",
         logged: !failErr || failErr.code === "23505",
       });
     }

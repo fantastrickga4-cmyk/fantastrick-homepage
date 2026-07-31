@@ -46,7 +46,15 @@ export async function sweepExpiredReservations(db: SupabaseClient): Promise<void
     })
     .eq("status", "pending")
     .eq("deposit_paid", false)
-    .lt("created_at", cutoff);
+    .lt("created_at", cutoff)
+    // 🔑 기존 사이트에서 복사돼 온 예약(wp-import)은 건드리지 않는다. (2026-07-31)
+    //   ① 30분 룰은 **홈페이지에서 직접 예약한 손님과 한 약속**이다. 저쪽 예약의 취소 권한은
+    //      저쪽에 있고, 여기서 취소해봐야 5분 뒤 동기화가 되살려 켜졌다 꺼졌다 하게 된다.
+    //   ② 더 위험한 것: 취소할 때 memo 를 "미입금으로 자동 취소"로 덮어쓰는데,
+    //      wp-import 예약의 memo 에는 **동기화 열쇠인 예약번호(#ID)** 가 들어 있다.
+    //      그게 지워지면 동기화가 그 예약을 못 알아보고 삭제 후 재생성한다.
+    //   ⚠️ .neq 만 쓰면 source=NULL(자체 예약)까지 걸러져 자동취소가 통째로 멈춘다. 반드시 .or.
+    .or("source.is.null,source.neq.wp-import");
 
   // 아직 오전 10시 30분(KST) 전이면, 오늘 자정 이후 접수된 건은 건드리지 않는다.
   //   → 새벽 2시 예약: 10시 30분까지 살아있음 (문자로 약속한 대로)
