@@ -998,6 +998,10 @@ function PayQueue({ onDone }: { onDone: () => void }) {
         return (
           <div key={r.id} className="rrow">
             <div className="head" style={{ cursor: "default" }}>
+              {/* 남은 시간만 있으면 "언제 신청한 건데 30분이 남았다는 거지?"를 알 수 없다.
+                  접수 시각을 왼쪽에 같이 둔다 — 카운트다운의 기준점이 보여야 말이 된다.
+                  (오른쪽 tname 의 날짜·시간은 '이용' 날짜라 서로 다른 값이다) */}
+              <span className="taken-at">{formatStampShort(r.created_at)} 접수</span>
               <span className={"when" + (m <= 5 ? " urgent" : "")}>
                 <IconClock /> {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
                 {grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}

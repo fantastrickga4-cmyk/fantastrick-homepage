@@ -1132,6 +1132,10 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 /* 🏦 통장 ↔ 예약 나란히 비교 (입출금 내역 › 통장 기준)
    왼쪽=카톡에서 읽은 입금, 오른쪽=그에 맞는 예약. 눈이 좌→우로 한 번만 움직이면
    "이 돈이 처리됐나?" 가 끝나야 한다. 폰에서는 위아래로 접힌다. */
+/* 입금 대기 줄 맨 앞의 "접수 시각" — 카운트다운의 기준점. 숫자는 tnum 으로 폭을 고정해
+   여러 줄이 세로로 나란히 읽히게 한다. 조연이므로 색은 죽인다. */
+.rrow .taken-at{font-size:12px;color:var(--muted);font-feature-settings:"tnum";flex:0 0 auto;white-space:nowrap}
+
 .dcmp-seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .dcmp-seg button{padding:6px 12px;font-size:13px;background:var(--surface);color:var(--muted);border:0;cursor:pointer}
 .dcmp-seg button.on{background:var(--brand);color:#fff;font-weight:700}
