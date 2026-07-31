@@ -1311,6 +1311,10 @@ function Ledger() {
   const [kind, setKind] = useState<"all" | "in" | "out">("all");
   const [rows, setRows] = useState<Reservation[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // 같은 돈을 두 가지 눈으로 본다.
+  //   bank = 통장에 들어온 돈 기준(카톡에서 읽은 것) → 놓친 입금이 보인다
+  //   res  = 예약에 도장이 찍힌 기준 → 환불까지 포함한 정산 장부
+  const [basis, setBasis] = useState<"bank" | "res">("bank");
 
   const load = useCallback(async () => {
     setLoaded(false);
@@ -1358,10 +1362,20 @@ function Ledger() {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <span style={{ color: "var(--faint)" }}>~</span>
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <button className="btn sm" onClick={load}>조회</button>
+        <div className="sp" />
+        <div className="dcmp-seg">
+          <button className={basis === "bank" ? "on" : ""} onClick={() => setBasis("bank")}>통장(카톡) 기준</button>
+          <button className={basis === "res" ? "on" : ""} onClick={() => setBasis("res")}>예약 기준</button>
+        </div>
+      </div>
+
+      {basis === "bank" ? <BankLedger from={from} to={to} /> : <>
+
+      <div className="admin-tools">
         <select value={kind} onChange={(e) => setKind(e.target.value as "all" | "in" | "out")}>
           <option value="all">전체</option><option value="in">입금만</option><option value="out">환불만</option>
         </select>
-        <button className="btn sm" onClick={load}>조회</button>
         <div className="sp" />
         <button className="btn ghost sm" onClick={exportCsv}><IconDownload /> CSV 내보내기</button>
       </div>
@@ -1398,6 +1412,165 @@ function Ledger() {
               </div>
             </div>
           ))}
+      </>}
+    </>
+  );
+}
+
+/* 🏦 통장(카톡) 기준 내역 — 태블릿이 카카오톡에서 읽은 입금을 그대로 늘어놓고,
+   그 옆에 "이 예약인 것 같다"를 붙여 대조한다.
+
+   왜 필요한가: 예약 기준 목록만 있으면 **돈은 들어왔는데 예약을 못 찾은 입금**이
+   화면 어디에도 안 나온다. 손님이 다른 이름으로 보내거나 금액을 잘못 넣으면
+   사장님이 그 사실을 영영 모른 채 지나간다. */
+type DepCand = {
+  id: string; name: string; theme_name: string; date: string; time: string;
+  deposit: number; status: string; deposit_paid: boolean; source: string | null; why: string;
+};
+type DepRow = {
+  id: string; at: string; depositorName: string; amount: number; rawText: string;
+  status: string; errorMessage: string | null; verdict: string;
+  matched: DepCand | null; candidates: DepCand[];
+};
+
+/** why 문장의 **강조** 만 굵게. (설명이 길어 핵심이 안 보이면 읽히지 않는다) */
+function Emph({ text }: { text: string }) {
+  return <>{text.split("**").map((s, i) => (i % 2 ? <b key={i}>{s}</b> : <span key={i}>{s}</span>))}</>;
+}
+
+const V_LABEL: Record<string, { t: string; c: string }> = {
+  ok: { t: "자동확정됨", c: "st-confirmed" },
+  near: { t: "보류 — 확인 필요", c: "st-pending" },
+  none: { t: "맞는 예약 없음", c: "st-pending" },
+  dry_run: { t: "연습모드(실제 처리 안 함)", c: "st-pending" },
+  failed: { t: "처리 실패", c: "st-cancelled" },
+  parse_failed: { t: "문구를 못 읽음", c: "st-cancelled" },
+};
+
+function BankLedger({ from, to }: { from: string; to: string }) {
+  const [rows, setRows] = useState<DepRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState("");
+  const [onlyIssue, setOnlyIssue] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoaded(false);
+    const res = await fetch(`/api/admin/deposits?from=${from}&to=${to}`);
+    if (res.ok) setRows(((await res.json()).deposits || []) as DepRow[]);
+    setLoaded(true);
+  }, [from, to]);
+  useEffect(() => { load(); }, [load]);
+
+  async function attach(depositId: string, reservationId: string, name: string) {
+    if (!confirm(`이 입금을 "${name}" 예약의 입금으로 확인 처리할까요?\n예약이 확정되고 안내가 나갑니다.`)) return;
+    setBusy(depositId);
+    const res = await fetch("/api/admin/deposits", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ depositId, reservationId }),
+    });
+    setBusy("");
+    if (!res.ok) { alert(((await res.json()) as { error?: string }).error || "처리하지 못했습니다."); return; }
+    load();
+  }
+
+  const view = onlyIssue ? rows.filter((d) => d.verdict !== "ok") : rows;
+  const okCount = rows.filter((d) => d.verdict === "ok").length;
+  const issueCount = rows.length - okCount;
+  const sum = rows.reduce((s, d) => s + d.amount, 0);
+
+  return (
+    <>
+      <div className="stat-row sub3">
+        <div className="stat"><b>{sum.toLocaleString()}</b><span>통장에 들어온 돈(원)</span></div>
+        <div className="stat"><b>{okCount}</b><span>자동으로 처리됨(건)</span></div>
+        <div className="stat"><b style={{ color: issueCount ? "#b3261e" : undefined }}>{issueCount}</b><span>손이 필요한 건</span></div>
+      </div>
+
+      <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
+        매장 태블릿이 <b>카카오톡에서 읽은 입금</b>입니다 — 왼쪽이 통장, 오른쪽이 그에 맞는 예약이에요.
+        자동확인은 <b>이름과 금액이 정확히 같을 때만</b> 누릅니다(돈 문제라 일부러 엄격합니다).
+      </p>
+
+      <div className="admin-tools">
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+          <input type="checkbox" checked={onlyIssue} onChange={(e) => setOnlyIssue(e.target.checked)} />
+          손이 필요한 것만 보기
+        </label>
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={load}>새로고침</button>
+      </div>
+
+      {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
+        : view.length === 0 ? (
+          <div className="notice info">
+            {rows.length === 0
+              ? "이 기간엔 카톡에서 읽은 입금이 없습니다. (태블릿 감시가 꺼져 있으면 여기가 계속 비어 있습니다)"
+              : "손이 필요한 입금이 없습니다. 전부 자동으로 처리됐어요."}
+          </div>
+        ) : view.map((d) => {
+          const v = V_LABEL[d.verdict] ?? { t: d.status, c: "st-pending" };
+          return (
+            <div key={d.id} className="dcmp">
+              <div className="dcmp-bank">
+                <div className="dcmp-h">통장 (카카오톡)</div>
+                <div className="dcmp-amt">+{d.amount.toLocaleString()}원</div>
+                <div className="dcmp-who">{d.depositorName}</div>
+                <div className="dcmp-when">{formatStampShort(d.at)}</div>
+                <details className="dcmp-raw">
+                  <summary>읽은 문구 그대로</summary>
+                  <pre>{d.rawText}</pre>
+                </details>
+              </div>
+
+              <div className="dcmp-res">
+                <div className="dcmp-h">
+                  예약 <span className={`badge-st ${v.c}`}>{v.t}</span>
+                </div>
+
+                {d.matched ? (
+                  <>
+                    <div className="dcmp-who">{d.matched.name}</div>
+                    <div className="dcmp-sub">
+                      {d.matched.theme_name} · {formatDate(d.matched.date)} {d.matched.time} · 예약금 {d.matched.deposit.toLocaleString()}원
+                    </div>
+                    {d.verdict === "ok" && <p className="dcmp-why">이 예약의 입금으로 처리됐습니다.</p>}
+                    {d.verdict === "failed" && <p className="dcmp-why err">예약은 찾았지만 처리 중 오류가 났습니다: {d.errorMessage}</p>}
+                  </>
+                ) : d.verdict === "parse_failed" ? (
+                  <p className="dcmp-why err">
+                    문구에서 이름·금액을 못 뽑았습니다. 위 &ldquo;읽은 문구&rdquo;를 보고 알려주시면 읽는 규칙을 고칠 수 있습니다.
+                  </p>
+                ) : d.candidates.length === 0 ? (
+                  <p className="dcmp-why">
+                    이 이름·금액에 맞는 예약이 없습니다. 예약 없이 보낸 돈이거나, 예약을 아직 안 넣었을 수 있어요.
+                  </p>
+                ) : (
+                  <>
+                    <p className="dcmp-why">이 예약 같은데, 아래 이유로 <b>자동확인을 보류</b>했습니다:</p>
+                    {d.candidates.map((c) => (
+                      <div key={c.id} className="dcmp-cand">
+                        <div className="dcmp-who">{c.name}</div>
+                        <div className="dcmp-sub">
+                          {c.theme_name} · {formatDate(c.date)} {c.time} · 예약금 {c.deposit.toLocaleString()}원
+                          {c.source === "wp-import" && <span className="src-tag" style={{ marginLeft: 6 }}>기존 사이트</span>}
+                        </div>
+                        <p className="dcmp-why"><Emph text={c.why} /></p>
+                        {/* 누를 수 있는 건 "지금 입금을 기다리는 예약"뿐이다.
+                            취소·노쇼·이미 입금된 건에 버튼을 열어두면 손이 미끄러져 눌린다. */}
+                        {c.source !== "wp-import" && !c.deposit_paid && c.status === "pending" && (
+                          <button className="btn sm" disabled={busy === d.id}
+                            onClick={() => attach(d.id, c.id, c.name)}>
+                            {busy === d.id ? "처리 중…" : "이 예약이 맞아요 — 입금확인"}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
     </>
   );
 }
