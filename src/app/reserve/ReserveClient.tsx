@@ -75,25 +75,33 @@ export default function ReserveClient({ preset }: { preset: string }) {
   const [allSlots, setAllSlots] = useState<{ blockedSlots: SlotRow[]; reservations: SlotRow[] } | null>(null);
   const [allLoaded, setAllLoaded] = useState(false);
   // (2) 고른 그 (테마·날짜)만 서버에서 콕 집어 신선하게 받아온 값. 있으면 이걸 우선한다.
-  const [freshSlots, setFreshSlots] = useState<Record<string, { blocked: string[]; dayClosed: boolean }>>({});
+  const [freshSlots, setFreshSlots] = useState<Record<string, { blocked: string[]; taken?: string[]; dayClosed: boolean }>>({});
   // 예전 코드가 쓰던 이름 유지 — '최초 로딩 전'에만 true(그 뒤 재확인은 조용히 처리, 로딩표시 없음).
   const slotsLoading = !allLoaded;
 
   // 고른 테마·날짜의 마감/예약 시간 — 서버와 같은 규칙(그 날 blocked_slots + 이미 잡힌 예약).
   //   1순위: 방금 그 슬롯만 콕 집어 받아온 신선값(freshSlots)
   //   2순위: 없으면 미리 받아둔 allSlots 로 즉시 계산(네트워크 대기 없음)
-  const { blocked, dayClosed } = useMemo(() => {
-    if (!themeId || !date) return { blocked: [] as string[], dayClosed: false };
+  //   taken 은 그중 **예약이 차서** 막힌 칸만 따로 — 화면에 "마감"이 아니라 "예약있음"으로
+  //   적어주기 위해서다. 손님 입장에선 둘이 전혀 다른 말이다("마감"은 우리가 안 받는 것 같고,
+  //   "예약있음"은 남이 먼저 잡았다는 뜻이라 다른 시간을 찾게 된다). 2026-07-31 사장님 요청.
+  const { blocked, taken, dayClosed } = useMemo(() => {
+    const empty = { blocked: [] as string[], taken: [] as string[], dayClosed: false };
+    if (!themeId || !date) return empty;
     const fresh = freshSlots[`${themeId}|${date}`];
-    if (fresh) return fresh;
-    if (!allSlots) return { blocked: [] as string[], dayClosed: false };
+    if (fresh) return { blocked: fresh.blocked, taken: fresh.taken || [], dayClosed: fresh.dayClosed };
+    if (!allSlots) return empty;
     const bs = allSlots.blockedSlots.filter((b) => b.date === date && (!b.theme_id || b.theme_id === themeId));
     const closed = bs.some((b) => !b.time);
     const blockedTimes = bs.filter((b) => b.time).map((b) => b.time as string);
-    const taken = allSlots.reservations
+    const takenTimes = allSlots.reservations
       .filter((r) => r.theme_id === themeId && r.date === date && r.time)
       .map((r) => r.time as string);
-    return { blocked: Array.from(new Set([...blockedTimes, ...taken])), dayClosed: closed };
+    return {
+      blocked: Array.from(new Set([...blockedTimes, ...takenTimes])),
+      taken: Array.from(new Set(takenTimes)),
+      dayClosed: closed,
+    };
   }, [themeId, date, allSlots, freshSlots]);
 
   const theme = useMemo(() => THEMES.find((t) => t.id === themeId), [themeId]);
@@ -208,7 +216,7 @@ export default function ReserveClient({ preset }: { preset: string }) {
     const refresh = () =>
       fetch(`/api/slots?theme=${themeId}&date=${date}`)
         .then((r) => r.json())
-        .then((d) => { if (alive && d) setFreshSlots((prev) => ({ ...prev, [key]: { blocked: d.blocked || [], dayClosed: !!d.dayClosed } })); })
+        .then((d) => { if (alive && d) setFreshSlots((prev) => ({ ...prev, [key]: { blocked: d.blocked || [], taken: d.taken || [], dayClosed: !!d.dayClosed } })); })
         .catch(() => {});
     refresh();
     const iv = setInterval(refresh, 60000);
@@ -434,6 +442,9 @@ export default function ReserveClient({ preset }: { preset: string }) {
                     <div className="rv-slots">
                       {activeSlots.map((tm) => {
                         const isBlocked = blocked.includes(tm);
+                        // 같은 "못 고름"이라도 이유를 나눠서 말한다 — 예약이 찬 것 vs 우리가 닫은 것
+                        const isTaken = isBlocked && taken.includes(tm);
+                        const blockedLabel = isTaken ? "예약있음" : "마감";
                         // 시작 직전(기본 10분 전)이거나 이미 지난 칸은 예약 불가
                         const soon = !isBlocked && isTooSoon(date, tm, leadMin, nowMs);
                         // 아직 확실하지 않은 동안에는 전부 못 누르게 한다.
@@ -455,11 +466,11 @@ export default function ReserveClient({ preset }: { preset: string }) {
                             aria-pressed={time === tm}
                             disabled={off}
                             onClick={() => { if (!off) setTime(tm); }}
-                            title={waiting ? "확인 중" : isBlocked ? "마감" : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
+                            title={waiting ? "확인 중" : isBlocked ? blockedLabel : soon ? (leadMin > 0 ? `시작 ${leadMin}분 전부터는 예약할 수 없어요` : "지난 시간") : ""}
                           >
                             <b>{tm}</b>
                             {!waiting && (isBlocked
-                              ? <em><IconBan /> 마감</em>
+                              ? <em><IconBan /> {blockedLabel}</em>
                               : soon
                               ? <em><IconClock /> {leadMin > 0 ? "곧 시작" : "지난 시간"}</em>
                               : null)}
@@ -470,7 +481,9 @@ export default function ReserveClient({ preset }: { preset: string }) {
                     {(slotsLoading || !cfgLoaded) && <div className="hint">예약 가능한 시간을 확인하는 중이에요…</div>}
                     {!slotsLoading && cfgLoaded && (
                       <div className="hint">
-                        ※ <IconBan /> 는 마감된 시간입니다.
+                        {/* 범례도 화면과 같은 말을 써야 한다 — 칸엔 "예약있음"이라 적혀 있는데
+                            여기서만 "마감"이라고 하면 손님이 다른 뜻으로 읽는다. */}
+                        ※ <IconBan /> 는 <b>예약있음</b>(이미 다른 분이 예약) 또는 <b>마감</b>된 시간입니다.
                         {leadMin > 0 && <> <IconClock /> 는 시작이 임박해(<b>{leadMin}분 전</b>) 온라인 예약이 닫힌 시간이에요. 매장으로 전화 주시면 도와드립니다.</>}
                       </div>
                     )}
