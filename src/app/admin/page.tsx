@@ -4,7 +4,7 @@ import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSl
 import { isRefundOwed, isRefundReady, refundAmount, cancelledBy } from "@/lib/money";
 import { IconChat, IconWarn, IconMask, IconMoney, IconClock, IconCalendar, IconList, IconMegaphone, IconBan, IconMail, IconBell, IconDownload, IconChart, IconBolt, IconCheck, IconPencil, IconUser, IconChevronUp, IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconCard, IconBook, IconEye, IconStar, IconPlus, IconRefresh } from "@/components/Icon";
 import { isActiveSmsType } from "@/lib/sms-templates";
-import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR } from "@/lib/expire";
+import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR, DELETE_AFTER_DAYS } from "@/lib/expire";
 import { formatDate, formatPhone, formatStamp, formatStampShort, formatStampTime, kstDateOf } from "@/lib/util";
 
 type Reservation = {
@@ -868,7 +868,7 @@ function SlotsTab() {
    끝난 일은 뒤의 "입출금 내역"으로. 상단 집계는 포트원 결제내역 패턴(받은 돈/돌려준 돈/실수령).
    ⚠️ 결제는 전부 카카오뱅크 수동 이체. 여기 버튼은 "사장님이 손으로 한 일을 기록"하는 것. */
 function MoneyTab() {
-  const [v, setV] = useState<"pay" | "refund" | "ledger">("pay");
+  const [v, setV] = useState<"pay" | "autocancel" | "refund" | "ledger">("pay");
   const [stats, setStats] = useState<Stats | null>(null);
   const [tick, setTick] = useState(0); // 자식이 처리하면 올려서 집계 재조회
 
@@ -908,13 +908,119 @@ function MoneyTab() {
         <button className={v === "pay" ? "on" : ""} onClick={() => setV("pay")}>
           <IconMoney /> 입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
         </button>
+        {/* 처리할 일은 아니지만 **손님이 물어볼 때** 바로 꺼내야 하는 화면이라 큐 사이에 둔다 */}
+        <button className={v === "autocancel" ? "on" : ""} onClick={() => setV("autocancel")}><IconBan /> 자동 취소</button>
         <button className={v === "refund" ? "on" : ""} onClick={() => setV("refund")}>
           <IconMoney /> 환불 처리{nRef > 0 && <span className="vt-badge">{nRef}</span>}
         </button>
         <button className={v === "ledger" ? "on" : ""} onClick={() => setV("ledger")}><IconBook /> 입출금 내역</button>
       </div>
 
-      {v === "pay" ? <PayQueue onDone={done} /> : v === "refund" ? <RefundQueue onDone={done} /> : <Ledger />}
+      {v === "pay" ? <PayQueue onDone={done} />
+        : v === "autocancel" ? <AutoCancelled />
+          : v === "refund" ? <RefundQueue onDone={done} />
+            : <Ledger />}
+    </>
+  );
+}
+
+/** 입금 마감 시각 — expire.ts 의 규칙 그대로.
+    보통은 접수 + 30분, 자정~오전10시 접수는 그날 10:30(KST)까지 봐준다.
+    ⚠️ 손님에게 말해야 하는 기준은 **이 마감 시각**이지, 시스템이 실제로 정리한 시각이 아니다. */
+function payDeadline(createdAt: string): { at: number; grace: boolean } {
+  const c = new Date(createdAt).getTime();
+  const normal = c + EXPIRE_MINUTES * 60000;
+  const kst = new Date(c + 9 * 3600 * 1000);
+  const isMidnightBooking = kst.getUTCHours() < GRACE_UNTIL_HOUR;
+  let at = normal;
+  if (isMidnightBooking) {
+    const g = new Date(c + 9 * 3600 * 1000);
+    g.setUTCHours(GRACE_UNTIL_HOUR, EXPIRE_MINUTES, 0, 0);
+    at = Math.max(normal, g.getTime() - 9 * 3600 * 1000);
+  }
+  return { at, grace: isMidnightBooking && at > normal };
+}
+
+/* 🚫 자동 취소된 예약 — **손님이 물어볼 때 꺼내 보는 화면.**
+   "분명 예약했는데 왜 없어졌냐"는 전화가 오면, 지금까진 취소된 예약을 목록에서
+   일일이 찾아야 했다. 여기 모아두고 **언제 접수해서 언제 취소됐는지**를 나란히 보여준다.
+   (처리할 일이 아니라 확인용이라 버튼은 두지 않는다) */
+function AutoCancelled() {
+  const [rows, setRows] = useState<Reservation[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [q, setQ] = useState("");
+
+  const load = useCallback(async () => {
+    setLoaded(false);
+    const res = await fetch("/api/admin/reservations?status=cancelled");
+    if (res.ok) setRows(((await res.json()).reservations || []) as Reservation[]);
+    setLoaded(true);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  // 자동취소 표시는 memo 에 남는다(expire.ts). money.ts 의 cancelledBy 와 같은 기준.
+  const auto = rows
+    .filter((r) => (r.memo || "").includes("자동 취소"))
+    .sort((a, b) => (b.cancelled_at || "").localeCompare(a.cancelled_at || ""));
+
+  const key = q.replace(/\s|-/g, "").toLowerCase();
+  const view = key
+    ? auto.filter((r) => (r.name + r.phone.replace(/-/g, "")).toLowerCase().includes(key))
+    : auto;
+
+  return (
+    <>
+      <p className="hint" style={{ marginBottom: 10 }}>
+        예약금이 <b>{EXPIRE_MINUTES}분</b> 안에 확인되지 않아 자동으로 취소된 예약이에요.
+        (자정 이후 접수는 그날 <b>오전 {GRACE_UNTIL_HOUR}시 {EXPIRE_MINUTES}분</b>까지 기다립니다)
+      </p>
+      <div className="notice info" style={{ marginBottom: 12 }}>
+        손님에게 말할 기준은 <b>입금 마감</b> 시각이에요. 옆의 <b>정리됨</b>은 시스템이 실제로
+        치운 시각이라 마감보다 한참 뒤일 수 있습니다(사이트에 접속이 있어야 정리가 돌아갑니다).
+        &ldquo;마감이 지나서 취소됐다&rdquo;고 안내하시면 됩니다.
+      </div>
+
+      <div className="admin-tools">
+        <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 또는 전화번호로 찾기" />
+        <div className="sp" />
+        <button className="btn ghost sm" onClick={load}>새로고침</button>
+      </div>
+
+      {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
+        : view.length === 0 ? (
+          <div className="notice info">
+            {auto.length === 0 ? "자동 취소된 예약이 없습니다." : "찾는 예약이 없습니다."}
+          </div>
+        ) : (
+          <>
+            {view.map((r) => {
+              const dl = payDeadline(r.created_at);
+              return (
+              <div key={r.id} className="rrow">
+                <div className="head" style={{ cursor: "default" }}>
+                  <span className="taken-at">{formatStampShort(r.created_at)} 접수</span>
+                  <span className="when">
+                    {formatStampShort(new Date(dl.at).toISOString())} 입금 마감
+                    {dl.grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}
+                  </span>
+                  <span className="taken-at">{formatStampShort(r.cancelled_at)} 정리됨</span>
+                  <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
+                  <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>
+                  <span className="amt">{r.deposit.toLocaleString()}원</span>
+                  <span className="rt">
+                    {r.source === "phone" && <span className="src-tag">전화</span>}
+                    <span className="badge-st st-cancelled">미입금 자동취소</span>
+                  </span>
+                  {r.admin_note && <MemoLine id={r.id} note={r.admin_note} onSaved={(m) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, admin_note: m } : x)))} />}
+                </div>
+              </div>
+              );
+            })}
+            <p className="hint" style={{ marginTop: 10 }}>
+              총 {view.length}건. 취소된 지 <b>{DELETE_AFTER_DAYS}일</b>이 지나면 기록이 자동으로 지워집니다.
+            </p>
+          </>
+        )}
     </>
   );
 }
@@ -951,19 +1057,8 @@ function PayQueue({ onDone }: { onDone: () => void }) {
   // 남은 시간 — 자정 이후 접수 건은 그날 오전 10시 30분까지 봐주므로(expire.ts) 그 기준으로 센다.
   // 안 그러면 새벽 예약이 "0분 남음"으로 보이는데 실제로는 안 취소돼 화면이 거짓말을 한다.
   function remainInfo(createdAt: string): { min: number; grace: boolean } {
-    const c = new Date(createdAt).getTime();
-    const normal = c + EXPIRE_MINUTES * 60000;
-    // 접수 시각이 KST 자정~오전10시 사이인가?
-    const kst = new Date(c + 9 * 3600 * 1000);
-    const isMidnightBooking = kst.getUTCHours() < GRACE_UNTIL_HOUR;
-    let deadline = normal;
-    if (isMidnightBooking) {
-      const g = new Date(c + 9 * 3600 * 1000);
-      g.setUTCHours(GRACE_UNTIL_HOUR, EXPIRE_MINUTES, 0, 0); // 그날 10:30 (KST)
-      const graceMs = g.getTime() - 9 * 3600 * 1000;
-      deadline = Math.max(normal, graceMs);
-    }
-    return { min: Math.max(0, Math.ceil((deadline - Date.now()) / 60000)), grace: isMidnightBooking && deadline > normal };
+    const { at, grace } = payDeadline(createdAt); // 규칙은 한 곳(payDeadline)에만 둔다
+    return { min: Math.max(0, Math.ceil((at - Date.now()) / 60000)), grace };
   }
 
   async function confirmPay(r: Reservation) {
