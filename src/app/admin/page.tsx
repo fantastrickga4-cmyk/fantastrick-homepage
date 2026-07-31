@@ -885,25 +885,9 @@ function MoneyTab() {
 
   return (
     <>
-      <div className="notice info" style={{ marginBottom: 14 }}>
-        <IconCard /> 예약금은 <b>전부 무통장입금</b>이에요 (카카오뱅크 3333-09-7175706 승현수).
-        여기 버튼은 <b>사장님이 은행앱에서 직접 하신 일을 기록</b>하는 거예요 — 돈이 자동으로 오가지 않습니다.
-      </div>
-
-      {stats && (
-        <div className="stat-row dash4">
-          {/* 색은 "내가 처리해야 함"(앰버)에만. 0건이면 앰버를 빼야 거짓 경보가 안 됨 */}
-          <div className={"stat" + (nPay ? " amber" : "")}>
-            <b>{nPay}</b><span>입금 대기 · {(stats.pendingUnpaidSum || 0).toLocaleString()}원</span>
-          </div>
-          <div className={"stat" + (nRef ? " amber" : "")}>
-            <b>{nRef}</b><span>환불 대기 · {(stats.refundPendingSum || 0).toLocaleString()}원</span>
-          </div>
-          <div className="stat"><b>{(stats.monthConfirmedDeposit || 0).toLocaleString()}</b><span>이번 달 확정 예약금(원)</span></div>
-          <div className="stat"><b>{(stats.depositPaidSum || 0).toLocaleString()}</b><span>입금확인 누적(원)</span></div>
-        </div>
-      )}
-
+      {/* 설명 배너·금액 집계 카드는 뺐다(2026-07-31 사장님 지시).
+          매일 보는 화면이라 안내문과 합계 숫자가 위를 다 차지하면 정작 처리할 줄이 밀린다.
+          처리할 건수는 탭 배지(vt-badge)로 충분하다. */}
       <div className="viewtoggle">
         <button className={v === "pay" ? "on" : ""} onClick={() => setV("pay")}>
           <IconMoney /> 입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
@@ -1079,9 +1063,6 @@ function PayQueue({ onDone }: { onDone: () => void }) {
   return (
     <>
       <div className="admin-top" style={{ marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--muted)" }}>
-          카카오뱅크 앱에서 <b>입금자 이름·금액</b>을 보고 아래와 맞춰 보세요. 30초마다 자동 새로고침돼요.
-        </span>
         <div className="sp" />
         <button className="btn ghost sm" onClick={load}>새로고침</button>
       </div>
@@ -1380,8 +1361,6 @@ function Ledger() {
   }
   txs.sort((a, b) => b.at.localeCompare(a.at));
   const view = txs.filter((t) => (kind === "all" ? true : t.kind === kind));
-  const inSum = txs.filter((t) => t.kind === "in").reduce((s, t) => s + t.amount, 0);
-  const outSum = txs.filter((t) => t.kind === "out").reduce((s, t) => s + t.amount, 0);
 
   function exportCsv() {
     if (view.length === 0) { alert("내보낼 내역이 없습니다."); return; }
@@ -1425,16 +1404,6 @@ function Ledger() {
         <div className="sp" />
         <button className="btn ghost sm" onClick={exportCsv}><IconDownload /> CSV 내보내기</button>
       </div>
-
-      <div className="stat-row sub3">
-        <div className="stat"><b>{inSum.toLocaleString()}</b><span>받은 예약금(원)</span></div>
-        <div className="stat"><b>{outSum.toLocaleString()}</b><span>돌려준 금액(원)</span></div>
-        <div className="stat"><b>{(inSum - outSum).toLocaleString()}</b><span>실수령(원)</span></div>
-      </div>
-
-      <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
-        <b>돈이 실제로 오간 날 기준</b>이에요 — 통장과 맞춰볼 수 있습니다. (예약 날짜가 아니라 입금·환불을 처리한 날)
-      </p>
 
       {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
         : view.length === 0 ? <div className="notice info">이 기간엔 오간 돈이 없습니다.</div>
@@ -1520,23 +1489,9 @@ function BankLedger({ from, to }: { from: string; to: string }) {
   }
 
   const view = onlyIssue ? rows.filter((d) => d.verdict !== "ok") : rows;
-  const okCount = rows.filter((d) => d.verdict === "ok").length;
-  const issueCount = rows.length - okCount;
-  const sum = rows.reduce((s, d) => s + d.amount, 0);
 
   return (
     <>
-      <div className="stat-row sub3">
-        <div className="stat"><b>{sum.toLocaleString()}</b><span>통장에 들어온 돈(원)</span></div>
-        <div className="stat"><b>{okCount}</b><span>자동으로 처리됨(건)</span></div>
-        <div className="stat"><b style={{ color: issueCount ? "#b3261e" : undefined }}>{issueCount}</b><span>손이 필요한 건</span></div>
-      </div>
-
-      <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
-        매장 태블릿이 <b>카카오톡에서 읽은 입금</b>입니다 — 왼쪽이 통장, 오른쪽이 그에 맞는 예약이에요.
-        자동확인은 <b>이름과 금액이 정확히 같을 때만</b> 누릅니다(돈 문제라 일부러 엄격합니다).
-      </p>
-
       <div className="admin-tools">
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
           <input type="checkbox" checked={onlyIssue} onChange={(e) => setOnlyIssue(e.target.checked)} />
