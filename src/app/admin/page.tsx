@@ -469,12 +469,9 @@ function ListView() {
             {r.status === "cancelled" && r.refunded && (
               <div className="refbox"><span style={{ color: "var(--muted)" }}><IconCheck /> 환불 완료된 예약이에요 ({refundAmount(r).toLocaleString()}원)</span></div>
             )}
-            <div className="field" style={{ marginTop: 12, marginBottom: 8 }}>
-              <label>메모</label><textarea rows={2} defaultValue={r.memo || ""} id={`memo-${r.id}`} placeholder="관리자 메모" />
-            </div>
             <div className="act-row">
-              <button className="btn sm" onClick={() => patch(r.id, { memo: (document.getElementById(`memo-${r.id}`) as HTMLTextAreaElement).value })}>메모 저장</button>
-              <button className={"btn sm " + (r.deposit_paid ? "ghost" : "primary")} onClick={() => patch(r.id, { deposit_paid: !r.deposit_paid })}>{r.deposit_paid ? "입금 취소" : "입금 확인"}</button>
+              {/* 메모칸·[입금 취소] 제거 — 위 상세 팝업과 같은 이유(2026-07-31) */}
+              {!r.deposit_paid && <button className="btn sm primary" onClick={() => patch(r.id, { deposit_paid: true })}>입금 확인</button>}
               {r.status !== "confirmed" && r.status !== "cancelled" && <button className="btn sm ok" onClick={() => patch(r.id, { status: "confirmed" })}>예약 확정</button>}
               {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" onClick={() => patch(r.id, { status: "noshow" })}>노쇼 처리</button>}
               {r.status !== "cancelled" && <button className="btn sm danger" onClick={() => { if (confirm("이 예약을 취소 처리할까요?")) patch(r.id, { status: "cancelled" }); }}>취소 처리</button>}
@@ -739,7 +736,6 @@ function GuestHistory({ phone, currentId }: { phone: string; currentId: string }
 /* 예약 1건 상세·처리 (날짜별 보기에서 손님 이름 클릭 시) */
 function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
-  const [memo, setMemo] = useState(r.memo || "");
   const [move, setMove] = useState(false);
   const [mDate, setMDate] = useState(r.date);
   const [mTime, setMTime] = useState(r.time);
@@ -814,12 +810,12 @@ function ResDetail({ r, onClose, onDone }: { r: Reservation; onClose: () => void
 
         <GuestHistory phone={r.phone} currentId={r.id} />
 
-        <div className="field" style={{ marginTop: 12 }}>
-          <label>메모</label><textarea rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="관리자 메모" />
-        </div>
+        {/* 메모칸은 뺐다(2026-07-31). 여기 보이던 건 사람 메모가 아니라 **시스템 memo** 였고
+            (기존 사이트 예약은 그 문자열이 동기화 열쇠 #ID 다) 저장하면 예약이 삭제·재생성된다.
+            사장님 메모는 예약 줄의 한 줄 메모(admin_note)에서 쓴다. */}
         <div className="act-row">
-          <button className="btn sm" disabled={busy} onClick={() => patch({ memo })}>메모 저장</button>
-          <button className={"btn sm " + (r.deposit_paid ? "ghost" : "primary")} disabled={busy} onClick={() => patch({ deposit_paid: !r.deposit_paid })}>{r.deposit_paid ? "입금 취소" : "입금 확인"}</button>
+          {/* [입금 취소] 없앰 — 실제로 쓸 일이 없고, 잘못 눌리면 확정된 예약이 미입금으로 돌아간다. */}
+          {!r.deposit_paid && <button className="btn sm primary" disabled={busy} onClick={() => patch({ deposit_paid: true })}>입금 확인</button>}
           {/* 지금 해야 할 일 하나만 파랗게 — 미입금이면 [입금 확인], 입금됐으면 [예약 확정] */}
           {r.status !== "confirmed" && r.status !== "cancelled" && <button className={"btn sm " + (r.deposit_paid ? "primary" : "ok")} disabled={busy} onClick={() => patch({ status: "confirmed" })}>예약 확정</button>}
           {r.status !== "noshow" && r.status !== "cancelled" && <button className="btn sm" disabled={busy} onClick={() => patch({ status: "noshow" })}>노쇼 처리</button>}
