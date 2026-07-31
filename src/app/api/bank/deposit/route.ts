@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { sweepExpiredReservations } from "@/lib/expire";
-import { parseDeposit } from "@/lib/bank/parser";
+import { parseDeposit, looksLikeBankNotice } from "@/lib/bank/parser";
 import { findMatch } from "@/lib/bank/matcher";
 import type { Deposit, Reservation } from "@/lib/bank/types";
 import { makeAdminToken, ADMIN_COOKIE } from "@/lib/admin";
@@ -69,14 +69,23 @@ export async function POST(req: NextRequest) {
       // 글자가 어떻게 읽혔는지 그대로 볼 수 있다.
       console.warn("[입금] 파싱 실패:", rawText.slice(0, 200));
       const failEventId = deriveEventId(rawText, receivedAt);
+      // 🔒 남의 대화는 남기지 않는다.
+      //   태블릿은 카카오톡 "화면"을 읽으므로, 채팅 목록이 떠 있으면 다른 방의
+      //   미리보기까지 읽힌다. 앱의 필터가 "입금/송금" 글자만 보기 때문에
+      //   "50,000원을 보냈어요"(개인 송금 대화) 같은 것도 여기까지 올라온다.
+      //   → 은행 알림 형태가 아니면 원문을 저장하지 않는다. 진단에 필요한 건
+      //     "무엇이 왜 걸러졌나"지 대화 내용이 아니다. (2026-07-31)
+      const looksLikeBank = looksLikeBankNotice(rawText);
       const { error: failErr } = await db.from("deposits").insert({
         event_id: failEventId,
         depositor_name: "(파싱실패)", // NOT NULL 이라 자리표시자
         amount: 0,
-        raw_text: rawText,
+        raw_text: looksLikeBank
+          ? rawText
+          : `(은행 알림이 아니라 개인 대화로 보여 원문을 저장하지 않았습니다 · ${rawText.length}자)`,
         received_at: new Date(receivedAt).toISOString(),
         status: "parse_failed",
-        error_message: "원문에서 이름·금액을 못 뽑음",
+        error_message: looksLikeBank ? "원문에서 이름·금액을 못 뽑음" : "은행 알림이 아님(원문 미저장)",
       });
       // 같은 원문이 또 와도(23505) 굳이 실패로 만들지 않는다 — 기록은 이미 있다.
       if (failErr && failErr.code !== "23505") {
@@ -86,7 +95,7 @@ export async function POST(req: NextRequest) {
       // (같은 400 이라 옛 코드/새 코드 구분이 안 돼서 원인 찾기가 막혔던 적이 있다)
       return jsonError(400, "parse_failed", {
         message: "알림에서 이름·금액을 못 뽑았습니다.",
-        build: "20260730-parsefail-log",
+        build: "20260731-redact",
         logged: !failErr || failErr.code === "23505",
       });
     }

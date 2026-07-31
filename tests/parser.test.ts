@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDeposit } from "../src/lib/bank/parser";
+import { parseDeposit, looksLikeBankNotice } from "../src/lib/bank/parser";
 
 describe('parseDeposit', () => {
   describe('카뱅 신형 (앱 푸시)', () => {
@@ -107,5 +107,17 @@ describe('parseDeposit', () => {
     it('과도하게 긴 텍스트는 거부', () => {
       expect(parseDeposit('x'.repeat(2001))).toBeNull();
     });
+  });
+});
+
+describe("looksLikeBankNotice — 개인 대화를 원문 저장에서 걸러낸다", () => {
+  it("카카오뱅크 입금 알림은 은행 문구로 본다", () => {
+    expect(looksLikeBankNotice("07/31 13:50\n입금 30,000원\n이서영 → 입출금통장(5706)\n잔액 2,966,000원")).toBe(true);
+  });
+  it("개인 송금 대화는 은행 문구가 아니다 (실제로 DB 에 저장됐던 문구)", () => {
+    expect(looksLikeBankNotice("Awesome준혜♡ | 50,000원을 보냈어요. 송금 받기 전까지 보낸 분은 내역 상세화면에서 취소할 수 있어요.")).toBe(false);
+  });
+  it("금액이 없는 안내 문구도 은행 문구가 아니다", () => {
+    expect(looksLikeBankNotice("알리고_알림톡 | 고객님의 환불 금액이 정상적으로 입금 처리되었습니다.")).toBe(false);
   });
 });
