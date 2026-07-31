@@ -41,7 +41,7 @@ function Phone({ v }: { v: string }) {
 }
 // 예약 탭이 기본 화면(사장님 지시 2026-07-30) — 로그인하면 바로 예약 목록부터.
 const TABS = [
-  { k: "res", label: "예약" }, { k: "home", label: "오늘" }, { k: "money", label: "입금·환불" },
+  { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
   { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
@@ -109,115 +109,11 @@ export default function AdminPage() {
           </a>
         ))}
       </div>
-      {tab === "home" && <HomeTab onGo={setTab} />}
       {tab === "res" && <ReservationsTab />}
       {tab === "money" && <MoneyTab />}
       {tab === "cont" && <ContentTab />}
       {tab === "set" && <SettingsHub />}
     </div>
-  );
-}
-
-/* ============ 오늘 (관리자 홈) ============
-   로그인하면 "오늘 뭐 해야 하지?"가 바로 보이게. 예전엔 7월 달력이 떠서
-   날짜 누르고 → 테마 탭 4번 누르고 → 입금·환불 탭 또 눌러야 알 수 있었음.
-   Checkfront "Daily Manifest" / FareHarbor Manifest 패턴. */
-function HomeTab({ onGo }: { onGo: (tab: string) => void }) {
-  const [rows, setRows] = useState<Reservation[] | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [, setNow] = useState(Date.now);
-  const today = todayKst();
-
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/reservations?from=${today}&to=${today}`);
-    if (res.ok) { const j = await res.json(); setRows(j.reservations || []); setStats(j.stats || null); }
-  }, [today]);
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]); // 새 예약 자동 반영
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
-
-  if (!rows) return <p style={{ color: "var(--muted)" }}>불러오는 중…</p>;
-
-  // 오늘 살아있는 예약을 시간순으로 (전 테마 한 화면 — 테마 탭 4번 안 눌러도 됨)
-  const live = rows.filter((r) => r.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
-  const nowHm = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(11, 16);
-  const next = live.find((r) => r.time >= nowHm && r.status !== "noshow");
-  const nPay = stats?.pendingUnpaid || 0;
-  const nRef = stats?.refundPending || 0;
-  const todo = nPay + nRef;
-
-  return (
-    <>
-      <div className="admin-top" style={{ marginBottom: 14 }}>
-        <h3 style={{ margin: 0, fontSize: 18 }}>{formatDate(today)} · 오늘 {live.length}팀</h3>
-        <div className="sp" />
-        <button className="btn ghost sm" onClick={load}>새로고침</button>
-      </div>
-
-      {/* 다음 손님 — 오늘 화면에서 제일 크게. "지금 뭘 준비해야 하나"의 답 */}
-      {next ? (
-        <div className="nextbox">
-          <span className="nb-lab">다음 손님</span>
-          <b className="nb-time">{next.time}</b>
-          <span className="nb-who">{next.name} · {next.people}명</span>
-          <span className="nb-theme">{next.theme_name}</span>
-          <span className="sp" />
-          <Phone v={next.phone} />
-          <span className={`dep ${next.deposit_paid ? "paid" : ""}`}>{next.deposit_paid ? "입금완료" : "미입금"}</span>
-        </div>
-      ) : (
-        <div className="notice ok" style={{ marginBottom: 14 }}>
-          {live.length === 0 ? "오늘은 예약이 없어요." : "오늘 예약이 다 끝났어요. 수고하셨습니다!"}
-        </div>
-      )}
-
-      {/* 돈으로 처리할 일 — 있을 때만 (0건이면 앰버가 거짓 경보가 됨) */}
-      {todo > 0 && (
-        <div className="notice warn" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <b><IconMoney /> 처리할 일 {todo}건</b>
-          <span style={{ color: "var(--muted)", fontSize: 13.5 }}>
-            {nPay > 0 && `입금 확인 ${nPay}건`}{nPay > 0 && nRef > 0 && " · "}{nRef > 0 && `환불 ${nRef}건`}
-          </span>
-          <span className="sp" />
-          <button className="btn sm primary" onClick={() => onGo("money")}>처리하러 가기 →</button>
-        </div>
-      )}
-
-      {stats && (
-        <div className="stat-row sub3" style={{ marginBottom: 16 }}>
-          <div className="stat"><b>{live.length}</b><span>오늘 예약</span></div>
-          <div className="stat"><b>{live.filter((r) => r.deposit_paid).length}</b><span>입금완료</span></div>
-          <div className="stat"><b>{stats.weekCount}</b><span>이번 주(월~일)</span></div>
-        </div>
-      )}
-
-      <div className="admin-card">
-        <div className="day-head">
-          <b>오늘 예약</b>
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>전 매장·전 테마 시간순</span>
-          <span className="sp" />
-          <button className="btn sm ghost" onClick={() => onGo("res")}>날짜별 보기 →</button>
-        </div>
-        {live.length === 0 ? (
-          <div className="notice info">오늘은 예약이 없습니다.</div>
-        ) : live.map((r) => {
-          const past = r.time < nowHm;
-          return (
-            <div key={r.id} className={"slotrow" + (past ? " blocked" : "")}>
-              <span className="s-time"><IconClock /> {r.time}</span>
-              <span className="who"><b>{r.name}</b> · {r.people}명</span>
-              <span className="tname">{r.theme_name} <span style={{ color: "var(--faint)", fontSize: 12 }}>{STORES.find((s) => s.id === r.store_id)?.tag || ""}</span></span>
-              <Phone v={r.phone} />
-              <span className="rt">
-                {r.source === "phone" && <span className="src-tag">전화</span>}
-                <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
-                <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </>
   );
 }
 
