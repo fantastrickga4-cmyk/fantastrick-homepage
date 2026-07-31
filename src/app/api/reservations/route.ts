@@ -4,6 +4,7 @@ import { normalizePhone, isValidPhone, reservationDateState, sanitizeText } from
 import { themeById, slotsForThemeDate, isTooSoon } from "@/lib/data";
 import { getConfig, depositOf } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
+import { isLookupLocked, noteLookupFail, clearLookupFails, LOCKED_MESSAGE } from "@/lib/pin-guard";
 import { sweepExpiredReservations, maybePurgeOldReservations, isHiddenFromLookup } from "@/lib/expire";
 
 const TOO_MANY = { error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." };
@@ -152,6 +153,13 @@ export async function GET(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "예약자 이름을 입력해 주세요." }, { status: 400 });
   if (!/^\d{4}$/.test(pin)) return NextResponse.json({ error: "비밀번호는 숫자 4자리로 입력해 주세요." }, { status: 400 });
 
+  // 🔒 4자리 비밀번호 무차별 대입 방어 — 전화번호 기준으로 실패를 센다(자세한 건 lib/pin-guard.ts).
+  //   ⚠️ 잠겨 있으면 예약을 찾아보지도 않는다. 여기서 조회를 돌리면 "잠겼다"고 해놓고
+  //      맞는 비밀번호는 통과시키는 셈이 되어 방어가 무의미해진다.
+  if (await isLookupLocked(db, phone).catch(() => false)) {
+    return NextResponse.json({ error: LOCKED_MESSAGE }, { status: 429 });
+  }
+
   const { data, error } = await db
     .from("reservations")
     .select("id, store_id, theme_id, theme_name, date, time, people, name, deposit, deposit_paid, status, created_at, cancelled_at")
@@ -162,6 +170,12 @@ export async function GET(req: NextRequest) {
     .limit(50);
 
   if (error) return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500 });
+
+  // 맞았으면 카운터를 지우고, 틀렸으면 1회 기록한다.
+  //   "이름은 맞는데 비밀번호만 틀린 경우"를 따로 가려내지 않는다 — 가려내는 순간
+  //   그 응답이 "이 번호로 예약이 있다"는 정보를 흘린다.
+  if ((data || []).length > 0) await clearLookupFails(db, phone).catch(() => {});
+  else await noteLookupFail(db, phone).catch(() => {});
 
   // 끝난 지 일주일 넘은 예약(취소·이용완료)은 손님 조회 화면에서 숨긴다(DB엔 남음, 관리자는 봄).
   const visible = (data || []).filter((r) => !isHiddenFromLookup(r));

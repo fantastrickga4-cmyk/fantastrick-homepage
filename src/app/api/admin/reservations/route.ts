@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "crypto";
+import { clearLookupFails } from "@/lib/pin-guard";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { normalizePhone, isValidPhone } from "@/lib/util";
@@ -269,7 +270,12 @@ export async function PATCH(req: NextRequest) {
   // 환불 계좌를 채워 넣었을 때 — 이제 [환불 처리] 큐에서 바로 보낼 수 있는 상태가 됐다는 흔적.
   if (patch.refund_account) logs.push({ reservation_id: id, action: "환불 계좌 입력", detail: `${patch.refund_bank || ""} ${patch.refund_account}`.trim() });
   // ⚠️ 새 비밀번호는 이력에 적지 않는다 — 이력은 화면에 그대로 보이므로 적으면 저장한 의미가 없다.
-  if (newPin) logs.push({ reservation_id: id, action: "비밀번호 재설정", detail: "관리자가 새 4자리로 바꿈" });
+  if (newPin) {
+    logs.push({ reservation_id: id, action: "비밀번호 재설정", detail: "관리자가 새 4자리로 바꿈" });
+    // 손님이 여러 번 틀려 조회가 잠긴 상태로 전화한 경우가 대부분이다 —
+    // 새 번호를 알려주면서 잠금도 같이 풀어줘야 그 자리에서 조회가 된다.
+    await clearLookupFails(db, String(before.phone || "")).catch(() => {});
+  }
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
   // 안내 문자 (문자 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
