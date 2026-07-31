@@ -1557,7 +1557,7 @@ function BankLedger({ from, to }: { from: string; to: string }) {
                         <p className="dcmp-why"><Emph text={c.why} /></p>
                         {/* 누를 수 있는 건 "지금 입금을 기다리는 예약"뿐이다.
                             취소·노쇼·이미 입금된 건에 버튼을 열어두면 손이 미끄러져 눌린다. */}
-                        {c.source !== "wp-import" && !c.deposit_paid && c.status === "pending" && (
+                        {!c.deposit_paid && c.status === "pending" && (
                           <button className="btn sm" disabled={busy === d.id}
                             onClick={() => attach(d.id, c.id, c.name)}>
                             {busy === d.id ? "처리 중…" : "이 예약이 맞아요 — 입금확인"}

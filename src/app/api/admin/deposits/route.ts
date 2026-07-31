@@ -115,10 +115,7 @@ export async function GET(req: NextRequest) {
           let why: string;
           let strength: number;
           if (nameEq && amountEq) {
-            if (r.source === "wp-import") {
-              why = "이름·금액이 딱 맞지만 **기존 사이트(워드프레스)에서 넘어온 예약**이라 자동확인 대상이 아닙니다. 확정은 기존 사이트에서 하세요.";
-              strength = 4;
-            } else if (r.deposit_paid) {
+            if (r.deposit_paid) {
               why = "이름·금액이 딱 맞는데 **이미 입금확인이 된 예약**입니다. 같은 사람이 두 번 보냈을 수 있어요.";
               strength = 3;
             } else if (r.status !== "pending") {

@@ -220,24 +220,51 @@ try {
     const have = new Map(existing.map((e) => [e.memo, e]));
 
     // 기존 사이트에서 사라진 예약(취소·삭제) → 여기서도 삭제
-    let delOk = 0;
+    //   ⚠️ 단 **입금이 확인된 예약은 지우지 않는다.** 돈이 들어온 기록이 조용히 사라지면
+    //      환불해야 할 건이 장부에서 증발한다. 대신 '취소'로 남겨 사람이 보게 한다.
+    //      (2026-07-31 "입금확인은 홈페이지가 주인" 규칙과 짝을 이룬다)
+    let delOk = 0, keptPaid = 0;
     for (const e of existing.filter((x) => !want.has(x.memo))) {
+      if (e.deposit_paid) {
+        if (e.status !== "cancelled") {
+          try { await sb(`reservations?id=eq.${e.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled", cancelled_at: new Date().toISOString() }) }); } catch { /* 다음 회차가 다시 맞춘다 */ }
+        }
+        keptPaid++;
+        continue;
+      }
       try { await sb(`reservations?id=eq.${e.id}`, { method: "DELETE" }); delOk++; }
       catch (err) { console.log(`  ❌ 삭제 실패 ${e.name} ${e.date} ${e.time}: ${(err as Error).message.slice(0, 120)}`); }
     }
 
-    // 날짜·시간·상태가 달라진 예약(변경·승인·되돌림) → 수정. 워드프레스가 항상 기준이다.
-    let upd = 0;
+    // 날짜·시간·상태가 달라진 예약(변경·승인) → 수정.
+    //
+    // 🔑 2026-07-31 규칙 변경 — **입금·확정은 올라가기만 하고 내려오지 않는다.**
+    //   전에는 워드프레스가 모든 칸의 기준이라, 태블릿 자동입금확인이 눌러놓은 예약도
+    //   기존 사이트가 아직 '대기'면 5분 뒤 대기로 되돌려 버렸다(= 자동확인이 무의미).
+    //   이제 역할을 나눈다:
+    //     · 기존 사이트가 기준 — 예약의 존재·날짜·시간·이름 (그쪽에서 손님을 받으니까)
+    //     · 홈페이지가 기준 — **입금확인**(태블릿이 통장을 보고 처리하니까)
+    //   그래서 "여기는 입금완료인데 저기는 아직 대기"인 경우엔 그 두 칸만 손대지 않는다.
+    //   반대 방향(저기서 먼저 승인 → 여기 반영)은 그대로 따라간다.
+    let upd = 0, kept = 0;
     for (const [memo, m] of want) {
       const e = have.get(memo);
       if (!e) continue;
-      if (e.date === m.date && e.time === m.time && e.status === m.status && e.deposit_paid === m.deposit_paid && e.name === m.name) continue;
-      const patch: Record<string, unknown> = { date: m.date, time: m.time, status: m.status, deposit_paid: m.deposit_paid, name: m.name };
-      if (m.deposit_paid && !e.deposit_paid) { patch.confirmed_at = new Date().toISOString(); patch.paid_at = patch.confirmed_at; }
-      if (!m.deposit_paid && e.deposit_paid) { patch.confirmed_at = null; patch.paid_at = null; }
+      const holdPaid = e.deposit_paid && !m.deposit_paid; // 홈페이지가 앞서 있음 → 지킨다
+      if (holdPaid) kept++;
+      const sameOtherwise = e.date === m.date && e.time === m.time && e.name === m.name;
+      if (sameOtherwise && (holdPaid || (e.status === m.status && e.deposit_paid === m.deposit_paid))) continue;
+
+      const patch: Record<string, unknown> = { date: m.date, time: m.time, name: m.name };
+      if (!holdPaid) {
+        patch.status = m.status;
+        patch.deposit_paid = m.deposit_paid;
+        if (m.deposit_paid && !e.deposit_paid) { patch.confirmed_at = new Date().toISOString(); patch.paid_at = patch.confirmed_at; }
+      }
       try { await sb(`reservations?id=eq.${e.id}`, { method: "PATCH", body: JSON.stringify(patch) }); upd++; }
       catch (err) { console.log(`  ❌ 수정 실패 ${m.name} ${m.date} ${m.time}: ${(err as Error).message.slice(0, 120)}`); }
     }
+    if (kept || keptPaid) console.log(`  🔒 입금확인 지킴: 수정보류 ${kept}건 · 삭제보류(취소로 남김) ${keptPaid}건`);
 
     // 새로 생긴 예약 → 추가
     let ok = 0;

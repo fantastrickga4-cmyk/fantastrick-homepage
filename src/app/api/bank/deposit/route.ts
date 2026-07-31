@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       // (같은 400 이라 옛 코드/새 코드 구분이 안 돼서 원인 찾기가 막혔던 적이 있다)
       return jsonError(400, "parse_failed", {
         message: "알림에서 이름·금액을 못 뽑았습니다.",
-        build: "20260731-redact",
+        build: "20260731-wpimport-auto",
         logged: !failErr || failErr.code === "23505",
       });
     }
@@ -135,16 +135,17 @@ export async function POST(req: NextRequest) {
   // 만료 정리(30분 미입금·자정 유예)를 먼저 돌린다 — 이미 취소돼야 할 예약에 입금확인을 누르지 않도록.
   await sweepExpiredReservations(db).catch(() => {});
 
-  // 기존 사이트에서 복사된 예약(source='wp-import')은 후보에서 뺀다.
-  //   그 예약들의 입금·확정 상태는 5분 동기화가 기존 사이트 기준으로 맞추므로, 여기서
-  //   같이 누르면 두 경로가 서로 덮어쓴다. 자체 예약(웹=source 없음·전화=phone)만 자동확인.
-  //   ⚠️ .neq 는 NULL 행까지 걸러버리므로 .or 로 "없거나 wp-import 아님"을 써야 한다.
+  // 🔑 2026-07-31 — **기존 사이트에서 온 예약(wp-import)도 자동확인 대상이다.**
+  //   전에는 뺐다. 5분 동기화가 기존 사이트 기준으로 입금·확정을 되돌려서, 여기서 눌러봐야
+  //   두 경로가 서로 덮어썼기 때문이다. 이제 동기화 규칙을 바꿔
+  //   **입금확인은 홈페이지가 주인**(올라가기만 하고 내려오지 않음)으로 정리했으므로
+  //   더 이상 뺄 이유가 없다 — 손님 예약은 기존 사이트로 들어오고 입금은 태블릿이 본다.
+  //   ⚠️ 짝이 되는 코드: scripts/import-from-wp.mts 의 holdPaid. 한쪽만 바꾸면 되돌림이 살아난다.
   const { data: rows, error: selErr } = await db
     .from("reservations")
     .select("id, name, phone, deposit, theme_name, date, time")
     .eq("status", "pending")
-    .eq("deposit_paid", false)
-    .or("source.is.null,source.neq.wp-import");
+    .eq("deposit_paid", false);
 
   if (selErr) {
     await finish({ status: "failed", error_message: `예약 조회 실패: ${selErr.message}` });
