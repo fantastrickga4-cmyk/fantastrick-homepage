@@ -954,15 +954,6 @@ function AutoCancelled() {
 
   return (
     <>
-      <p className="hint" style={{ marginBottom: 10 }}>
-        예약금이 <b>{EXPIRE_MINUTES}분</b> 안에 확인되지 않아 자동으로 취소된 예약이에요.
-        (자정 이후 접수는 그날 <b>오전 {GRACE_UNTIL_HOUR}시 {EXPIRE_MINUTES}분</b>까지 기다립니다)
-      </p>
-      <div className="notice info" style={{ marginBottom: 12 }}>
-        손님에게 말할 기준은 <b>입금 마감</b> 시각이에요. 옆의 <b>정리됨</b>은 시스템이 실제로
-        치운 시각이라 마감보다 한참 뒤일 수 있습니다(사이트에 접속이 있어야 정리가 돌아갑니다).
-        &ldquo;마감이 지나서 취소됐다&rdquo;고 안내하시면 됩니다.
-      </div>
 
       <div className="admin-tools">
         <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 또는 전화번호로 찾기" />
@@ -1001,7 +992,7 @@ function AutoCancelled() {
               );
             })}
             <p className="hint" style={{ marginTop: 10 }}>
-              총 {view.length}건. 취소된 지 <b>{DELETE_AFTER_DAYS}일</b>이 지나면 기록이 자동으로 지워집니다.
+              총 {view.length}건
             </p>
           </>
         )}
@@ -1112,9 +1103,6 @@ function PayQueue({ onDone }: { onDone: () => void }) {
             <span className="rt"><span className="badge-st st-cancelled">지난 일</span></span>
           </div>
           <div className="detail">
-            <p className="hint" style={{ marginTop: 0 }}>
-              손님이 늦게 입금했을 수도 있어요. 입금이 들어와 있으면 <b>[예약 › 목록·검색]</b>에서 찾아 <b>[취소 되돌리기]</b> 후 입금 확인하세요.
-            </p>
             {expired.map((r) => (
               <div key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "7px 0", borderTop: "1px solid var(--line)", fontSize: 13 }}>
                 <span style={{ color: "var(--faint)", minWidth: 42 }}>{formatStampTime(r.cancelled_at)}</span>
@@ -1182,9 +1170,6 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
   return (
     <>
       <div className="admin-top" style={{ marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--muted)" }}>
-          <b>계좌 복사 → 은행앱에서 이체 → 완료 누르기</b> 순서예요. 완료를 눌러도 돈이 자동으로 나가진 않아요.
-        </span>
         <div className="sp" />
         <button className="btn ghost sm" onClick={load}>새로고침</button>
       </div>
@@ -1194,8 +1179,7 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
       {needAcct.length > 0 && (
         <>
           <div className="notice warn" style={{ marginBottom: 10 }}>
-            <IconWarn /> <b>계좌 입력 필요 {needAcct.length}건</b> — 사장님이 취소한 예약이에요.
-            손님에게 환불 계좌를 물어봐서 아래에 입력하면 환불할 수 있어요.
+            <IconWarn /> <b>계좌 입력 필요 {needAcct.length}건</b>
           </div>
           {needAcct.map((r) => (
             <NeedAcctRow key={r.id} r={r} onSaved={() => { load(); onDone(); }} />
@@ -1306,7 +1290,6 @@ function NeedAcctRow({ r, onSaved }: { r: Reservation; onSaved: () => void }) {
         <p className="hint" style={{ margin: "0 0 8px" }}>
           예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
           {" · "}취소 {formatStamp(r.cancelled_at)} ({cancelledBy(r)})
-          {" · "}손님에게 환불 계좌를 물어봐 입력해 주세요.
         </p>
         <div className="acct-form">
           <div className="field"><label>은행</label>
@@ -1505,8 +1488,8 @@ function BankLedger({ from, to }: { from: string; to: string }) {
         : view.length === 0 ? (
           <div className="notice info">
             {rows.length === 0
-              ? "이 기간엔 카톡에서 읽은 입금이 없습니다. (태블릿 감시가 꺼져 있으면 여기가 계속 비어 있습니다)"
-              : "손이 필요한 입금이 없습니다. 전부 자동으로 처리됐어요."}
+              ? "이 기간엔 카톡에서 읽은 입금이 없습니다."
+              : "손이 필요한 입금이 없습니다."}
           </div>
         ) : view.map((d) => {
           const v = V_LABEL[d.verdict] ?? { t: d.status, c: "st-pending" };
