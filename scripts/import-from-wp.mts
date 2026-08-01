@@ -144,7 +144,14 @@ try {
 
     const { date, time } = toKstParts(r.epoch);
     const confirmed = r.post_status === "publish";
-    const createdAt = new Date(r.post_date).toISOString();
+    // 🔴 워드프레스의 post_date 는 **접수 시각으로 믿을 수 없다**(2026-08-02 실측).
+    //    번호가 더 큰(=나중에 만들어진) 예약의 post_date 가 더 이른 경우가 있고,
+    //    DB NOW() 가 06:51 인데 post_date 가 12:07 인 미래 값도 여럿이었다.
+    //    그 값을 그대로 쓰면 30분 카운트다운이 "5시간 남음"으로 나오고 만료가 영영 안 온다.
+    //    → **미래면 지금(가져온 시각)으로 잡는다.** 우리가 그 예약을 처음 안 순간이
+    //      카운트다운의 정직한 기준이다. 과거 값은 그대로 둔다(자정 유예 판단에 필요).
+    const rawCreated = new Date(r.post_date).getTime();
+    const createdAt = new Date(Math.min(rawCreated, Date.now())).toISOString();
 
     return [{
       store_id: theme.store,
