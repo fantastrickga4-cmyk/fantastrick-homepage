@@ -63,6 +63,10 @@ export default function ReservationLookup() {
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
+  // 취소 완료 안내 팝업 — 손님이 [확인]을 눌러야만 닫힌다(예약 때 예약금 안내와 같은 구조).
+  //   환불 안내를 스쳐 지나가면 "왜 아직 환불이 안 왔냐"는 문의로 돌아온다.
+  const [cancelDone, setCancelDone] = useState<{ rate: number | null } | null>(null);
+  const [cancelAck, setCancelAck] = useState(false);
 
   async function lookup() {
     setErr(""); setList(null); setDoneMsg("");
@@ -130,6 +134,8 @@ export default function ReservationLookup() {
       // 목록 갱신 + 안내
       setList((prev) => prev?.map((x) => (x.id === target.id ? { ...x, status: "cancelled" } : x)) || null);
       const rate = j.refundRate;
+      setCancelAck(false);
+      setCancelDone({ rate: rate ?? null });
       setDoneMsg(
         rate == null
           ? "예약이 취소되었습니다. (예약금 입금 전이라 환불은 없습니다.)"
@@ -404,6 +410,47 @@ export default function ReservationLookup() {
             setDoneMsg(`예약을 ${formatDate(d)} ${t} 으로 변경했어요. 예약금은 그대로 유지됩니다.`);
           }}
         />
+      )}
+      {/* 🔔 취소 완료 안내 — **[확인]을 눌러야만 닫힌다.**
+          바깥을 눌러 닫히게 두면 환불 안내(최대 24시간)를 못 보고 지나가고,
+          그러면 "왜 아직 환불이 안 왔냐"는 문의로 되돌아온다. 예약금 안내 팝업과 같은 구조. */}
+      {cancelDone && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cancel-done-title">
+          <div className="modal">
+            <h3 id="cancel-done-title">예약 취소 안내</h3>
+            <div className="modal-policy">
+              <p><b>1.</b> 예약취소가 정상적으로 등록되었습니다.</p>
+              {cancelDone.rate != null && cancelDone.rate > 0 ? (
+                <p>
+                  <b>2.</b> 예약시 안내드린 것처럼 예약금 환불까지 <b>최대 24시간</b>이 걸릴 수 있습니다.
+                  최대한 빠르게 처리 도와드릴 수 있도록 노력하겠습니다.
+                </p>
+              ) : (
+                /* 환불이 없는 취소에 "24시간 걸린다"고 하면 오지 않을 돈을 기다리게 된다 */
+                <p>
+                  <b>2.</b> {cancelDone.rate == null
+                    ? "예약금 입금 전이라 환불은 없습니다."
+                    : "이용 임박 취소라 예약금은 환불되지 않습니다."}
+                </p>
+              )}
+              <p><b>3.</b> 예약 취소 변경을 원하실 경우 매장으로 연락 부탁드립니다. 감사합니다.</p>
+            </div>
+
+            <label className="agree-row">
+              <input type="checkbox" checked={cancelAck} onChange={(e) => setCancelAck(e.target.checked)} />
+              위 내용을 확인했습니다.
+            </label>
+
+            <button
+              className="btn primary"
+              style={{ width: "100%", justifyContent: "center", marginTop: 12 }}
+              disabled={!cancelAck}
+              onClick={() => setCancelDone(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
