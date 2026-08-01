@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORES, THEMES, TIME_SLOTS, DOW_LABELS, slotsForThemeDate, type StoreSlots, type SlotSchedule } from "@/lib/data";
-import { isRefundOwed, isRefundReady, refundAmount, cancelledBy } from "@/lib/money";
+import { isRefundOwed, isRefundReady, refundAmount, cancelledBy, isAutoCancelled } from "@/lib/money";
 import { IconChat, IconWarn, IconMask, IconMoney, IconClock, IconCalendar, IconList, IconMegaphone, IconBan, IconMail, IconBell, IconDownload, IconChart, IconBolt, IconCheck, IconPencil, IconUser, IconChevronUp, IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconCard, IconBook, IconEye, IconStar, IconPlus, IconRefresh } from "@/components/Icon";
 import { isActiveSmsType } from "@/lib/sms-templates";
 import { EXPIRE_MINUTES, GRACE_UNTIL_HOUR, DELETE_AFTER_DAYS } from "@/lib/expire";
@@ -14,6 +14,7 @@ type Reservation = {
   refund_bank: string | null; refund_account: string | null; refund_holder: string | null;
   refund_rate: number | null; refunded: boolean; memo: string | null;
   admin_note: string | null; // 사장님이 손으로 쓰는 한 줄 메모 (memo 는 시스템 칸 — 섞지 말 것)
+  auto_cancelled: boolean | null; // 30분 미입금으로 시스템이 취소한 건
   source: string;
   created_at: string; confirmed_at: string | null; cancelled_at: string | null;
   paid_at: string | null; refunded_at: string | null; // 돈이 실제로 오간 시각
@@ -964,9 +965,9 @@ function AutoCancelled() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  // 자동취소 표시는 memo 에 남는다(expire.ts). money.ts 의 cancelledBy 와 같은 기준.
+  // 자동취소 표시는 auto_cancelled 칸(옛 기록은 memo 문자열). money.ts 와 같은 기준을 쓴다.
   const auto = rows
-    .filter((r) => (r.memo || "").includes("자동 취소"))
+    .filter((r) => isAutoCancelled(r))
     .sort((a, b) => (b.cancelled_at || "").localeCompare(a.cancelled_at || ""));
 
   const key = q.replace(/\s|-/g, "").toLowerCase();
@@ -1084,11 +1085,6 @@ function PayQueue({ onDone }: { onDone: () => void }) {
         <div className="notice ok"><IconCheck /> 입금 대기 없음 — 다 처리하셨어요.</div>
       ) : list.map((r) => {
         const { min: m, grace } = remainInfo(r.created_at);
-        // 기존 사이트에서 온 예약은 **30분 자동취소 대상이 아니다**(expire.ts 에서 제외).
-        //   그쪽 예약의 취소 권한은 그쪽에 있고, 여기서 취소하면 동기화 열쇠(memo #ID)가
-        //   지워져 예약이 삭제·재생성된다. 그런데 카운트다운을 그대로 보여주면
-        //   "0분 남음"인데 안 없어지는 화면이 되어 거짓말이 된다(2026-08-01 사장님이 짚음).
-        const noExpire = r.source === "wp-import";
         return (
           <div key={r.id} className="rrow">
             <div className="head" style={{ cursor: "default" }}>
@@ -1096,21 +1092,16 @@ function PayQueue({ onDone }: { onDone: () => void }) {
                   접수 시각을 왼쪽에 같이 둔다 — 카운트다운의 기준점이 보여야 말이 된다.
                   (오른쪽 tname 의 날짜·시간은 '이용' 날짜라 서로 다른 값이다) */}
               <span className="taken-at">{formatStampShort(r.created_at)} 접수</span>
-              {noExpire ? (
-                <span className="when"><IconClock /> 자동취소 안 함</span>
-              ) : (
               <span className={"when" + (m <= 5 ? " urgent" : "")}>
                 <IconClock /> {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
                 {grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}
               </span>
-              )}
               {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
               <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
               <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>
               <span className="amt">{r.deposit.toLocaleString()}원</span>
               <span className="rt">
                 {r.source === "phone" && <span className="src-tag">전화</span>}
-                {noExpire && <span className="src-tag" title="기존 사이트에서 넘어온 예약이라 여기서 자동취소하지 않습니다">기존 사이트</span>}
                 {/* 통장에 찍힌 이름이 예약자와 다를 때(친구·엄마·회사 이름) 적어둔다.
                     비워두면 예약자명으로 들어온 것으로 본다. */}
                 <input

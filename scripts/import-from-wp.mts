@@ -18,14 +18,14 @@
  *   npx tsx scripts/import-from-wp.mts --apply --reset   # 전에 넣은 연습 데이터 지우고 새로
  *   npx tsx scripts/import-from-wp.mts --apply --sync    # 실시간 동기화 1회(추가+변경+삭제)
  *
- * --sync (2026-07-30, 운영 병행 테스트용):
- *   --apply 는 "새로 생긴 예약 추가"만 한다(기존 건은 memo 로 건너뜀). 그래서 기존
- *   사이트에서 취소·시간변경·승인이 일어나도 새 사이트에 반영이 안 된다.
- *   --sync 는 memo 속 예약 번호(#ID)를 열쇠로 세 방향을 다 맞춘다:
- *     · 기존 사이트에서 사라진 예약(취소) → 여기서도 삭제
- *     · 날짜·시간·상태가 달라진 예약(변경·승인) → 여기서도 수정
- *     · 새로 생긴 예약 → 추가
- *   5분마다 작업 스케줄러로 돌리면 준-실시간이 된다. 워드프레스에는 여전히 SELECT 만 한다.
+ * 🔑 --sync (2026-08-01 구조 변경: **가져오기 전용**):
+ *   기존 사이트는 이제 **새 예약이 들어오는 입구**일 뿐이다. 입금확인·확정·취소·30분 만료 등
+ *   **그 뒤의 모든 처리는 우리 사이트가 주인**이다. 그래서 --sync 는 한 가지만 한다:
+ *     · 아직 안 가져온 예약을 추가 (memo 속 예약번호 #ID 로 판별)
+ *   전에는 "저쪽이 항상 기준"이라 상태·시간을 되돌리고 사라진 예약을 지웠는데,
+ *   그게 **우리가 처리한 확정·취소를 5분 뒤 되돌려** 자동입금확인을 무의미하게 만들었다.
+ *   ⚠️ 대신 손님이 기존 사이트에서 취소해도 우리 쪽엔 남는다 — 우리 사이트에서 취소하면 된다.
+ *   5분마다 작업 스케줄러로 돌린다. 워드프레스에는 여전히 SELECT 만 한다.
  *
  * 넣은 데이터는 전부 source='wp-import' 로 표시된다. 나중에 실제 오픈 전에
  * 이 표시로 한 번에 지울 수 있다(--reset).
@@ -209,70 +209,30 @@ try {
   if (!APPLY) {
     console.log("\n※ 미리보기만 했습니다. 실제로 넣으려면 --apply 를 붙이세요.");
   } else if (SYNC) {
-    // ── 4-b) 실시간 동기화: 삭제 → 수정 → 추가 순 ─────────────────────
-    //   순서가 중요하다. 옮겨진 예약이 들어갈 칸(uq_res_slot)을 먼저 비워야 하므로
-    //   삭제·수정을 추가보다 앞에 둔다. 실패한 건은 다음 회차(5분 뒤)가 다시 맞춘다.
-    type Ex = { id: string; memo: string; date: string; time: string; status: string; deposit_paid: boolean; name: string };
-    const existing = (await sb(
-      `reservations?source=eq.${SOURCE_TAG}&select=id,memo,date,time,status,deposit_paid,name`
-    )) as Ex[];
-    const want = new Map(rowsToInsert.map((m) => [m.memo, m]));
-    const have = new Map(existing.map((e) => [e.memo, e]));
-
-    // 기존 사이트에서 사라진 예약(취소·삭제) → 여기서도 삭제
-    //   ⚠️ 단 **입금이 확인된 예약은 지우지 않는다.** 돈이 들어온 기록이 조용히 사라지면
-    //      환불해야 할 건이 장부에서 증발한다. 대신 '취소'로 남겨 사람이 보게 한다.
-    //      (2026-07-31 "입금확인은 홈페이지가 주인" 규칙과 짝을 이룬다)
-    let delOk = 0, keptPaid = 0;
-    for (const e of existing.filter((x) => !want.has(x.memo))) {
-      if (e.deposit_paid) {
-        if (e.status !== "cancelled") {
-          try { await sb(`reservations?id=eq.${e.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled", cancelled_at: new Date().toISOString() }) }); } catch { /* 다음 회차가 다시 맞춘다 */ }
-        }
-        keptPaid++;
-        continue;
-      }
-      try { await sb(`reservations?id=eq.${e.id}`, { method: "DELETE" }); delOk++; }
-      catch (err) { console.log(`  ❌ 삭제 실패 ${e.name} ${e.date} ${e.time}: ${(err as Error).message.slice(0, 120)}`); }
-    }
-
-    // 날짜·시간·상태가 달라진 예약(변경·승인) → 수정.
+    // ── 4-b) **가져오기 전용** (2026-08-01 구조 변경) ────────────────────
     //
-    // 🔑 2026-07-31 규칙 변경 — **입금·확정은 올라가기만 하고 내려오지 않는다.**
-    //   전에는 워드프레스가 모든 칸의 기준이라, 태블릿 자동입금확인이 눌러놓은 예약도
-    //   기존 사이트가 아직 '대기'면 5분 뒤 대기로 되돌려 버렸다(= 자동확인이 무의미).
-    //   이제 역할을 나눈다:
-    //     · 기존 사이트가 기준 — 예약의 존재·날짜·시간·이름 (그쪽에서 손님을 받으니까)
-    //     · 홈페이지가 기준 — **입금확인**(태블릿이 통장을 보고 처리하니까)
-    //   그래서 "여기는 입금완료인데 저기는 아직 대기"인 경우엔 그 두 칸만 손대지 않는다.
-    //   반대 방향(저기서 먼저 승인 → 여기 반영)은 그대로 따라간다.
-    let upd = 0, kept = 0;
-    for (const [memo, m] of want) {
-      const e = have.get(memo);
-      if (!e) continue;
-      const holdPaid = e.deposit_paid && !m.deposit_paid; // 홈페이지가 앞서 있음 → 지킨다
-      if (holdPaid) kept++;
-      const sameOtherwise = e.date === m.date && e.time === m.time && e.name === m.name;
-      if (sameOtherwise && (holdPaid || (e.status === m.status && e.deposit_paid === m.deposit_paid))) continue;
+    // 🔑 기존 사이트는 이제 **새 예약이 들어오는 입구**일 뿐이다.
+    //    입금확인·확정·취소·30분 만료 등 **그 뒤의 모든 처리는 우리 사이트가 주인**이다.
+    //
+    // 그래서 여기서 하는 일은 하나뿐 — **아직 안 가져온 예약을 넣는다.**
+    //    · 수정 동기화 없음: 저쪽이 기준이면 우리가 처리한 확정·취소를 5분 뒤 되돌려버린다.
+    //      (실제로 그랬다 — 태블릿 자동입금확인이 눌러놓은 것이 되돌려져 무의미했다)
+    //    · 삭제 동기화 없음: 저쪽에서 사라졌다고 우리 기록을 지우면, 우리가 처리한 예약과
+    //      돈 기록이 통째로 증발한다.
+    //
+    // ⚠️ 대신 이런 일이 생긴다: 손님이 **기존 사이트에서 취소**해도 우리 쪽엔 남는다.
+    //    우리 사이트에서 취소해 주면 된다(처리의 주인이 여기이므로 그게 맞는 흐름이다).
+    type Ex = { memo: string };
+    const existing = (await sb(`reservations?source=eq.${SOURCE_TAG}&select=memo`)) as Ex[];
+    const have = new Set(existing.map((e) => e.memo));
 
-      const patch: Record<string, unknown> = { date: m.date, time: m.time, name: m.name };
-      if (!holdPaid) {
-        patch.status = m.status;
-        patch.deposit_paid = m.deposit_paid;
-        if (m.deposit_paid && !e.deposit_paid) { patch.confirmed_at = new Date().toISOString(); patch.paid_at = patch.confirmed_at; }
-      }
-      try { await sb(`reservations?id=eq.${e.id}`, { method: "PATCH", body: JSON.stringify(patch) }); upd++; }
-      catch (err) { console.log(`  ❌ 수정 실패 ${m.name} ${m.date} ${m.time}: ${(err as Error).message.slice(0, 120)}`); }
-    }
-    if (kept || keptPaid) console.log(`  🔒 입금확인 지킴: 수정보류 ${kept}건 · 삭제보류(취소로 남김) ${keptPaid}건`);
-
-    // 새로 생긴 예약 → 추가
     let ok = 0;
     for (const m of rowsToInsert.filter((x) => !have.has(x.memo))) {
       try { await sb("reservations", { method: "POST", body: JSON.stringify(m) }); ok++; }
-      catch (e) { console.log(`  ❌ 추가 실패 ${m.name} ${m.date} ${m.time}: ${(e as Error).message.slice(0, 120)}`); }
+      catch (err) { console.log(`  ❌ 추가 실패 ${m.name} ${m.date} ${m.time}: ${(err as Error).message.slice(0, 120)}`); }
     }
-    console.log(`\n✅ 동기화: 추가 ${ok} · 수정 ${upd} · 삭제 ${delOk} (기존 사이트 기준 ${rowsToInsert.length}건)`);
+    console.log(`
+✅ 가져오기: 새 예약 ${ok}건 추가 (기존 사이트 ${rowsToInsert.length}건 중 이미 있는 것 ${have.size}건)`);
   } else {
     // ── 4) 넣기 ──────────────────────────────────────────────────────
     if (RESET) {

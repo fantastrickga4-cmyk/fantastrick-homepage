@@ -78,12 +78,17 @@ export function refundRateFor(date: string, time: string, nowMs: number = Date.n
   return 80;
 }
 
-// 누가 취소했나 — DB에 '취소한 사람' 칸은 없지만 남는 흔적으로 구분된다(SQL 추가 불필요).
+// 누가 취소했나 — 남는 흔적으로 구분한다.
+//   · 자동 취소(expire.ts)    : auto_cancelled 칸이 true
+//     (2026-08-01 이전 기록은 memo 문자열로 표시됐으므로 그것도 함께 본다)
 //   · 손님 취소(/reservation) : 환불 계좌를 반드시 입력받으므로 refund_account 가 있다
-//   · 자동 취소(expire.ts)    : 메모에 "미입금으로 자동 취소" 를 남긴다
 //   · 그 외                   : 관리자가 화면에서 [취소 처리] 를 누른 것
-export function cancelledBy(r: { refund_account?: string | null; memo?: string | null }): string {
-  if ((r.memo || "").includes("자동 취소")) return "미입금 자동취소";
+export function isAutoCancelled(r: { auto_cancelled?: boolean | null; memo?: string | null }): boolean {
+  return r.auto_cancelled === true || (r.memo || "").includes("자동 취소");
+}
+
+export function cancelledBy(r: { refund_account?: string | null; memo?: string | null; auto_cancelled?: boolean | null }): string {
+  if (isAutoCancelled(r)) return "미입금 자동취소";
   if (r.refund_account) return "손님이 직접 취소";
   return "관리자 취소";
 }

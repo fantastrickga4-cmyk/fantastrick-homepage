@@ -11,7 +11,7 @@ import { sendReservationSms } from "@/lib/sms";
 import { sweepExpiredReservations, maybePurgeOldReservations } from "@/lib/expire";
 
 const COLS =
-  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, admin_note, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
+  "id, store_id, theme_id, theme_name, date, time, people, name, phone, deposit, deposit_paid, deposit_payer, status, refund_bank, refund_account, refund_holder, refund_rate, refunded, memo, admin_note, auto_cancelled, source, created_at, confirmed_at, cancelled_at, paid_at, refunded_at, paid_source";
 
 // 변경 이력에 쓸 한국어 상태명
 const ST_KO: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };

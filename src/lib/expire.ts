@@ -42,19 +42,20 @@ export async function sweepExpiredReservations(db: SupabaseClient): Promise<void
     .update({
       status: "cancelled",
       cancelled_at: new Date().toISOString(),
-      memo: "미입금으로 자동 취소",
+      // ⚠️ memo 는 절대 건드리지 않는다 — 기존 사이트에서 가져온 예약은 memo 통째로가
+      //    가져오기 열쇠(#예약번호)라, 덮어쓰면 같은 예약을 또 가져오거나 못 알아본다.
+      //    취소 표시는 전용 칸에 적는다(2026-08-01).
+      auto_cancelled: true,
     })
     .eq("status", "pending")
     .eq("deposit_paid", false)
-    .lt("created_at", cutoff)
-    // 🔑 기존 사이트에서 복사돼 온 예약(wp-import)은 건드리지 않는다. (2026-07-31)
-    //   ① 30분 룰은 **홈페이지에서 직접 예약한 손님과 한 약속**이다. 저쪽 예약의 취소 권한은
-    //      저쪽에 있고, 여기서 취소해봐야 5분 뒤 동기화가 되살려 켜졌다 꺼졌다 하게 된다.
-    //   ② 더 위험한 것: 취소할 때 memo 를 "미입금으로 자동 취소"로 덮어쓰는데,
-    //      wp-import 예약의 memo 에는 **동기화 열쇠인 예약번호(#ID)** 가 들어 있다.
-    //      그게 지워지면 동기화가 그 예약을 못 알아보고 삭제 후 재생성한다.
-    //   ⚠️ .neq 만 쓰면 source=NULL(자체 예약)까지 걸러져 자동취소가 통째로 멈춘다. 반드시 .or.
-    .or("source.is.null,source.neq.wp-import");
+    .lt("created_at", cutoff);
+  // 🔑 2026-08-01 — **모든 예약에 적용한다**(기존 사이트에서 가져온 것 포함).
+  //   07-31 에는 wp-import 를 뺐었다. 그땐 5분 동기화가 저쪽을 기준으로 되돌려서
+  //   취소했다 살아났다 반복했고, memo 덮어쓰기가 가져오기 열쇠를 지웠기 때문이다.
+  //   이제 ①동기화는 "새 대기 예약 가져오기"만 하고 ②취소 표시는 memo 가 아니라
+  //   auto_cancelled 칸에 적으므로, 두 이유가 다 사라졌다.
+  //   → 예약을 어디서 받았든 **처리의 주인은 우리 사이트**다.
 
   // 아직 오전 10시 30분(KST) 전이면, 오늘 자정 이후 접수된 건은 건드리지 않는다.
   //   → 새벽 2시 예약: 10시 30분까지 살아있음 (문자로 약속한 대로)
