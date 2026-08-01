@@ -1265,6 +1265,14 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .rrow .when.urgent{color:var(--amber)}
 
 /* 환불 계좌 한 줄 — 은행/계좌/예금주/복사를 가로로. 눈이 위아래로 안 움직이게 */
+/* 💸 환불 줄 — 사장님이 하는 일은 "이 계좌로 이 금액 보내기" 하나다.
+   그래서 금액이 제일 크고, 바로 아래 계좌, 근거(예약금×환불율·취소시각)는 작게 내린다. */
+.refund-amt{display:flex;align-items:baseline;gap:9px;margin:2px 0 8px}
+.refund-amt span{font-size:12px;color:var(--muted)}
+.refund-amt b{font-size:23px;font-weight:800;color:var(--text);font-feature-settings:"tnum";letter-spacing:-.01em}
+.refund-meta{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.refund-warn{margin:5px 0 0;font-size:12.5px;font-weight:700;color:#b3261e}
+
 .acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);padding:9px 12px;font-size:13.5px}
 .acct .bank{color:var(--muted);font-weight:700;flex:0 0 auto}

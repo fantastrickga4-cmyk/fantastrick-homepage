@@ -1241,10 +1241,12 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
             <span className="when">{daysAgoLabel(r.cancelled_at)}</span>
             <span className="who"><b>{r.refund_holder || r.name}</b> · <Phone v={r.phone} /></span>
             <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time}</span>
-            <span className="amt">{refundAmount(r).toLocaleString()}원</span>
             <span className="rt"><span className="badge-st st-pending">환불 {r.refund_rate}%</span></span>
           </div>
           <div className="detail">
+            {/* 사장님이 할 일은 하나 — **이 계좌로 이 금액을 보내는 것.**
+                그래서 금액을 제일 크게, 바로 아래 계좌를 둔다. 나머지는 근거라 작게 내린다. */}
+            <div className="refund-amt"><span>보낼 금액</span><b>{refundAmount(r).toLocaleString()}원</b></div>
             {/* 은행·계좌·예금주를 한 줄에 — 눈이 위아래로 안 움직이게 */}
             <div className="acct">
               <span className="bank">{r.refund_bank || "은행 없음"}</span>
@@ -1255,11 +1257,14 @@ function RefundQueue({ onDone }: { onDone: () => void }) {
                 {copied === r.id ? <>복사됨 </> : <>계좌 복사</>}
               </button>
             </div>
-            <p className="hint" style={{ margin: "2px 0 0" }}>
-              예약금 {r.deposit.toLocaleString()}원 × 환불율 {r.refund_rate}% = <b style={{ color: "var(--text)" }}>{refundAmount(r).toLocaleString()}원</b>
-              {" · "}취소 {formatStamp(r.cancelled_at)} ({cancelledBy(r)})
-              {r.refund_holder && r.refund_holder !== r.name && <> · 예금주가 예약자({r.name})와 달라요</>}
+            {/* 근거·취소정보는 작게 아래로 — 손이 움직이는 건 금액과 계좌 두 가지뿐이다 */}
+            <p className="refund-meta">
+              예약금 {r.deposit.toLocaleString()}원 × {r.refund_rate}%
+              {" · "}{formatStamp(r.cancelled_at)} {cancelledBy(r)}
             </p>
+            {r.refund_holder && r.refund_holder !== r.name && (
+              <p className="refund-warn">예금주({r.refund_holder})가 예약자({r.name})와 달라요 — 보내기 전 확인</p>
+            )}
             <div className="act-row">
               {/* 금액을 버튼 라벨에 박아 오송금 방지 */}
               <button className="btn sm primary" disabled={busy === r.id} onClick={() => markRefunded(r)}>
