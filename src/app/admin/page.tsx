@@ -325,10 +325,9 @@ function ListView() {
               <span className={`dep ${r.deposit_paid ? "paid" : ""}`}>{r.deposit_paid ? "입금완료" : "미입금"}</span>
               <span className={`badge-st st-${r.status}`}>{ST_LABEL[r.status] || r.status}</span>
             </span>
-            {/* wp-import 복사본은 memo 가 동기화 열쇠라 편집 금지 — 고치면 동기화가 그 예약을 못 알아본다 */}
-            {r.source !== "wp-import" && (
-              <MemoLine id={r.id} note={r.admin_note} onSaved={(m) => setList((l) => l.map((x) => (x.id === r.id ? { ...x, admin_note: m } : x)))} />
-            )}
+            {/* 메모는 admin_note(사람 칸)에 쓰므로 기존 사이트 예약에도 안전하다.
+                동기화 열쇠는 memo 라 건드리지 않는다. 날짜별 화면과 같은 규칙. */}
+            <MemoLine id={r.id} note={r.admin_note} onSaved={(m) => setList((l) => l.map((x) => (x.id === r.id ? { ...x, admin_note: m } : x)))} />
           </div>
           <div className="detail">
             <div className="res-summary" style={{ margin: 0 }}>
@@ -1085,6 +1084,11 @@ function PayQueue({ onDone }: { onDone: () => void }) {
         <div className="notice ok"><IconCheck /> 입금 대기 없음 — 다 처리하셨어요.</div>
       ) : list.map((r) => {
         const { min: m, grace } = remainInfo(r.created_at);
+        // 기존 사이트에서 온 예약은 **30분 자동취소 대상이 아니다**(expire.ts 에서 제외).
+        //   그쪽 예약의 취소 권한은 그쪽에 있고, 여기서 취소하면 동기화 열쇠(memo #ID)가
+        //   지워져 예약이 삭제·재생성된다. 그런데 카운트다운을 그대로 보여주면
+        //   "0분 남음"인데 안 없어지는 화면이 되어 거짓말이 된다(2026-08-01 사장님이 짚음).
+        const noExpire = r.source === "wp-import";
         return (
           <div key={r.id} className="rrow">
             <div className="head" style={{ cursor: "default" }}>
@@ -1092,16 +1096,21 @@ function PayQueue({ onDone }: { onDone: () => void }) {
                   접수 시각을 왼쪽에 같이 둔다 — 카운트다운의 기준점이 보여야 말이 된다.
                   (오른쪽 tname 의 날짜·시간은 '이용' 날짜라 서로 다른 값이다) */}
               <span className="taken-at">{formatStampShort(r.created_at)} 접수</span>
+              {noExpire ? (
+                <span className="when"><IconClock /> 자동취소 안 함</span>
+              ) : (
               <span className={"when" + (m <= 5 ? " urgent" : "")}>
                 <IconClock /> {m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`} 남음
                 {grace && <span className="src-tag" style={{ marginLeft: 6 }}>새벽 예약</span>}
               </span>
+              )}
               {/* 이름 = 은행앱 입금자명과 맞추는 키라 굵게 */}
               <span className="who"><b>{r.name}</b> · <Phone v={r.phone} /></span>
               <span className="tname">{r.theme_name} · {formatDate(r.date)} {r.time} · {r.people}명</span>
               <span className="amt">{r.deposit.toLocaleString()}원</span>
               <span className="rt">
                 {r.source === "phone" && <span className="src-tag">전화</span>}
+                {noExpire && <span className="src-tag" title="기존 사이트에서 넘어온 예약이라 여기서 자동취소하지 않습니다">기존 사이트</span>}
                 {/* 통장에 찍힌 이름이 예약자와 다를 때(친구·엄마·회사 이름) 적어둔다.
                     비워두면 예약자명으로 들어온 것으로 본다. */}
                 <input
