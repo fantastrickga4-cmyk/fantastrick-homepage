@@ -26,6 +26,10 @@ type Stats = {
   pendingUnpaidSum: number; refundPending: number; refundPendingSum: number; // 입금·환불 탭용
   themes: { name: string; count: number }[]; activeTotal: number;
 };
+/* 달력에 색으로 표시할 테마 — 순서 = 태초의 신부 · 사자의 서 · 락다운시티 · 시간의 영속성.
+   준비중(soon) 테마는 예약이 없으므로 뺀다. 색은 globals.css 의 .tn.t0~.t3 과 짝이다. */
+const CAL_THEMES = THEMES.filter((t) => !t.soon);
+
 const ST_LABEL: Record<string, string> = { pending: "대기", confirmed: "확정", cancelled: "취소", noshow: "노쇼" };
 
 /* 전화번호 — 폰에서 누르면 바로 전화/문자.
@@ -459,8 +463,26 @@ function DayView() {
           <div key={i} className={"cal-cell" + (pick === dstr(d) ? " pick" : "") + (dstr(d) === t0 ? " today" : "")}
             onClick={() => setPick(dstr(d))}>
             <span className="cal-d">{d}</span>
-            {byDay[dstr(d)] && <span className="cal-n">{byDay[dstr(d)].length}건</span>}
+            {/* 총 건수 대신 **테마별 건수를 색으로** 보여준다(2026-08-01 사장님 요청).
+                합계만 있으면 "8건"이 한 테마에 몰린 건지 골고루인지 알 수 없어서,
+                달력을 열어 날짜를 눌러봐야 했다. 0건인 테마는 칸이 좁아 생략하고
+                색으로 어느 테마인지 알린다(아래 색 안내 참고). */}
+            {byDay[dstr(d)] && (
+              <span className="cal-tn">
+                {CAL_THEMES.map((t, ti) => {
+                  const n = byDay[dstr(d)].filter((r) => r.theme_id === t.id).length;
+                  return n ? <b key={t.id} className={`tn t${ti}`} title={`${t.name} ${n}건`}>{n}</b> : null;
+                })}
+              </span>
+            )}
           </div>
+        ))}
+      </div>
+
+      {/* 색 안내 — 색만 보고 테마를 알아야 하므로 달력 바로 아래 둔다 */}
+      <div className="cal-legend">
+        {CAL_THEMES.map((t, ti) => (
+          <span key={t.id}><i className={`tn t${ti}`} />{t.name}</span>
         ))}
       </div>
 
