@@ -26,7 +26,7 @@ function fallbackBody(type: string, themeId: string): string {
 
 // 템플릿(종류별·테마별) + 최근 발송내역 + 문자 연동여부
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
 // 실패한 문자 다시 보내기 — 그때 나갔어야 할 문구 그대로 재발송
 //   문구를 다시 만들지 않고 로그에 남은 body 를 그대로 쓴다(그 사이 문구를 고쳤어도 원래 안내대로 나가게)
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
   let body: Record<string, unknown>;
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
 // 템플릿 수정 — themeId 를 주면 그 테마 전용, 없으면 모든 테마 공통
 export async function PUT(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
   let body: Record<string, unknown>;
@@ -127,7 +127,7 @@ export async function PUT(req: NextRequest) {
 
 // 저장한 문구를 지워 "기존 문구"로 되돌리기
 export async function DELETE(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
   const sp = req.nextUrl.searchParams;

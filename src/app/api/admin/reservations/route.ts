@@ -18,7 +18,7 @@ const ST_KO: Record<string, string> = { pending: "대기", confirmed: "확정", 
 
 // 예약 목록 조회 (필터·검색) + 통계
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
@@ -115,7 +115,7 @@ function buildStats(rows: Row[]) {
 
 // 예약 수정 (상태/입금/메모/환불완료)
 export async function PATCH(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
@@ -295,7 +295,7 @@ export async function PATCH(req: NextRequest) {
 
 // 수동 예약 등록 (전화 예약)
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 

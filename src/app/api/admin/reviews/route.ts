@@ -8,7 +8,7 @@ const COLS = "id, theme_id, theme_name, name, phone, rating, body, source, statu
 
 // 리뷰 목록 (관리자) — ?status=pending|approved|all (기본 pending)
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
 // 리뷰 모더레이션 / 외부 후기 수동 등록 / 삭제
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!(await isAdmin(req))) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 

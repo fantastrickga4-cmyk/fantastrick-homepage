@@ -5,7 +5,7 @@ import { sweepExpiredReservations } from "@/lib/expire";
 import { parseDeposit, looksLikeBankNotice } from "@/lib/bank/parser";
 import { findMatch } from "@/lib/bank/matcher";
 import type { Deposit, Reservation } from "@/lib/bank/types";
-import { makeAdminToken, ADMIN_COOKIE } from "@/lib/admin";
+import { makeAdminToken, INTERNAL_HEADER } from "@/lib/admin";
 import { PATCH as adminPatch } from "@/app/api/admin/reservations/route";
 
 /**
@@ -190,7 +190,9 @@ export async function POST(req: NextRequest) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      cookie: `${ADMIN_COOKIE}=${makeAdminToken() ?? ""}`,
+      // 사람의 로그인 세션이 없으므로 **서버 안에서만 쓰는 열쇠**로 부른다.
+      // (쿠키로는 안 통한다 — 세션은 이제 DB 에 있는 것만 유효하다)
+      [INTERNAL_HEADER]: makeAdminToken() ?? "",
     },
     body: JSON.stringify({
       id: match.reservation.id,

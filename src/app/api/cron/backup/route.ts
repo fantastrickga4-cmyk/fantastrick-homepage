@@ -10,14 +10,14 @@ const BUCKET = "backups";
 const KEEP = 12; // 최근 12개(≈3개월치) 보관
 
 // Vercel Cron 은 Authorization: Bearer ${CRON_SECRET} 를 붙여 호출한다. 관리자 세션도 허용(수동 실행).
-function authorized(req: NextRequest): boolean {
+async function authorized(req: NextRequest): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.get("authorization") === `Bearer ${secret}`) return true;
   return isAdmin(req);
 }
 
 async function runBackup(req: NextRequest) {
-  if (!authorized(req)) return NextResponse.json({ error: "권한이 없습니다." }, { status: 401 });
+  if (!(await authorized(req))) return NextResponse.json({ error: "권한이 없습니다." }, { status: 401 });
   const db = getSupabase();
   if (!db) return NextResponse.json({ error: "DB가 설정되지 않았습니다." }, { status: 503 });
 
