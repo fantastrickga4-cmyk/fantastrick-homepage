@@ -45,12 +45,20 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
 // 요청에서 클라이언트 IP 추출.
 // x-forwarded-for 의 첫 IP → x-real-ip → "unknown"
 export function getClientIp(req: NextRequest): string {
+  // 🔴 Cloudflare 에서는 **cf-connecting-ip 가 진짜 손님 IP** 다.
+  //   x-forwarded-for 를 먼저 보다가 `::1`(내부 주소)이 잡히는 것을 실측했다(2026-08-02).
+  //   그 값으로 관리자 로그인 잠금을 걸면 **모든 사람이 한 IP로 묶여**,
+  //   아무나 5번 틀리는 것만으로 사장님을 10분씩 잠가버릴 수 있다.
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf?.trim()) return cf.trim();
+
   const xff = req.headers.get("x-forwarded-for");
   if (xff) {
-    const first = xff.split(",")[0]?.trim();
+    // 내부 루프백은 손님 IP 가 아니다 — 건너뛰고 진짜 주소를 찾는다.
+    const first = xff.split(",").map((s) => s.trim()).find((s) => s && s !== "::1" && s !== "127.0.0.1");
     if (first) return first;
   }
   const real = req.headers.get("x-real-ip");
-  if (real) return real.trim();
+  if (real?.trim() && real.trim() !== "::1") return real.trim();
   return "unknown";
 }
