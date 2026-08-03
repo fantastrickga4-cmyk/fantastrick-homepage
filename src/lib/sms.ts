@@ -117,6 +117,24 @@ export function isTestPhone(phone: string): boolean {
   return normalizePhone(phone).startsWith(TEST_PHONE_PREFIX);
 }
 
+/* ─── 🔴 우리가 보내는 문자는 "예약 확정" 하나뿐이다 (2026-08-03 사장님 방침) ───
+ *
+ * 기존 워드프레스에서는 예약대기(계좌 안내)·손님취소·관리자취소 문자도 보냈다.
+ * **새 홈페이지에서는 쓰지 않는다.** 문구도 호출부도 전부 지웠지만, 여기 한 겹을 더 둔다.
+ *
+ * 왜 게이트까지 두나: 문자가 나가는 길은 결국 sendSms / sendAlimtalk 둘뿐이다.
+ * 호출부만 지우면 나중에 누군가(사람이든 나중 세션이든) "취소 문자가 안 나가네?" 하고
+ * 되살릴 수 있고, 관리자 화면의 [다시 보내기] 는 **옛 로그의 종류를 그대로 다시 보낸다**.
+ * 여기서 막으면 어느 경로로도 확정문자 말고는 나가지 않는다.
+ *
+ * ⚠️ 여기에 종류를 추가하는 것 = 손님에게 새 문자를 보내기 시작한다는 뜻이다. 방침 확인 없이 넣지 말 것.
+ */
+export const SENDABLE_TYPES = new Set(["payment", "confirm"]);
+
+export function isSendableType(type: string): boolean {
+  return SENDABLE_TYPES.has(type);
+}
+
 // 문자 템플릿 기본값 (DB에도 테마별 문구에도 없을 때). 치환: {이름}{테마}{날짜}{시간}{인원}{환불율}
 // reservation·payment·cancel·admin_cancel 은 기존 사이트 문구를 그대로 옮긴 sms-templates.ts 를 사용.
 export const DEFAULT_TEMPLATES: Record<string, string> = {
@@ -125,36 +143,11 @@ export const DEFAULT_TEMPLATES: Record<string, string> = {
     "[판타스트릭] {이름}님, 예약이 확정되었습니다.\n{테마} / {날짜} {시간} / {인원}명\n방문 감사합니다!",
 };
 
-type Vars = {
-  name?: string; theme?: string; date?: string; time?: string; people?: number;
-  refundRate?: number;
-  deposit?: number;      // 예약금 원금 — 환불액을 문자에 적으려면 필요
-  depositPaid?: boolean; // 입금 전이면 "환불 대상 금액 자체가 없음"
-};
-
-/**
- * {환불안내} — 취소 문자에서 **손님이 제일 궁금한 한 가지**를 문장으로 만든다: "나 얼마 돌려받지?"
- *
- * 왜 템플릿에 그냥 못 적나: 경우가 넷(미입금·당일 0%·80%·100%)이고, 금액은 테마마다 다르다.
- * 옛 문구는 이걸 전부 생략해서 **100% 손님과 당일취소 0% 손님이 똑같은 문자**를 받았다.
- *
- * 🔴 "계좌를 문자로 보내달라"는 말을 여기서 하지 않는다 — 손님 취소는 취소 화면에서
- *    계좌를 이미 받았다. 또 보내라고 하면 손님이 두 번 일하고, 안 보내면 환불이 안 되는 줄 안다.
- */
-function refundNotice(v: Vars): string {
-  if (v.depositPaid === false) return "예약금 입금 전이라 환불 대상 금액은 없습니다.";
-  const rate = v.refundRate ?? 0;
-  const deposit = v.deposit ?? 0;
-  const won = (n: number) => n.toLocaleString("ko-KR") + "원";
-  if (rate <= 0) {
-    return `당일 취소라 환불 규정에 따라 예약금 ${won(deposit)}은 환불되지 않습니다. (환불 예정액 0원)`;
-  }
-  return (
-    `환불 예정액: ${won(Math.round((deposit * rate) / 100))} (예약금 ${won(deposit)}의 ${rate}%)\n` +
-    "취소하실 때 입력해 주신 계좌로 최대 24시간 안에 보내드립니다.\n" +
-    "따로 문자 주지 않으셔도 됩니다."
-  );
-}
+/* 치환자는 확정문자에 필요한 것만 남긴다.
+   {환불율}·{환불안내} 같은 취소 문자용 치환은 취소 문자를 없애면서 함께 지웠다
+   (2026-08-03) — 쓰지 않는 치환자를 남겨두면 "이거 쓰면 되겠네" 하고 쓰게 되는데
+   정작 그 문자가 나가지 않는다. */
+type Vars = { name?: string; theme?: string; date?: string; time?: string; people?: number };
 
 export function renderTemplate(body: string, v: Vars): string {
   return body
@@ -162,12 +155,7 @@ export function renderTemplate(body: string, v: Vars): string {
     .replaceAll("{테마}", v.theme ?? "")
     .replaceAll("{날짜}", v.date ? formatDate(v.date) : "")
     .replaceAll("{시간}", v.time ?? "")
-    .replaceAll("{인원}", v.people != null ? String(v.people) : "")
-    .replaceAll("{환불율}", v.refundRate != null ? String(v.refundRate) : "")
-    .replaceAll("{예약금}", v.deposit != null ? v.deposit.toLocaleString("ko-KR") + "원" : "")
-    .replaceAll("{환불액}", v.deposit != null && v.refundRate != null
-      ? Math.round((v.deposit * v.refundRate) / 100).toLocaleString("ko-KR") + "원" : "")
-    .replaceAll("{환불안내}", refundNotice(v));
+    .replaceAll("{인원}", v.people != null ? String(v.people) : "");
 }
 
 // 테마마다 문구가 달라야 하는 종류 (기존 사이트와 동일)
@@ -210,6 +198,11 @@ async function writeLog(row: Record<string, unknown>) {
 
 // 문자(SMS) 발송. 솔라피 키가 있으면 실제 발송, 없으면 발송 로그만 'skipped' 로 남김.
 export async function sendSms(phone: string, body: string, type: string): Promise<{ ok: boolean; skipped?: boolean }> {
+  // 확정문자 말고는 보내지 않는다 (사장님 방침). 로그는 남겨 "왜 안 갔나"를 알 수 있게 한다.
+  if (!isSendableType(type)) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "사용하지 않는 문자 종류 — 발송 차단" });
+    return { ok: false, skipped: true };
+  }
   // 연습용 데이터에는 절대 발송하지 않는다 (키가 있어도).
   if (isTestPhone(phone)) {
     await writeLog({ phone, body, type, status: "skipped", channel: "sms", error: "연습용 데이터(가져온 예약) — 발송 차단" });
@@ -253,6 +246,11 @@ export function kakaoConfigured(type?: string): boolean {
 export async function sendAlimtalk(
   phone: string, body: string, type: string, vars: Record<string, string>
 ): Promise<{ ok: boolean } | null> {
+  // 확정문자 말고는 보내지 않는다. {ok:false} 를 줘야 호출측이 SMS 로 폴백하지 않는다.
+  if (!isSendableType(type)) {
+    await writeLog({ phone, body, type, status: "skipped", channel: "alimtalk", error: "사용하지 않는 문자 종류 — 발송 차단" });
+    return { ok: false };
+  }
   // 연습용 데이터 차단. null 이 아니라 {ok:false} 를 돌려줘야 호출측이 SMS 로 폴백하지 않는다.
   if (isTestPhone(phone)) {
     await writeLog({ phone, body, type, status: "skipped", channel: "alimtalk", error: "연습용 데이터(가져온 예약) — 발송 차단" });
@@ -273,17 +271,12 @@ export async function sendReservationSms(
   type: SmsType,
   r: {
     name: string; phone: string; theme_name: string; date: string; time: string; people: number;
-    refund_rate?: number | null; theme_id?: string;
-    // 취소 문자에 "얼마 돌려받는지"를 적으려면 원금과 입금 여부가 필요하다.
-    deposit?: number | null; deposit_paid?: boolean | null;
+    theme_id?: string;
   }
 ) {
   const tpl = await getTemplate(type, r.theme_id);
   const body = renderTemplate(tpl, {
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
-    refundRate: r.refund_rate ?? undefined,
-    deposit: r.deposit ?? undefined,
-    depositPaid: r.deposit_paid ?? undefined,
   });
   // 알림톡 템플릿 치환값. 카카오 템플릿 본문의 #{이름}#{테마}#{날짜}#{시간} 자리에 들어간다.
   // ⚠️ NHN 은 키를 **#{} 없이** 받는다(솔라피는 "#{이름}" 형태였음). 여기서 형태가 어긋나면

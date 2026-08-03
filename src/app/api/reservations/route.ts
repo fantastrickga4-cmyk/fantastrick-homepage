@@ -6,7 +6,6 @@ import { getConfig, depositOf } from "@/lib/settings";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { isLookupLocked, noteLookupFail, clearLookupFails, LOCKED_MESSAGE } from "@/lib/pin-guard";
 import { sweepExpiredReservations, maybePurgeOldReservations, isHiddenFromLookup } from "@/lib/expire";
-import { sendReservationSms } from "@/lib/sms";
 
 const TOO_MANY = { error: "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요." };
 
@@ -129,20 +128,12 @@ export async function POST(req: NextRequest) {
   await db.from("reservation_logs").insert({ reservation_id: data.id, action: "접수", detail: "손님이 홈페이지에서 예약" })
     .then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  /* 🔴 예약대기 안내 문자 — 입금 계좌를 손님 손에 남긴다 (2026-08-03 추가).
-     전에는 이 문자가 **아예 나가지 않았다.** 문구(reservation)는 4테마 모두 준비돼 있었는데
-     부르는 곳이 없었다. 그런데 예약 완료 화면은 "곧 안내 연락이 도착할 예정"이라고 약속한다.
-
-     왜 급했나: 30분 안에 입금이 없으면 예약이 자동 취소된다(expire.ts). 그런데 계좌번호는
-     예약 직후 팝업에만 있어서, 손님이 그 팝업을 닫으면 **계좌를 다시 볼 방법이 없었다.**
-     → 입금을 못 하고 30분 뒤 예약이 사라진다. 매출이 그대로 새는 자리였다.
-
-     ⚠️ 문자가 실패해도 예약은 이미 성사됐다. 여기서 에러를 던지면 손님 화면에 "예약 실패"가
-        떠서 같은 시간에 두 번 예약을 시도하게 된다 — 그래서 삼키고 로그만 남긴다. */
-  await sendReservationSms("reservation", {
-    name, phone, theme_id: theme.id, theme_name: theme.name,
-    date, time, people, deposit,
-  }).catch((e) => console.error("[예약대기 안내문자 실패]", String(e)));
+  /* 🔴 여기서 **문자를 보내지 않는다** (2026-08-03 사장님 방침).
+     기존 워드프레스는 접수 직후 "예약대기 안내(계좌 안내)" 문자를 보냈지만,
+     우리 홈페이지가 보내는 문자는 **예약 확정문자 하나뿐**이다.
+     계좌 안내는 예약 완료 직후 뜨는 팝업이 담당한다.
+     ⚠️ "문자가 안 나가네?" 하고 여기에 sendReservationSms 를 넣지 말 것.
+        발송 길목(lib/sms.ts SENDABLE_TYPES)에서도 막혀 있어 넣어도 나가지 않는다. */
 
   return NextResponse.json({ ok: true, id: data.id, deposit });
 }

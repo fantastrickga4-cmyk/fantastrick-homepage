@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { normalizePhone, isValidPhone, sanitizeText } from "@/lib/util";
-import { sendReservationSms } from "@/lib/sms";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { refundRateFor, hasStarted } from "@/lib/money";
 
@@ -42,8 +41,7 @@ export async function POST(req: NextRequest) {
   // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간/입금여부 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
-    // deposit 은 취소 문자에 "환불 예정액"을 적기 위해 필요하다 (2026-08-03 추가).
-    .select("id, status, date, time, theme_id, theme_name, people, deposit, deposit_paid")
+    .select("id, status, date, time, theme_id, theme_name, people, deposit_paid")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -105,14 +103,10 @@ export async function POST(req: NextRequest) {
     reservation_id: id, action: "손님 취소", detail: paid ? `환불율 ${refundRate}%` : "미입금 취소(환불 없음)",
   }).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 취소 안내 문자 (문자 키 있을 때만 실제 발송)
-  // deposit·deposit_paid 를 함께 넘겨야 문자에 "환불 예정액 24,000원 (예약금 30,000원의 80%)"
-  // 처럼 금액이 찍힌다. 안 넘기면 옛날처럼 모든 손님이 같은 문자를 받는다.
-  await sendReservationSms("cancel", {
-    name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
-    people: found.people, refund_rate: refundRate ?? 0,
-    deposit: found.deposit, deposit_paid: paid,
-  }).catch(() => {});
+  /* 🔴 취소 안내 문자를 **보내지 않는다** (2026-08-03 사장님 방침).
+     기존 워드프레스는 취소 확인 문자를 보냈지만, 우리 홈페이지가 보내는 문자는
+     **예약 확정문자 하나뿐**이다. 취소 결과·환불 예정액은 취소 직후 뜨는 팝업이 알려준다.
+     ⚠️ 되살리지 말 것 — 발송 길목(lib/sms.ts SENDABLE_TYPES)에서도 막혀 있다. */
 
   return NextResponse.json({ ok: true, refundRate });
 }

@@ -278,17 +278,17 @@ export async function PATCH(req: NextRequest) {
   }
   if (logs.length) await db.from("reservation_logs").insert(logs).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 안내 문자 (문자 키 있을 때만 실제 발송) — 상태가 실제로 바뀐 경우에만 1통
+  /* 안내 문자 — 우리가 보내는 건 **예약 확정 안내 하나뿐**이다 (2026-08-03 사장님 방침).
+     🔴 관리자 취소(admin_cancel) 문자는 **보내지 않는다.** 기존 워드프레스에서 쓰던 것이고
+        새 홈페이지에서는 쓰지 않기로 했다.
+        ⚠️ 그래서 사장님이 예약을 취소하면 손님에게 자동으로 가는 알림이 없다 — 전화로 알려야 한다. */
   const r = { ...before, refund_rate: before.refund_rate };
   if (nowPaid) {
-    // 입금확인 → 예약확정 안내 (기존 payment 문자)
+    // 입금확인 → 예약확정 안내 (payment) ← 우리가 쓰는 유일한 문자
     await sendReservationSms("payment", r).catch(() => {});
   } else if (patch.status === "confirmed" && before.status !== "confirmed") {
-    // 입금 없이 관리자가 확정한 경우
+    // 입금 없이 관리자가 확정한 경우 — 이것도 "예약이 확정됐다" 안내라 함께 남긴다
     await sendReservationSms("confirm", r).catch(() => {});
-  } else if (patch.status === "cancelled" && before.status !== "cancelled") {
-    // 관리자가 취소한 경우 (기존 admin_cancel 문자)
-    await sendReservationSms("admin_cancel", r).catch(() => {});
   }
   return NextResponse.json(newPin ? { ok: true, pin: newPin } : { ok: true });
 }

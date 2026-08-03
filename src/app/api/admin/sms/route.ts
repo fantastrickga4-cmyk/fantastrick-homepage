@@ -8,12 +8,13 @@ import { normalizePhone } from "@/lib/util";
 
 // 문자 종류. perTheme=true 면 테마마다 문구가 다를 수 있어 테마별로 편집한다.
 //   (기존 사이트: 예약대기=테마마다 예약금이 다름 / 입금확정=사자의 서만 인스타·길안내 추가)
+/* 🔴 우리가 보내는 문자는 **예약 확정 안내 하나뿐**이다 (2026-08-03 사장님 방침).
+   기존 워드프레스에서 쓰던 예약대기·손님취소·관리자취소 문자는 새 홈페이지에서 쓰지 않기로 해
+   문구·발송부를 전부 지웠다. 그래서 이 화면에도 더 이상 띄우지 않는다.
+   (옛 문구가 화면에 남아 있으면 "고쳐두면 나가겠지" 하고 고치게 되는데, 실제로는 안 나간다) */
 const SMS_TYPES = [
-  { type: "reservation", label: "예약대기 안내 (접수 직후 · 계좌 안내)", perTheme: true },
-  { type: "payment", label: "입금확정 안내 (입금확인 시)", perTheme: true },
-  { type: "cancel", label: "취소 문자 (손님이 직접 취소)", perTheme: false },
-  { type: "admin_cancel", label: "관리자 취소 안내", perTheme: false },
-  { type: "confirm", label: "예약확정 문자 (입금 없이 확정 시)", perTheme: false },
+  { type: "payment", label: "예약확정 안내 (입금확인 시)", perTheme: true },
+  { type: "confirm", label: "예약확정 안내 (입금 없이 확정 시 · 전화예약 등)", perTheme: false },
 ] as const;
 const TYPE_KEYS = SMS_TYPES.map((t) => t.type) as readonly string[];
 const THEME_IDS = new Set(THEMES.map((t) => t.id));
