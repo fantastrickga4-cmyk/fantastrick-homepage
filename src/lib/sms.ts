@@ -125,7 +125,36 @@ export const DEFAULT_TEMPLATES: Record<string, string> = {
     "[판타스트릭] {이름}님, 예약이 확정되었습니다.\n{테마} / {날짜} {시간} / {인원}명\n방문 감사합니다!",
 };
 
-type Vars = { name?: string; theme?: string; date?: string; time?: string; people?: number; refundRate?: number };
+type Vars = {
+  name?: string; theme?: string; date?: string; time?: string; people?: number;
+  refundRate?: number;
+  deposit?: number;      // 예약금 원금 — 환불액을 문자에 적으려면 필요
+  depositPaid?: boolean; // 입금 전이면 "환불 대상 금액 자체가 없음"
+};
+
+/**
+ * {환불안내} — 취소 문자에서 **손님이 제일 궁금한 한 가지**를 문장으로 만든다: "나 얼마 돌려받지?"
+ *
+ * 왜 템플릿에 그냥 못 적나: 경우가 넷(미입금·당일 0%·80%·100%)이고, 금액은 테마마다 다르다.
+ * 옛 문구는 이걸 전부 생략해서 **100% 손님과 당일취소 0% 손님이 똑같은 문자**를 받았다.
+ *
+ * 🔴 "계좌를 문자로 보내달라"는 말을 여기서 하지 않는다 — 손님 취소는 취소 화면에서
+ *    계좌를 이미 받았다. 또 보내라고 하면 손님이 두 번 일하고, 안 보내면 환불이 안 되는 줄 안다.
+ */
+function refundNotice(v: Vars): string {
+  if (v.depositPaid === false) return "예약금 입금 전이라 환불 대상 금액은 없습니다.";
+  const rate = v.refundRate ?? 0;
+  const deposit = v.deposit ?? 0;
+  const won = (n: number) => n.toLocaleString("ko-KR") + "원";
+  if (rate <= 0) {
+    return `당일 취소라 환불 규정에 따라 예약금 ${won(deposit)}은 환불되지 않습니다. (환불 예정액 0원)`;
+  }
+  return (
+    `환불 예정액: ${won(Math.round((deposit * rate) / 100))} (예약금 ${won(deposit)}의 ${rate}%)\n` +
+    "취소하실 때 입력해 주신 계좌로 최대 24시간 안에 보내드립니다.\n" +
+    "따로 문자 주지 않으셔도 됩니다."
+  );
+}
 
 export function renderTemplate(body: string, v: Vars): string {
   return body
@@ -134,7 +163,11 @@ export function renderTemplate(body: string, v: Vars): string {
     .replaceAll("{날짜}", v.date ? formatDate(v.date) : "")
     .replaceAll("{시간}", v.time ?? "")
     .replaceAll("{인원}", v.people != null ? String(v.people) : "")
-    .replaceAll("{환불율}", v.refundRate != null ? String(v.refundRate) : "");
+    .replaceAll("{환불율}", v.refundRate != null ? String(v.refundRate) : "")
+    .replaceAll("{예약금}", v.deposit != null ? v.deposit.toLocaleString("ko-KR") + "원" : "")
+    .replaceAll("{환불액}", v.deposit != null && v.refundRate != null
+      ? Math.round((v.deposit * v.refundRate) / 100).toLocaleString("ko-KR") + "원" : "")
+    .replaceAll("{환불안내}", refundNotice(v));
 }
 
 // 테마마다 문구가 달라야 하는 종류 (기존 사이트와 동일)
@@ -238,12 +271,19 @@ export async function sendAlimtalk(
 // theme_id 가 있으면 그 테마의 기존 문구를 사용(사자의 서는 인스타·길안내가 더 붙는 등 테마마다 다름).
 export async function sendReservationSms(
   type: SmsType,
-  r: { name: string; phone: string; theme_name: string; date: string; time: string; people: number; refund_rate?: number | null; theme_id?: string }
+  r: {
+    name: string; phone: string; theme_name: string; date: string; time: string; people: number;
+    refund_rate?: number | null; theme_id?: string;
+    // 취소 문자에 "얼마 돌려받는지"를 적으려면 원금과 입금 여부가 필요하다.
+    deposit?: number | null; deposit_paid?: boolean | null;
+  }
 ) {
   const tpl = await getTemplate(type, r.theme_id);
   const body = renderTemplate(tpl, {
     name: r.name, theme: r.theme_name, date: r.date, time: r.time, people: r.people,
     refundRate: r.refund_rate ?? undefined,
+    deposit: r.deposit ?? undefined,
+    depositPaid: r.deposit_paid ?? undefined,
   });
   // 알림톡 템플릿 치환값. 카카오 템플릿 본문의 #{이름}#{테마}#{날짜}#{시간} 자리에 들어간다.
   // ⚠️ NHN 은 키를 **#{} 없이** 받는다(솔라피는 "#{이름}" 형태였음). 여기서 형태가 어긋나면

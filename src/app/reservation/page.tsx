@@ -4,7 +4,7 @@ import { useState } from "react";
 import { formatDate, formatPhone } from "@/lib/util";
 import { STORES } from "@/lib/data";
 import { refundRateFor, hasStarted } from "@/lib/money";
-import { IconWarn, IconCheck, IconClose } from "@/components/Icon";
+import { IconWarn, IconClose } from "@/components/Icon";
 import ChangeModal from "./ChangeModal";
 
 type Reservation = {
@@ -62,14 +62,18 @@ export default function ReservationLookup() {
   const [modalErr, setModalErr] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [doneMsg, setDoneMsg] = useState("");
   // 취소 완료 안내 팝업 — 손님이 [확인]을 눌러야만 닫힌다(예약 때 예약금 안내와 같은 구조).
   //   환불 안내를 스쳐 지나가면 "왜 아직 환불이 안 왔냐"는 문의로 돌아온다.
   const [cancelDone, setCancelDone] = useState<{ rate: number | null } | null>(null);
   const [cancelAck, setCancelAck] = useState(false);
+  /* 시간 변경 완료 팝업 — 전에는 화면 위쪽에 초록 줄(doneMsg) 하나로만 알렸다.
+     그 줄은 변경 팝업이 닫히면서 스크롤 위치에 따라 **아예 안 보일 수 있고**,
+     무엇보다 "언제에서 언제로" 바뀌었는지 옛 시간이 안 남아 손님이 확인할 수가 없었다.
+     취소 완료 팝업과 같은 구조로 — [확인]을 눌러야 닫히게 해서 반드시 읽고 가게 한다. */
+  const [changeDone, setChangeDone] = useState<{ theme: string; fromD: string; fromT: string; toD: string; toT: string } | null>(null);
 
   async function lookup() {
-    setErr(""); setList(null); setDoneMsg("");
+    setErr(""); setList(null);
     if (!phone.trim()) return setErr("전화번호를 입력해 주세요.");
     if (!lookupName.trim()) return setErr("예약자 이름을 입력해 주세요.");
     if (!/^\d{4}$/.test(pin)) return setErr("예약 비밀번호(숫자 4자리)를 입력해 주세요.");
@@ -136,13 +140,8 @@ export default function ReservationLookup() {
       const rate = j.refundRate;
       setCancelAck(false);
       setCancelDone({ rate: rate ?? null });
-      setDoneMsg(
-        rate == null
-          ? "예약이 취소되었습니다. (예약금 입금 전이라 환불은 없습니다.)"
-          : rate === 0
-          ? "예약이 취소되었습니다. (당일 예약/방문으로 환불은 불가합니다.)"
-          : `예약이 취소되었습니다. 입력하신 계좌로 예약금의 ${rate}%가 환불됩니다.`
-      );
+      // 안내는 위 팝업 하나로 끝낸다. 예전엔 화면 위쪽 초록 줄로도 같은 말을 했는데,
+      // 팝업과 문구가 미묘하게 달라 손님이 어느 쪽을 믿어야 할지 헷갈렸다.
       closeModal();
     } catch {
       setModalErr("네트워크 오류가 발생했습니다.");
@@ -198,8 +197,6 @@ export default function ReservationLookup() {
         </button>
         {err && <div className="msg-err"><IconWarn /> {err}</div>}
       </div>
-
-      {doneMsg && <div className="notice ok" style={{ marginTop: 16 }}><IconCheck /> {doneMsg}</div>}
 
       {list && (
         <div style={{ marginTop: 20 }}>
@@ -405,12 +402,54 @@ export default function ReservationLookup() {
           pin={pin}
           onClose={() => setChangeTarget(null)}
           onDone={(id, d, t) => {
+            // 옛 일시는 목록이 갱신되기 **전에** 붙잡아 둔다 — 아래 setList 가 덮어쓰면
+            // "언제에서 언제로" 중 '언제에서'가 사라진다.
+            const from = { theme: changeTarget.theme_name, d: changeTarget.date, t: changeTarget.time };
             setList((prev) => prev?.map((x) => (x.id === id ? { ...x, date: d, time: t, changed: true } : x)) || null);
             setChangeTarget(null);
-            setDoneMsg(`예약을 ${formatDate(d)} ${t} 으로 변경했어요. 예약금은 그대로 유지됩니다.`);
+            setChangeDone({ theme: from.theme, fromD: from.d, fromT: from.t, toD: d, toT: t });
           }}
         />
       )}
+      {/* 🔔 시간 변경 완료 안내 — **[확인]을 눌러야만 닫힌다.**
+          "언제에서 언제로" 를 나란히 보여준다. 바뀐 시간만 보여주면 손님이 옛 시간과
+          헷갈리고, 앞서 받은 예약확정 문자에는 **옛 시간**이 적혀 있어 더 헷갈린다. */}
+      {changeDone && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="change-done-title">
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <h3 id="change-done-title">예약 시간이 변경되었습니다</h3>
+
+            <div className="res-summary" style={{ marginTop: 0, marginBottom: 14 }}>
+              <div className="r"><span>테마</span><b>{changeDone.theme}</b></div>
+              <div className="r">
+                <span>변경 전</span>
+                <b style={{ color: "var(--muted)", textDecoration: "line-through" }}>
+                  {formatDate(changeDone.fromD)} {changeDone.fromT}
+                </b>
+              </div>
+              <div className="r">
+                <span>변경 후</span>
+                <b style={{ color: "var(--ok)" }}>{formatDate(changeDone.toD)} {changeDone.toT}</b>
+              </div>
+            </div>
+
+            <div className="modal-policy">
+              <p><b>1.</b> 예약금은 <b>그대로 유지</b>됩니다. 다시 입금하지 않으셔도 됩니다.</p>
+              <p><b>2.</b> 시간 변경은 <b>한 번만</b> 가능합니다. 추가 변경은 매장으로 연락 부탁드립니다.</p>
+              <p><b>3.</b> 앞서 받으신 예약확정 문자에는 <b>변경 전 시간</b>이 적혀 있습니다. <b>이 화면의 시간</b>이 맞습니다.</p>
+            </div>
+
+            <button
+              className="btn primary"
+              style={{ width: "100%", justifyContent: "center", marginTop: 12 }}
+              onClick={() => setChangeDone(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 🔔 취소 완료 안내 — **[확인]을 눌러야만 닫힌다.**
           바깥을 눌러 닫히게 두면 환불 안내(최대 24시간)를 못 보고 지나가고,
           그러면 "왜 아직 환불이 안 왔냐"는 문의로 되돌아온다. 예약금 안내 팝업과 같은 구조. */}

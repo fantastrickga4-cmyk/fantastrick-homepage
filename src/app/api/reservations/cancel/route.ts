@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
   // 본인 예약인지 확인(전화번호 + 이름) + 날짜/시간/입금여부 가져오기
   const { data: found, error: findErr } = await db
     .from("reservations")
-    .select("id, status, date, time, theme_id, theme_name, people, deposit_paid")
+    // deposit 은 취소 문자에 "환불 예정액"을 적기 위해 필요하다 (2026-08-03 추가).
+    .select("id, status, date, time, theme_id, theme_name, people, deposit, deposit_paid")
     .eq("id", id)
     .eq("phone", phone)
     .eq("name", name)
@@ -104,10 +105,13 @@ export async function POST(req: NextRequest) {
     reservation_id: id, action: "손님 취소", detail: paid ? `환불율 ${refundRate}%` : "미입금 취소(환불 없음)",
   }).then(({ error: e }) => { if (e) console.error("[변경이력 기록 실패]", e.message); });
 
-  // 취소 안내 문자 (문자 키 있을 때만 실제 발송) — 미입금은 환불 언급 없이(refund_rate=0)
+  // 취소 안내 문자 (문자 키 있을 때만 실제 발송)
+  // deposit·deposit_paid 를 함께 넘겨야 문자에 "환불 예정액 24,000원 (예약금 30,000원의 80%)"
+  // 처럼 금액이 찍힌다. 안 넘기면 옛날처럼 모든 손님이 같은 문자를 받는다.
   await sendReservationSms("cancel", {
     name, phone, theme_id: found.theme_id, theme_name: found.theme_name, date: found.date, time: found.time,
     people: found.people, refund_rate: refundRate ?? 0,
+    deposit: found.deposit, deposit_paid: paid,
   }).catch(() => {});
 
   return NextResponse.json({ ok: true, refundRate });
