@@ -276,11 +276,16 @@ export default function ReserveClient({ preset }: { preset: string }) {
             <div className="r"><span>예약자</span><b>{name} ({formatPhone(phone)})</b></div>
             <div className="r"><span>예약금</span><b>{deposit.toLocaleString()}원</b></div>
           </div>
+          {/* 🔴 "곧 문자로 안내드린다"는 문구를 뺐다 (2026-08-03).
+              우리가 보내는 문자는 **입금이 확인된 뒤의 확정문자 하나뿐**이라, 접수 단계에서
+              연락을 약속하면 지키지 못하는 말이 된다. 손님은 오지 않는 문자를 기다리다
+              30분이 지나 예약이 자동취소된다.
+              → 계좌는 **아래 팝업이 지금 바로** 알려준다는 사실을 그대로 적는다. */}
           <div className="notice info" style={{ marginTop: 16 }}>
-            예약금 결제·확정 안내를 도와드릴게요. 예약금은 <b>{deposit.toLocaleString()}원</b>입니다.
-            입력하신 전화번호로 곧 예약금 입금 안내 연락이 도착할 예정입니다.
-            <b> 예약금 입금이 확인되어야 비로소 예약이 확정 처리</b>됩니다.
-            <b> 30분 내 예약금 미입금 시 예약은 자동 취소</b>됩니다.
+            예약금은 <b>{deposit.toLocaleString()}원</b>입니다.
+            아래 <b>[예약금 입금 안내]</b> 창의 계좌로 <b>30분 안에</b> 입금해 주세요.
+            <b> 입금이 확인되어야 예약이 확정</b>되며, 확정되면 <b>확정 안내 문자</b>를 보내드립니다.
+            <b> 30분 내 미입금 시 예약은 자동 취소</b>됩니다.
             예약 확인 및 취소는{" "}
             <Link href="/reservation" style={{ color: "var(--cyan)", fontWeight: 700 }}>예약조회</Link>
             에서 진행하실 수 있습니다.
