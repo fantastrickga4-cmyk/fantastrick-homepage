@@ -37,6 +37,16 @@ const SCREEN_DOWN_MIN = 120;
 /** 진단 표에서 몇 줄이나 훑어볼지. 5분 하트비트 × 2경로 = 시간당 24줄쯤 쌓인다. */
 const SCAN_ROWS = 400;
 
+/**
+ * 예비 경로를 **입금 기록으로 역추론**할 때 거슬러 볼 시간.
+ * 실측상 밤에는 입금이 8시간쯤 끊기는 구간이 있다(08-03 00:28 → 08:37).
+ * 그보다 짧게 잡으면 매일 새벽마다 "판단 보류"로 넘어가 쓸모가 없어진다.
+ */
+const INFER_WINDOW_H = 18;
+
+/** 입금 행과 전송 기록(send_result)을 같은 건으로 볼 시간차. 보통 몇 초 안에 짝이 남는다. */
+const ATTRIBUTE_TOLERANCE_MS = 180_000;
+
 type Level = "ok" | "warn" | "down" | "unknown";
 
 type DiagRow = { kind: string; payload: Record<string, unknown> | null; created_at: string };
@@ -143,59 +153,97 @@ export async function GET(req: NextRequest) {
           : screen.level === "warn" ? `${ago(screenMins)}부터 조용합니다. 채팅방이 떠 있는지 봐주세요.`
             : `읽고 있습니다 (마지막 ${ago(screenMins)}).`;
 
-  // ── 3) 알림 캡처 (화면을 안 봐도 되는 예비 경로) ───────────────────────
+  // ── 3) 예비 경로 (화면을 안 봐도 입금을 받는 쪽) ───────────────────────
+  //
+  // 두 가지 방법으로 본다. 앱이 신호를 보내주면 그걸 쓰고, 안 보내면 **역추론**한다.
+  //
+  //  (a) 진짜 하트비트 — 앱 v0.4.0 이상이면 notif_heartbeat 이 5분마다 온다. 제일 정확하다.
+  //  (b) 역추론 — 입금은 들어왔는데 화면 감시의 전송 기록(send_result)이 짝으로 없으면,
+  //      **화면 감시가 아닌 다른 경로가 그 입금을 넣었다**는 뜻이다. 곧 예비가 살아 있다는 증거다.
+  //
+  // ⚠️ (b) 의 한계 두 가지를 화면에 정직하게 적는다:
+  //   · 입금이 없는 시간대엔 살아있는지 **알 수 없다**(조용한 것과 죽은 것이 구분 안 됨).
+  //     그래서 역추론으로는 절대 "죽었다(down)"고 말하지 않는다. 최악이 "판단 보류(unknown)"다.
+  //   · 그 경로가 태블릿 알림 캡처인지 PC 캡처(pc-capture)인지는 구분되지 않는다.
+  //     둘 다 "화면 감시 말고 다른 게 받아주고 있다"는 뜻이라 목적상 같은 값이다.
   const notifAt = latestOf(rows, ["notif_heartbeat", "notif_connected", "notif_send"]);
   const notifMins = minsSince(notifAt, now);
   const notifDead = rows.find((r) => r.kind === "notif_destroyed" || r.kind === "notif_disconnected");
   const notifDeadIsLatest = !!notifDead && (!notifAt || notifDead.created_at >= notifAt);
 
-  const notif: Signal = {
-    key: "notif",
-    label: "알림 캡처",
-    level: notifMins === null ? "unknown" : notifDeadIsLatest || notifMins > SERVICE_DOWN_MIN ? "down" : "ok",
-    lastAt: notifAt,
-    minsAgo: notifMins,
-    note: "",
-  };
-  notif.note =
-    // 앱 v0.4.0 부터 신호를 보낸다. 그 전 버전이면 "없음"이 정상이라 겁줄 필요가 없다.
-    notif.level === "unknown" ? "아직 신호가 없습니다. 태블릿 앱이 0.4.0 미만이면 정상입니다(그 버전엔 이 신호가 없음)."
-      : notifDeadIsLatest ? "연결이 끊겼다는 신호가 마지막입니다. 알림 접근 설정을 껐다 켜주세요."
-        : notif.level === "down" ? `${ago(notifMins)}부터 신호가 없습니다. 알림 접근 설정을 껐다 켜주세요.`
-          : `살아 있습니다 (마지막 신호 ${ago(notifMins)}).`;
+  const backup: Signal = { key: "backup", label: "예비 경로", level: "unknown", lastAt: null, minsAgo: null, note: "" };
+
+  if (notifMins !== null) {
+    // (a) 앱이 직접 말해준다 — 제일 좋은 경우
+    backup.level = notifDeadIsLatest || notifMins > SERVICE_DOWN_MIN ? "down" : "ok";
+    backup.lastAt = notifAt;
+    backup.minsAgo = notifMins;
+    backup.note =
+      notifDeadIsLatest ? "연결이 끊겼다는 신호가 마지막입니다. 알림 접근 설정을 껐다 켜주세요."
+        : backup.level === "down" ? `${ago(notifMins)}부터 신호가 없습니다. 알림 접근 설정을 껐다 켜주세요.`
+          : `알림 캡처가 살아 있습니다 (마지막 신호 ${ago(notifMins)}).`;
+  } else {
+    // (b) 역추론 — 최근 입금 중 화면 감시가 보낸 흔적이 없는 게 있나?
+    const since = new Date(now - INFER_WINDOW_H * 3600 * 1000).toISOString();
+    const [{ data: recentDeps }, { data: sendRows }] = await Promise.all([
+      db.from("deposits").select("created_at").gte("created_at", since).order("created_at", { ascending: false }),
+      db.from("bank_diag").select("created_at").in("kind", ["send_result", "notif_send"]).gte("created_at", since),
+    ]);
+    const sendTimes = (sendRows || []).map((r) => new Date(r.created_at).getTime());
+    // 화면 감시가 보낸 입금이면 거의 같은 시각에 send_result 가 남는다. 몇 초 차이는 허용한다.
+    const byBackup = (recentDeps || []).find(
+      (d) => !sendTimes.some((t) => Math.abs(t - new Date(d.created_at).getTime()) <= ATTRIBUTE_TOLERANCE_MS),
+    );
+    backup.lastAt = byBackup?.created_at ?? null;
+    backup.minsAgo = minsSince(backup.lastAt, now);
+    // 입금이 없다고 죽은 게 아니다 — 여기서는 "ok" 아니면 "unknown" 뿐, 절대 "down" 을 만들지 않는다.
+    backup.level = backup.lastAt ? "ok" : "unknown";
+    backup.note = backup.lastAt
+      ? `${ago(backup.minsAgo)} 이 경로로 입금이 들어왔습니다 — 살아 있습니다. ` +
+        "(태블릿 앱이 0.4.0 미만이라 직접 신호는 없고, 입금 기록으로 확인한 것입니다)"
+      : `최근 ${INFER_WINDOW_H}시간 안에 이 경로로 들어온 입금이 없어 판단 보류입니다. ` +
+        "죽었다는 뜻은 아닙니다 — 조용한 것과 구분이 안 될 뿐입니다. " +
+        "확실히 보려면 태블릿 앱을 0.4.0 으로 올리면 5분마다 직접 신호가 옵니다.";
+  }
 
   // ── 4) 종합 — "지금 입금이 들어오면 잡히나?" 하나로 답한다 ──────────────
-  // 잡을 수 있는 경로: 화면 감시(서비스 살아있고 + 카톡이 화면에 있음) / 알림 캡처(살아있음)
+  //
+  // ⚠️ 여기서 제일 조심할 것은 **거짓 빨강**이다.
+  //    2026-08-02~03 의 26시간이 그 예다 — 화면 감시가 카톡을 못 읽는 동안 입금은 예비 경로가
+  //    전부 받고 있었다. 그때 빨강을 켰다면 26시간 내내 거짓말이었고, 사장님은 그 뒤로
+  //    빨강을 안 믿게 된다. 그래서 **예비가 살아 있다는 증거가 있으면 빨강을 켜지 않는다.**
   const screenPathOk = watcher.level === "ok" && (screen.level === "ok" || screen.level === "warn");
-  const notifPathOk = notif.level === "ok";
-  // 앱이 구버전이라 알림 신호가 아예 없는 경우 — 죽었다고 단정하면 안 된다(모르는 것뿐).
-  const notifUnknown = notif.level === "unknown";
+  const backupOk = backup.level === "ok";
+  const backupUnknown = backup.level === "unknown"; // 죽은 게 아니라 "확인이 안 되는" 상태
 
   let level: Level;
   let headline: string;
   let detail: string;
-  if (screenPathOk && notifPathOk) {
+  if (screenPathOk && backupOk) {
     level = "ok";
     headline = "입금 감시 정상";
-    detail = "두 경로(화면 감시·알림 캡처)가 모두 살아 있습니다.";
-  } else if (notifUnknown) {
-    // "모른다"를 "멈췄다"로 말하면 안 된다 — 앱이 구버전이면 신호가 없는 게 정상이다.
-    // (이 분기를 아래 "하나 멈춤"보다 먼저 둬야 한다. 순서를 바꾸면 멀쩡한 태블릿을 고장났다고 말한다)
-    level = screenPathOk ? "warn" : "down";
-    headline = screenPathOk ? "화면 감시만 확인됨" : "입금이 안 잡히고 있습니다";
-    detail = screenPathOk
-      ? "알림 캡처 상태는 알 수 없습니다 — 태블릿 앱이 0.4.0 미만이면 원래 신호를 안 보냅니다."
-      : "화면 감시가 멈췄고, 알림 캡처는 상태를 알 수 없습니다. 태블릿을 확인해 주세요.";
-  } else if (screenPathOk || notifPathOk) {
+    detail = "화면 감시와 예비 경로가 모두 살아 있습니다.";
+  } else if (screenPathOk || backupOk) {
     level = "warn";
-    const alive = screenPathOk ? "화면 감시" : "알림 캡처";
-    const dead = screenPathOk ? "알림 캡처" : "화면 감시";
-    headline = `${dead}가 멈췄습니다 — ${alive}가 대신 받는 중`;
-    detail = "입금은 계속 들어옵니다. 다만 지금은 예비가 없으니 시간 날 때 태블릿을 봐주세요.";
+    const alive = screenPathOk ? "화면 감시" : "예비 경로";
+    const dead = screenPathOk ? "예비 경로" : "화면 감시";
+    headline = backupUnknown && screenPathOk
+      ? "화면 감시 정상 — 예비 경로는 확인 안 됨"
+      : `${dead}가 멈췄습니다 — ${alive}가 대신 받는 중`;
+    detail = backupUnknown && screenPathOk
+      ? "입금은 잘 잡히고 있습니다. 예비가 살아 있는지는 지금 확인할 방법이 없을 뿐입니다."
+      : "입금은 계속 들어옵니다. 다만 지금은 예비가 없으니 시간 날 때 태블릿을 봐주세요.";
+  } else if (backupUnknown && watcher.level === "ok") {
+    // 앱은 살아 있는데 카톡만 못 읽는 상태 + 예비는 확인 불가.
+    // 예비가 받고 있을 가능성이 크다(26시간 사고가 정확히 이 모양이었다) → 빨강을 켜지 않는다.
+    level = "warn";
+    headline = "화면 감시가 카톡을 못 읽습니다";
+    detail = "예비 경로가 대신 받고 있을 수 있지만 확인은 안 됩니다. 태블릿에 카카오뱅크 채팅방을 다시 띄워주세요.";
   } else {
+    // 앱 자체가 신호를 끊었다(하트비트 없음). 이건 예비도 같이 죽었을 가능성이 크다.
     level = "down";
     headline = "입금이 안 잡히고 있습니다";
-    detail = "두 경로가 모두 멈췄습니다. 지금 들어오는 입금은 자동확정되지 않습니다 — 태블릿을 확인해 주세요.";
+    detail = "태블릿이 신호를 보내지 않습니다. 지금 들어오는 입금은 자동확정되지 않을 수 있습니다 — 태블릿을 확인해 주세요.";
   }
 
   // 참고용 — 마지막으로 실제 입금이 올라온 시각. 신호등이 초록인데 이게 한참 전이면
@@ -209,7 +257,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     overall: { level, headline, detail },
-    signals: [watcher, screen, notif] satisfies Signal[],
+    signals: [watcher, screen, backup] satisfies Signal[],
     lastDepositAt: dep?.created_at ?? null,
     checkedAt: new Date().toISOString(),
   });
