@@ -1343,6 +1343,48 @@ form.cform{border:1px solid rgba(122,59,184,.28);border-radius:var(--r-lg);paddi
 .cal-legend i.t2{background:#b3261e}
 .cal-legend i.t3{background:#622698}
 
+/* ---------- 🚦 입금 감시 신호등 (입금·환불 탭 맨 위) ----------
+   26시간 동안 태블릿이 멈춘 걸 아무도 몰랐던 사고(2026-08-03) 대응.
+   매일 보는 화면이라 **정상일 땐 한 줄**로 접히고, 문제일 때만 펼쳐진다.
+   색 규칙은 기존 배지와 같은 값 — 초록 #137a4c(.st-confirmed), 앰버 #8a6512(.st-pending),
+   빨강 var(--blood)은 "지금 돈이 안 잡힌다"에만 쓴다(아껴 써야 무시당하지 않는다). */
+.bhealth{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-bottom:14px;overflow:hidden}
+.bhealth.lv-ok{border-color:rgba(31,157,99,.3);background:rgba(31,157,99,.05)}
+.bhealth.lv-warn{border-color:rgba(181,137,31,.38);background:rgba(181,137,31,.07)}
+.bhealth.lv-down{border-color:rgba(178,14,25,.42);background:rgba(178,14,25,.06)}
+.bh-top{width:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px;min-height:44px;
+  font-family:inherit;text-align:left;background:none;border:none;cursor:pointer;color:var(--text)}
+.bh-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;background:var(--muted)}
+.lv-ok .bh-dot{background:#137a4c}
+.lv-warn .bh-dot{background:#8a6512}
+/* 빨강만 깜빡인다 — 초록/노랑까지 움직이면 눈이 피로해 정작 빨강을 못 알아본다 */
+.lv-down .bh-dot{background:var(--blood);animation:bh-pulse 1.6s ease-in-out infinite}
+@keyframes bh-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.lv-down .bh-dot{animation:none}}
+.bh-head{font-size:14px;font-weight:800}
+.lv-ok .bh-head{color:#137a4c}
+.lv-warn .bh-head{color:#8a6512}
+.lv-down .bh-head{color:var(--blood)}
+.bh-chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.bh-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--r-full);white-space:nowrap;
+  border:1px solid var(--line);color:var(--muted);background:var(--bg2)}
+.bh-chip b{font-weight:800}
+.bh-chip.lv-ok{color:#137a4c;border-color:rgba(31,157,99,.3);background:rgba(31,157,99,.12)}
+.bh-chip.lv-warn{color:#8a6512;border-color:rgba(181,137,31,.32);background:rgba(181,137,31,.12)}
+.bh-chip.lv-down{color:var(--blood);border-color:rgba(178,14,25,.35);background:rgba(178,14,25,.10)}
+.bh-caret{color:var(--faint);font-size:11px;flex:0 0 auto}
+.bh-body{padding:0 14px 12px;border-top:1px solid var(--line)}
+.bh-detail{margin:10px 0 8px;font-size:13.5px;color:var(--text)}
+.bh-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.bh-list li{font-size:12.5px;color:var(--muted);line-height:1.5}
+.bh-list li.lv-warn{color:#8a6512}
+.bh-list li.lv-down{color:var(--blood)}
+.bh-foot{margin:10px 0 0;font-size:11.5px;color:var(--muted)}
+@media(max-width:640px){
+  .bh-chips{margin-left:0;width:100%;order:3}
+  .bh-caret{margin-left:auto}
+}
+
 /* ---------- 예약관리 · 날짜별 보기 (기존 Booked "예약확인" 이식) ---------- */
 .viewtoggle{display:flex;gap:6px;margin-bottom:14px}
 .viewtoggle button{font-family:inherit;font-size:13px;font-weight:700;padding:8px 15px;min-height:40px;border-radius:var(--r-full);

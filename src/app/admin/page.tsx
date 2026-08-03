@@ -930,7 +930,10 @@ function MoneyTab() {
     <>
       {/* 설명 배너·금액 집계 카드는 뺐다(2026-07-31 사장님 지시).
           매일 보는 화면이라 안내문과 합계 숫자가 위를 다 차지하면 정작 처리할 줄이 밀린다.
-          처리할 건수는 탭 배지(vt-badge)로 충분하다. */}
+          처리할 건수는 탭 배지(vt-badge)로 충분하다.
+          ⚠️ 단 아래 신호등은 예외 — 이게 안 보여서 26시간을 놓쳤다(2026-08-03). 한 줄만 쓴다. */}
+      <BankHealth />
+
       <div className="viewtoggle">
         <button className={v === "pay" ? "on" : ""} onClick={() => setV("pay")}>
           입금 확인{nPay > 0 && <span className="vt-badge">{nPay}</span>}
@@ -948,6 +951,85 @@ function MoneyTab() {
           : v === "refund" ? <RefundQueue onDone={done} />
             : <Ledger />}
     </>
+  );
+}
+
+/* 🚦 입금 감시 신호등 — "지금 입금이 들어오면 잡히나?" 를 한 줄로.
+
+   왜 있나: 2026-08-02 10:17 ~ 08-03 12:26 약 26시간 동안 태블릿에 카카오톡이 화면에
+   없어서 화면 감시가 글자를 하나도 못 읽었는데 **아무도 몰랐다.** 신호는 bank_diag 표에
+   5분마다 쌓이고 있었지만 그걸 보는 화면이 없었다. 그래서 여기 한 줄로 띄운다.
+
+   경로가 둘(화면 감시·알림 캡처)이고 서로 예비라서, **하나 멈춤(🟡)과 둘 다 멈춤(🔴)을
+   반드시 구분한다.** 하나 멈췄다고 빨강을 켜면 빨강에 익숙해져 진짜 빨강을 무시하게 된다. */
+type HealthSignal = { key: string; label: string; level: string; minsAgo: number | null; note: string };
+type Health = {
+  overall: { level: string; headline: string; detail: string };
+  signals: HealthSignal[];
+  lastDepositAt: string | null;
+};
+
+/** "3분" / "26시간" — 26시간을 "1560분"으로 쓰면 심각한지 감이 안 온다 */
+function shortAgo(mins: number | null): string {
+  if (mins === null) return "—";
+  if (mins < 1) return "방금";
+  if (mins < 60) return `${mins}분`;
+  const h = Math.floor(mins / 60);
+  return h < 48 ? `${h}시간` : `${Math.floor(h / 24)}일`;
+}
+
+function BankHealth() {
+  const [h, setH] = useState<Health | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const load = useCallback(() => {
+    fetch("/api/admin/bank-health")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j?.overall) setH(j as Health); })
+      .catch(() => {});
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  // 하트비트가 5분 주기라 1분마다면 충분하다(더 자주 물어도 새 정보가 없다).
+  useEffect(() => { const t = setInterval(load, 60000); return () => clearInterval(t); }, [load]);
+
+  if (!h) return null;
+  const lv = h.overall.level;
+  // 정상일 땐 접어두고, 문제가 있으면 처음부터 펼친다 — 매일 보는 화면이라 평소엔 한 줄이어야 한다.
+  const expanded = open || lv !== "ok";
+
+  return (
+    <div className={`bhealth lv-${lv}`}>
+      <button className="bh-top" onClick={() => setOpen((v) => !v)} aria-expanded={expanded}>
+        <span className="bh-dot" aria-hidden="true" />
+        <span className="bh-head">{h.overall.headline}</span>
+        <span className="bh-chips">
+          {h.signals.map((s) => (
+            <span key={s.key} className={`bh-chip lv-${s.level}`}>
+              {s.label} <b>{shortAgo(s.minsAgo)}</b>
+            </span>
+          ))}
+        </span>
+        <span className="bh-caret">{expanded ? "▴" : "▾"}</span>
+      </button>
+
+      {expanded && (
+        <div className="bh-body">
+          <p className="bh-detail">{h.overall.detail}</p>
+          <ul className="bh-list">
+            {h.signals.map((s) => (
+              <li key={s.key} className={`lv-${s.level}`}>
+                <b>{s.label}</b> — {s.note}
+              </li>
+            ))}
+          </ul>
+          <p className="bh-foot">
+            마지막으로 올라온 입금: {h.lastDepositAt ? formatStampShort(h.lastDepositAt) : "기록 없음"}
+            {" · "}
+            <span style={{ color: "var(--faint)" }}>신호는 태블릿이 5분마다 보냅니다</span>
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
