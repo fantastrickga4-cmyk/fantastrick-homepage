@@ -1123,7 +1123,7 @@ body{ font-family:"Pretendard Variable","Pretendard","P폴백-노토","P폴백-�
 
 ## 2026-06-24 (이어서2)
 - 🔒 **예약 조회·취소 본인확인 강화** — 전화번호만 → **전화번호 + 예약자 이름** 둘 다 일치해야 조회·취소 가능 (남의 번호만으로 못 보게). 조회/취소 API와 화면에 이름 입력 추가. (더 강한 SMS 인증은 알리고 연동 시 업그레이드 예정)
-- 📦 **저장소 독립 + GitHub 자동배포** — fantastrick2026 → 본인 계정 `fantastrickga4-cmyk/fantastrick-homepage`로 이전. main push 시 Vercel 자동배포(CLI 배포는 신규계정 차단되어 GitHub 연동으로 해결)
+- 📦 **저장소 독립 + GitHub 자동배포** — fantastrick2026 → 본인 계정 `tndn1102-git/fantastrick-homepage`로 이전. main push 시 Vercel 자동배포(CLI 배포는 신규계정 차단되어 GitHub 연동으로 해결)
 
 ## 2026-06-24
 - 🔌 **Supabase 연결 완료** — 예약·조회·취소·리뷰 전 과정 실제 저장 동작 확인(E2E PASS). 키는 `.env.local`(깃 제외). ⚠️Supabase 새 키(sb_secret_)는 supabase-js에서 거부됨 → **Legacy service_role 키(eyJ...)** 사용
