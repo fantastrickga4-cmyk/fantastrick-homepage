@@ -189,11 +189,11 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="wrap">
       {/* ══════════ ① 통째로 만들기 ══════════
-          패널마다 성격이 달라 디자인도 나눈다(사장님 지시 2026-08-06).
-          껍데기 클래스(.pn-*)만 다르고 브랜드 색·글꼴은 공통 — 세 화면이 한 사이트로 읽혀야 한다. */}
-      {here === "turnkey" && <div className="pn-turnkey">
+          패널마다 배경·글씨체·색을 통째로 바꾼다(사장님 선택 2026-08-06: T2 종이 도면).
+          ⚠️ 껍데기가 .wrap **바깥**에 있어야 배경이 화면 끝까지 칠해진다.
+             안에 두면 밝은 배경이 가운데 카드처럼 떠 보인다. */}
+      {here === "turnkey" && <div className="pn-turnkey"><div className="wrap">
         <section className="bz-sec" id="turnkey">
           <div className="kicker reveal">통째로 만들기</div>
           <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
@@ -316,10 +316,10 @@ export default function BusinessPage() {
           <p className="note reveal">값은 방 크기랑 하시려는 연출에 따라 달라서 보고 나서 말씀드립니다.</p>
         </section>
         <NextUp here={here} pick={pick} />
-      </div>}
+      </div></div>}
 
-      {/* ══════════ ② 제어기 · 장치 ══════════ */}
-      {here === "device" && <div className="pn-device">
+      {/* ══════════ ② 제어기 · 장치 ══════════ (D6 카본 · 시안) */}
+      {here === "device" && <div className="pn-device"><div className="wrap">
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
           <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
@@ -405,14 +405,15 @@ export default function BusinessPage() {
               {/* 마스터 */}
               <rect className="pn-master" x="16" y="40" width="250" height="200" rx="12"
                 fill="url(#pcbgrid)" stroke="#6ea8ff" strokeOpacity=".72" strokeWidth="1.5" />
-              <circle cx="34" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
-              <circle cx="248" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
-              <circle cx="34" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
-              <circle cx="248" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              {/* 마운팅 홀 — 클래스로 색을 잡아둔다(패널 스킨이 바뀌면 CSS 한 줄로 따라간다) */}
+              <circle className="hole" cx="34" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle className="hole" cx="248" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle className="hole" cx="34" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle className="hole" cx="248" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
               <text className="silk-brand" x="52" y="78">FANTASTRICK</text>
               <text className="silk-model" x="52" y="103">마스터</text>
               <text className="silk-role" x="52" y="122">MASTER</text>
-              <rect x="52" y="140" width="58" height="58" rx="4"
+              <rect className="mcu" x="52" y="140" width="58" height="58" rx="4"
                 fill="#8fb6ff" fillOpacity=".14" stroke="#8fb6ff" strokeOpacity=".7" />
               <text className="silk-tiny" x="81" y="173" textAnchor="middle">MCU</text>
               {/* 치수선 — 32칸의 폭을 실제로 잰다. 여기 쓰는 숫자는 사양표에 있는 32 뿐이다.
@@ -429,11 +430,14 @@ export default function BusinessPage() {
                   <text key={c} x="124" y={151 + i * 16} textAnchor="end">{c}</text>
                 ))}
               </g>
-              {Array.from({ length: 32 }, (_, i) => (
-                <rect key={i} x={130 + (i % 8) * 16} y={142 + Math.floor(i / 8) * 16}
-                  width="10" height="10" rx="2"
-                  fill="#6ea8ff" fillOpacity=".22" stroke="#6ea8ff" strokeOpacity=".7" />
-              ))}
+              {/* 출력 32칸 — 따로 묶어둔다. 마스터·슬레이브 판(fill=격자무늬)과 색 규칙이 달라서다. */}
+              <g className="ports">
+                {Array.from({ length: 32 }, (_, i) => (
+                  <rect key={i} x={130 + (i % 8) * 16} y={142 + Math.floor(i / 8) * 16}
+                    width="10" height="10" rx="2"
+                    fill="#6ea8ff" fillOpacity=".22" stroke="#6ea8ff" strokeOpacity=".7" />
+                ))}
+              </g>
               <text className="silk-tiny" x="130" y="224">장치 32개</text>
               {/* 상태 표시 — 이 제품이 '스스로 보고 있다'는 유일한 시각 신호. 딱 하나만 둔다. */}
               <circle className="pn-led-ring" cx="232" cy="100" r="5" />
@@ -580,10 +584,10 @@ export default function BusinessPage() {
           </figure>
         </section>
         <NextUp here={here} pick={pick} />
-      </div>}
+      </div></div>}
 
-      {/* ══════════ ③ 매장 운영 프로그램 ══════════ */}
-      {here === "software" && <div className="pn-software">
+      {/* ══════════ ③ 매장 운영 프로그램 ══════════ (S1 밝은 SaaS) */}
+      {here === "software" && <div className="pn-software"><div className="wrap">
         <section className="bz-sec" id="software">
           <div className="kicker reveal">방 밖에서 쓰는 것</div>
           <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
@@ -668,9 +672,10 @@ export default function BusinessPage() {
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
         <NextUp here={here} pick={pick} />
-      </div>}
+      </div></div>}
 
-        {/* ══════════ 여기서부터는 어느 범위를 보든 항상 나온다 ══════════ */}
+      {/* ══════════ 여기서부터는 어느 범위를 보든 항상 나온다 ══════════ */}
+      <div className="wrap">
         {/* 비교 */}
         <section className="bz-sec">
           <div className="kicker reveal">비교</div>
