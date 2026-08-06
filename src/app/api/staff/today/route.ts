@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
+
+/**
+ * 직원용 "오늘 예약" 읽기 전용 API — 안내문자 앱(reservation-sms)이 부른다.
+ *
+ * [왜 관리자 API 를 그냥 쓰지 않나]
+ *  관리자 로그인은 ADMIN_PASSWORD 하나뿐이고, 그게 뚫리면 환불·설정·매출까지 전부 열린다.
+ *  아침마다 문자를 돌리는 건 직원 일이라, 그 일 하나 때문에 사장님 비밀번호를 폰에 저장해
+ *  두게 할 수는 없다. → **읽기 전용 + 오늘치 + 돈 정보 제외** 인 문을 따로 낸다.
+ *
+ * [무엇을 안 주나]
+ *  예약금·환불계좌·메모·관리자메모는 **일부러 뺐다.** 문자 보내는 데 필요 없고,
+ *  직원 폰이 분실되면 그대로 새는 정보다. 필요해지면 그때 명시적으로 추가할 것.
+ *
+ * [토큰이 새면]
+ *  STAFF_TOKEN 값만 바꾸면 즉시 막힌다(관리자 비밀번호는 안 건드려도 된다). 그게 문을
+ *  따로 낸 이유이기도 하다.
+ */
+
+// 안내문자 앱이 사는 곳. 다른 출처라 브라우저가 CORS 를 요구한다.
+const ALLOWED_ORIGINS = new Set([
+  "https://reservation-sms.pages.dev",
+  "http://localhost:3000",
+  "http://localhost:3001",
+]);
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  // 목록에 없는 출처엔 CORS 를 열어주지 않는다(토큰이 있어도 브라우저가 응답을 막는다).
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return {};
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+}
+
+// 타이밍 공격 방어: 길이 확인 후 상수시간 비교 (login/route.ts 와 같은 방식)
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+/** 오늘 날짜(KST) — 워커는 UTC 라 그냥 자르면 새벽 0~9시에 어제가 나온다. */
+function todayKst(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(req.headers.get("origin")) });
+}
+
+export async function GET(req: NextRequest) {
+  const cors = corsHeaders(req.headers.get("origin"));
+
+  const expected = process.env.STAFF_TOKEN;
+  if (!expected) {
+    return NextResponse.json(
+      { error: "직원용 열쇠(STAFF_TOKEN)가 설정되지 않았습니다. 관리자에게 문의해 주세요." },
+      { status: 503, headers: cors },
+    );
+  }
+
+  // Authorization: Bearer <토큰>. 주소창(쿼리스트링)으로는 받지 않는다 — 로그·기록에 남는다.
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!token || !safeEqual(token, expected)) {
+    return NextResponse.json({ error: "열쇠가 올바르지 않습니다." }, { status: 401, headers: cors });
+  }
+
+  const db = getSupabase();
+  if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503, headers: cors });
+
+  // 기본은 오늘(KST). ?date= 로 다른 날도 볼 수 있게 둔다(내일치 미리 확인·테스트용).
+  const q = req.nextUrl.searchParams.get("date");
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(q || "") ? (q as string) : todayKst();
+
+  const { data, error } = await db
+    .from("reservations")
+    .select("id, store_id, theme_id, theme_name, date, time, people, name, phone, status")
+    .eq("date", date)
+    .neq("status", "cancelled")
+    .order("time", { ascending: true });
+
+  if (error) {
+    return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500, headers: cors });
+  }
+
+  return NextResponse.json(
+    { ok: true, date, reservations: data || [] },
+    { headers: { ...cors, "Cache-Control": "no-store" } },
+  );
+}

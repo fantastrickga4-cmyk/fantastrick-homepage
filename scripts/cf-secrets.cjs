@@ -28,6 +28,9 @@ const KEYS = [
   "NHN_SENDER_KEY",
   "NHN_TPL_CONFIRM",
   "NHN_TPL_CANCEL",
+  // 직원용 안내문자 앱(reservation-sms)이 오늘 예약을 읽을 때 쓰는 열쇠.
+  // 관리자 비밀번호와 **별개** — 새면 이 값만 바꾸면 된다. (api/staff/today)
+  "STAFF_TOKEN",
 ];
 
 const p = path.join(__dirname, "..", ".env.local");
