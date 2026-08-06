@@ -279,26 +279,98 @@
 .bizsys .ask::before { content: ""; flex: 0 0 auto; width: 3px; height: 20px; margin-top: 3px;
   border-radius: 2px; background: linear-gradient(180deg,#9cc2ff,#6ea8ff) }
 
-/* ── 범위 선택기 (탭 대체) ──────────────────────────────
-   탭은 "둘 중 하나 고르라"는 화면이라 사다리 맨 윗칸(통째로)이 영영 안 보인다.
-   여기서는 고른 칸으로 스크롤만 시키고, 아래에는 네 범위가 순서대로 전부 있다. */
-.bizsys .scope { position: sticky; top: 68px; z-index: 20;
-  background: rgba(6,18,46,.92); backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line) }
-.bizsys .scope-in { display: flex; gap: 8px; padding: 10px 0; overflow-x: auto; scrollbar-width: none }
-.bizsys .scope-in::-webkit-scrollbar { display: none }
-.bizsys .scope button { flex: 1 0 auto; min-width: 138px; text-align: left; cursor: pointer;
-  font-family: inherit; background: transparent; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 12px; padding: 10px 15px; transition: .18s }
-.bizsys .scope button b { display: block; font-size: 14.5px; font-weight: 800; color: var(--text) }
-.bizsys .scope button span { font-size: 11.5px; color: var(--faint) }
-.bizsys .scope button:hover { border-color: rgba(143,182,255,.45) }
-.bizsys .scope button.on { background: rgba(110,168,255,.16); border-color: var(--brand) }
-.bizsys .scope button.on b { color: var(--brand-bright) }
+/* ── 범위 선택 = 이 페이지의 차례(목차) ──────────────────
+   그냥 탭이 아니라 "무엇을 고르는 자리"로 읽혀야 한다. 그래서
+     ① 왼쪽에 물음("어디까지 맡기시겠습니까")을 세우고
+     ② 단추마다 01·02·03 번호를 달고
+     ③ 단추 하나하나가 **그 범위의 디자인을 미리 보여준다**(종이 / 카본 / 흰 화면).
+   고른 단추는 아래 화면과 같은 색이 되어, 선택과 본문이 한 덩어리로 붙어 보인다. */
+.bizsys .scope {
+  position: sticky; top: 68px; z-index: 20;
+  background: rgba(4,12,32,.95); backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255,255,255,.10);
+  border-bottom: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 14px 30px -26px rgba(0,0,0,.9);
+  transition: background .3s;
+}
+/* 고른 범위의 색이 선택 줄 위쪽에 가느다랗게 배어 나온다 — 아래 화면과 이어져 보이게 */
+.bizsys .scope::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: background .3s;
+}
+.bizsys .scope.on-turnkey::before { background: linear-gradient(90deg, #f3efe6, rgba(243,239,230,.15) 62%, transparent) }
+.bizsys .scope.on-device::before { background: linear-gradient(90deg, #00d4ff, rgba(0,212,255,.15) 62%, transparent) }
+.bizsys .scope.on-software::before { background: linear-gradient(90deg, #2563eb, rgba(37,99,235,.15) 62%, transparent) }
+
+.bizsys .scope-in { display: flex; align-items: center; gap: 20px; padding: 13px 0 14px }
+.bizsys .scope-lab { flex: 0 0 auto; line-height: 1.25 }
+.bizsys .scope-lab span {
+  display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .24em; color: #8ea0c4;
+}
+.bizsys .scope-lab b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.03em; color: #e9f0ff }
+.bizsys .scope-tabs { display: flex; gap: 8px; flex: 1 1 auto; overflow-x: auto; scrollbar-width: none }
+.bizsys .scope-tabs::-webkit-scrollbar { display: none }
+
+.bizsys .scope button {
+  flex: 1 0 auto; min-width: 152px; text-align: left; cursor: pointer; font-family: inherit;
+  position: relative; padding: 9px 15px 10px; transition: .18s;
+  background: transparent; border: 1px solid rgba(255,255,255,.16);
+}
+.bizsys .scope button i {
+  display: block; font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .14em;
+  opacity: .75; margin-bottom: 2px;
+}
+.bizsys .scope button b { display: block; font-size: 14.5px; font-weight: 800; letter-spacing: -.02em }
+.bizsys .scope button span { font-size: 11px; opacity: .72 }
+
+/* 단추마다 그 범위의 생김새 — 안 골랐을 때는 윤곽만, 고르면 그 화면 색으로 꽉 찬다 */
+.bizsys .scope .sc-turnkey {
+  border-radius: 2px; color: #e8e3d6;
+  font-family: "Nanum Myeongjo", serif;
+}
+.bizsys .scope .sc-turnkey i { font-family: "IBM Plex Mono", ui-monospace, monospace }
+.bizsys .scope .sc-turnkey span { font-family: var(--font-sans) }
+.bizsys .scope .sc-turnkey:hover { border-color: rgba(243,239,230,.55); background: rgba(243,239,230,.07) }
+.bizsys .scope .sc-turnkey.on {
+  background: #f3efe6; color: #1a1a18; border-color: #f3efe6;
+  box-shadow: 0 10px 24px -14px rgba(243,239,230,.7);
+}
+.bizsys .scope .sc-turnkey.on i { color: #0d3b8c; opacity: 1 }
+
+.bizsys .scope .sc-device {
+  border-radius: 3px; color: #cfeef8;
+  font-family: "General Sans", var(--font-sans);
+}
+.bizsys .scope .sc-device i, .bizsys .scope .sc-device span {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+.bizsys .scope .sc-device:hover { border-color: rgba(0,212,255,.6); background: rgba(0,212,255,.10) }
+.bizsys .scope .sc-device.on {
+  background: #0d0f12; color: #e6f7ff; border-color: #00d4ff;
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,.35), 0 10px 24px -14px rgba(0,212,255,.8);
+}
+.bizsys .scope .sc-device.on i { color: #00d4ff; opacity: 1 }
+
+.bizsys .scope .sc-software {
+  border-radius: 12px; color: #dbe6f5;
+  font-family: "General Sans", var(--font-sans);
+}
+.bizsys .scope .sc-software:hover { border-color: rgba(96,165,250,.6); background: rgba(37,99,235,.14) }
+.bizsys .scope .sc-software.on {
+  background: #ffffff; color: #101828; border-color: #ffffff;
+  box-shadow: 0 10px 24px -14px rgba(255,255,255,.55);
+}
+.bizsys .scope .sc-software.on i { color: #2563eb; opacity: 1 }
+.bizsys .scope button.on span { opacity: .62 }
+
+@media (max-width: 860px) {
+  /* 물음은 데스크톱에서만. 좁은 화면에서 sticky 가 두 줄이 되면 화면을 너무 먹는다. */
+  .bizsys .scope-lab { display: none }
+}
 @media (max-width: 520px) {
-  .bizsys .scope button { min-width: 124px; padding: 9px 12px }
+  .bizsys .scope-in { padding: 10px 0 11px }
+  .bizsys .scope button { min-width: 132px; padding: 8px 12px 9px }
   .bizsys .scope button b { font-size: 13px }
-  .bizsys .scope button span { font-size: 10.5px }
+  .bizsys .scope button span { font-size: 10px }
 }
 
 /* ── 역량 3축 ───────────────────────────────────────────

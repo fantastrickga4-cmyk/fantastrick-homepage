@@ -181,18 +181,24 @@ export default function BusinessPage() {
         </section>
       </div>
 
-      {/* 범위 선택 — 누르면 아래 내용이 통째로 바뀐다 */}
-      <div className="scope" id="scopebar">
+      {/* 범위 선택 — 누르면 아래 내용이 통째로 바뀐다.
+          단추 하나하나가 **그 범위의 디자인을 미리 보여준다**(종이 / 카본 / 흰 화면).
+          그래서 무엇을 고르는지가 글자만이 아니라 생김새로도 읽힌다. */}
+      <div className={`scope on-${here}`} id="scopebar">
         <div className="wrap">
-          <div className="scope-in" role="tablist" aria-label="보실 범위">
-            {SCOPES.map((s) => (
-              <button
-                key={s.id} role="tab" aria-selected={here === s.id}
-                className={here === s.id ? "on" : ""} onClick={() => pick(s.id)}
-              >
-                <b>{s.label}</b><span>{s.sub}</span>
-              </button>
-            ))}
+          <div className="scope-in">
+            <div className="scope-lab"><span>어디까지</span><b>맡기시겠습니까</b></div>
+            <div className="scope-tabs" role="tablist" aria-label="보실 범위">
+              {SCOPES.map((s, i) => (
+                <button
+                  key={s.id} role="tab" aria-selected={here === s.id}
+                  className={`sc-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
+                >
+                  <i>{String(i + 1).padStart(2, "0")}</i>
+                  <b>{s.label}</b><span>{s.sub}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
