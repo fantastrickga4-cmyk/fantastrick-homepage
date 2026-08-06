@@ -382,6 +382,75 @@
   .bizsys .sp-cards button span { flex: 1 0 100%; margin-top: 5px }
 }
 
+/* ── 오른쪽 세로 길잡이 (넓은 화면 전용) ──────────────────
+   고르는 장은 한 번 지나가면 사라진다. 다시 고르려고 8,000px 을 거슬러 올라가는 건 너무 멀다.
+   ⚠️ 1200px 아래에서는 아예 안 띄운다. 본문 폭이 1180 이라 그 아래에서는 글자를 가린다.
+      좁은 화면에는 대신 [다시 고르기] 단추 하나만 둔다(아래). */
+/* 🔴 두 가지를 실측으로 잡았다.
+   ① 라벨을 펼친 채로 두면 본문을 가린다. 1440px 화면에서 본문은 x=130~1310 인데
+      168px 짜리 길잡이는 x=1254 에서 시작해 56px 을 덮었다.
+      → 평소에는 번호만(48px), 마우스를 올리면 펼친다. 그러면 1340px 이상에서 안 겹친다.
+   ② 고른 항목을 그 화면 색으로 꽉 채웠더니 **같은 색 배경 위에서 사라졌다**(크림 위 크림).
+      → 길잡이는 항상 어두운 판으로 두고, 고른 것은 **글자색 + 왼쪽 굵은 선**으로만 표시한다.
+        어느 화면 위에 떠 있든 읽힌다. */
+.bizsys .sidenav {
+  position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+  z-index: 110; display: none; flex-direction: column; gap: 6px;
+  padding: 7px; border-radius: 14px;
+  background: rgba(4,12,32,.92); border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 18px 40px -20px rgba(0,0,0,.9);
+}
+@media (min-width: 1340px) {
+  .bizsys .sidenav { display: flex; opacity: 0; visibility: hidden;
+    transform: translateY(-50%) translateX(14px);
+    transition: opacity .28s, transform .28s, visibility 0s .28s }
+  .bizsys .sidenav.on { opacity: 1; visibility: visible;
+    transform: translateY(-50%) translateX(0); transition-delay: 0s }
+}
+.bizsys .sidenav button {
+  display: flex; align-items: center; gap: 10px; overflow: hidden;
+  width: 44px; height: 42px; padding: 0 0 0 13px; cursor: pointer; font-family: inherit;
+  background: transparent; border: 0; border-left: 3px solid transparent; border-radius: 8px;
+  color: #a9b8d6; transition: width .22s cubic-bezier(.2,.7,.2,1), background .16s, color .16s;
+}
+.bizsys .sidenav button i {
+  font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .08em;
+  font-family: "IBM Plex Mono", ui-monospace, monospace; flex: 0 0 auto;
+}
+/* 라벨은 접혀 있어도 DOM 에 남긴다 — 화면낭독기는 번호가 아니라 이름을 읽어야 한다 */
+.bizsys .sidenav button b {
+  font-size: 13px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap;
+  opacity: 0; transition: opacity .18s;
+}
+.bizsys .sidenav:hover button, .bizsys .sidenav:focus-within button { width: 172px }
+.bizsys .sidenav:hover button b, .bizsys .sidenav:focus-within button b { opacity: 1 }
+.bizsys .sidenav button:hover { background: rgba(255,255,255,.07); color: #e9f0ff }
+.bizsys .sidenav button:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px }
+/* 고른 것 = 그 화면의 색으로 된 글자 + 왼쪽 굵은 선. 채움을 쓰지 않아 어느 배경 위에서도 보인다. */
+.bizsys .sidenav .sn-turnkey.on { color: #f3efe6; border-left-color: #f3efe6; background: rgba(243,239,230,.10) }
+.bizsys .sidenav .sn-device.on { color: #6fe6ff; border-left-color: #00d4ff; background: rgba(0,212,255,.12) }
+.bizsys .sidenav .sn-software.on { color: #cfe0ff; border-left-color: #60a5fa; background: rgba(96,165,250,.14) }
+@media (prefers-reduced-motion: reduce) {
+  .bizsys .sidenav button, .bizsys .sidenav button b { transition: none }
+}
+
+/* ── 좁은 화면: 세로 길잡이 대신 단추 하나 ────────────────
+   폰에서 세로 목록은 화면을 먹고 한 손 조작도 어렵다. 셋을 나열하는 대신
+   "고르는 자리로 돌려보내는" 단추 하나만 둔다. 순서대로 넘어가는 건 [이어서 보기]가 이미 맡는다. */
+.bizsys .backpick {
+  position: fixed; right: 14px; bottom: 16px; z-index: 110; display: none;
+  align-items: center; min-height: 44px; padding: 11px 18px; cursor: pointer; font-family: inherit;
+  font-size: 13.5px; font-weight: 800; letter-spacing: -.01em;
+  color: #06122e; background: #8fb6ff; border: 0; border-radius: 999px;
+  box-shadow: 0 10px 26px -10px rgba(0,0,0,.8);
+}
+@media (max-width: 1199px) {
+  .bizsys .backpick { opacity: 0; visibility: hidden; transform: translateY(8px);
+    transition: opacity .24s, transform .24s, visibility 0s .24s }
+  .bizsys .backpick.on { display: inline-flex; opacity: 1; visibility: visible;
+    transform: none; transition-delay: 0s }
+}
+
 /* ── 범위 표제 — 그 화면이 어디서 시작하는지 못 박는다 ──────
    고르는 장에서 눌러 내려왔는데 첫 화면이 12px 키커면 "시작됐다"는 느낌이 없다.
    ⚠️ 색을 하드코딩하지 않는다. 세 패널이 --text·--muted·--brand·--line 을 자기 값으로

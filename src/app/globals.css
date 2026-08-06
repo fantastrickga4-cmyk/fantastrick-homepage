@@ -156,8 +156,11 @@ h1.title,h2.title{font-family:var(--font-display);font-size:var(--fs-2xl);font-w
 /* ---------- HEADER ---------- */
 header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.25s}
 .hdr-in{max-width:var(--maxw);margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:18px}
-/* 저사양 스크롤 최적화: backdrop-filter(스크롤마다 블러 리페인트) 제거 → 불투명 배경으로 대체 */
-header.scrolled{background:rgba(255,255,255,.96);border-bottom:1px solid var(--line)}
+/* 저사양 스크롤 최적화: backdrop-filter(스크롤마다 블러 리페인트) 제거 → 불투명 배경으로 대체
+   🔴 알파를 1 로 올렸다(2026-08-06). 96% 는 다크 화면에서는 티가 안 났지만,
+      비즈니스의 밝은 화면(크림 종이·흰 SaaS)에서는 **헤더 뒤로 지나가는 큰 제목이 유령처럼 비쳤다.**
+      4% 를 없애도 눈에 보이는 차이는 없고, 비침만 사라진다. */
+header.scrolled{background:#fff;border-bottom:1px solid var(--line)}
 header.scrolled .hdr-in{padding:11px 22px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.04em;font-size:17px}
 .brand .logo-img{height:26px;width:auto;display:block}

@@ -70,6 +70,8 @@ export default function BusinessPage() {
         ② 비교표·사후관리·경쟁사 우려·자주 묻는 것·문의는 **범위와 상관없이 늘 아래에 있다**
         (셋 다 상품과 무관하게 궁금한 것들이라 어느 범위를 보든 눈에 들어와야 한다) */
   const [here, setHere] = useState("turnkey");
+  // 오른쪽 길잡이를 띄울지 (고르는 장이 화면 밖으로 나갔을 때만)
+  const [showNav, setShowNav] = useState(false);
   // 문의
   const [form, setForm] = useState({ storeName: "", phone: "", rooms: "", area: "" });
   const [kind, setKind] = useState(KINDS[0]);
@@ -95,6 +97,21 @@ export default function BusinessPage() {
   useEffect(() => {
     const h = window.location.hash.replace("#", "");
     if (SCOPES.some((s) => s.id === h)) setHere(h);
+  }, []);
+
+  /* 고르는 장이 화면 밖으로 나가면 오른쪽 길잡이를 띄운다.
+     고르는 자리가 보이는 동안에는 길잡이가 같은 말을 두 번 하는 셈이라 숨긴다. */
+  useEffect(() => {
+    const bar = document.getElementById("scopebar");
+    if (!bar) return;
+    /* ⚠️ "안 보이면 띄운다"로 하면 안 된다 — 페이지 맨 위에서는 고르는 장이 아직 **아래**에 있어서
+          그것도 "안 보임"이라, 열자마자 길잡이가 뜬다. **지나간 뒤**(위로 사라진 뒤)만 띄운다. */
+    const io = new IntersectionObserver(
+      ([e]) => setShowNav(e.boundingClientRect.bottom < 0),
+      { threshold: 0 }
+    );
+    io.observe(bar);
+    return () => io.disconnect();
   }, []);
 
   const lost = fee * slots;
@@ -155,8 +172,37 @@ export default function BusinessPage() {
     setSending(false);
   }
 
+  // 폰에서 [다시 고르기] — 고르는 장으로 데려다준다
+  function backToPick() {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("scopebar")?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }
+
   return (
     <div className="bizsys" ref={wrapRef}>
+      {/* ══════════ 화면 오른쪽 길잡이 (넓은 화면) ══════════
+          고르는 장은 한 번 지나가면 화면에서 사라진다. 다시 고르려고 8,000px 을 거슬러 올라가는 건
+          너무 멀다. 그래서 지나간 뒤부터 오른쪽에 세로로 붙여둔다.
+          ⚠️ 1200px 아래에서는 안 띄운다 — 본문 폭(1180)과 겹쳐 글자를 가린다. */}
+      <nav className={`sidenav${showNav ? " on" : ""}`} aria-label="범위 바꾸기">
+        {SCOPES.map((s, i) => (
+          <button
+            key={s.id} type="button" aria-current={here === s.id}
+            className={`sn-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
+          >
+            <i aria-hidden="true">{String(i + 1).padStart(2, "0")}</i>
+            <b>{s.label}</b>
+          </button>
+        ))}
+      </nav>
+
+      {/* 폰·태블릿에서는 세로 길잡이가 화면을 먹고 한 손 조작도 어렵다.
+          대신 단추 하나만 — 누르면 고르는 장으로 돌려보낸다.
+          ⚠️ 이 사이트는 폰에서 .float(예약) 를 **오른쪽 위**로 옮겨 두었으므로 오른쪽 아래는 비어 있다. */}
+      <button type="button" className={`backpick${showNav ? " on" : ""}`} onClick={backToPick}>
+        다시 고르기
+      </button>
+
       {/* HERO */}
       <section className="bz-hero">
         <div className="scan" />
