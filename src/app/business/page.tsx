@@ -17,6 +17,10 @@ const won = (n: number) => n.toLocaleString("ko-KR");
 const onlyNum = (s: string) => Number(String(s).replace(/[^0-9]/g, "")) || 0;
 
 export default function BusinessPage() {
+  /* 하드웨어(제어기)와 소프트웨어(운영 프로그램)를 탭으로 나눈다 (사장님 지시 2026-08-06).
+     둘은 사는 결정이 아예 다르다 — 하드웨어는 수백만원 한 번, 운영 프로그램은 매달 쓰는 것.
+     한 페이지에 섞어 놓으면 둘 다 흐려진다는 게 8/5 분석의 결론이기도 했다. */
+  const [tab, setTab] = useState<"hw" | "sw">("hw");
   // 손실 계산기 — 사장님이 자기 매장 숫자를 넣어보는 곳. 우리가 금액을 단정하지 않는다.
   const [fee, setFee] = useState(60000);
   const [slots, setSlots] = useState(12);
@@ -28,6 +32,14 @@ export default function BusinessPage() {
   const [sent, setSent] = useState(false);
   const [formErr, setFormErr] = useState("");
 
+  // 주소에 #sw 가 붙어 오면 운영 프로그램 탭으로 연다 (다른 곳에서 링크 걸 수 있게)
+  useEffect(() => {
+    if (window.location.hash === "#sw") setTab("sw");
+  }, []);
+
+  /* 스크롤 등장 애니메이션.
+     ⚠️ tab 을 의존성에 반드시 넣을 것 — 탭을 바꾸면 화면에 새 요소가 붙는데,
+        처음 한 번만 관찰하면 그 요소들은 `opacity:0` 인 채로 영영 안 보인다. */
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
@@ -35,7 +47,16 @@ export default function BusinessPage() {
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [tab]);
+
+  function switchTab(next: "hw" | "sw") {
+    if (next === tab) return;
+    setTab(next);
+    history.replaceState(null, "", next === "sw" ? "#sw" : " ");
+    // 탭을 바꾸면 바뀐 내용의 첫 줄부터 보게 한다. 그대로 두면 아까 보던 높이에 남아
+    // "아무 일도 안 일어난 것"처럼 보인다.
+    document.getElementById("bztabs")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
 
   const lost = fee * slots;
   const devices = 32 + mods * 32;
@@ -86,7 +107,23 @@ export default function BusinessPage() {
         </div>
       </section>
 
+      {/* 탭 — 제어기(하드웨어) / 운영 프로그램(소프트웨어).
+          스크롤을 내려도 따라오게 붙여둔다. 페이지가 길어서 위로 되돌아가기 번거롭다. */}
+      <div className="bztabs" id="bztabs">
+        <div className="wrap">
+          <div className="bztabs-in" role="tablist" aria-label="상품 구분">
+            <button role="tab" aria-selected={tab === "hw"} className={tab === "hw" ? "on" : ""} onClick={() => switchTab("hw")}>
+              <b>제어기 · 장치</b><span>방에 들어가는 것</span>
+            </button>
+            <button role="tab" aria-selected={tab === "sw"} className={tab === "sw" ? "on" : ""} onClick={() => switchTab("sw")}>
+              <b>매장 운영 프로그램</b><span>사무실에서 쓰는 것</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="wrap">
+      {tab === "hw" && <>
         {/* 손실 */}
         <section className="bz-sec">
           <div className="kicker reveal">장치값보다 큰 돈</div>
@@ -307,33 +344,7 @@ export default function BusinessPage() {
             특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
         </section>
 
-        {/* 운영 프로그램 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">같이 들어가는 것</div>
-          <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
-          <div className="ops">
-            <div className="op reveal"><b>출퇴근, 근무표</b><span>폰으로 찍습니다. 대타 바꾸는 것도 앱에서 하고요.</span></div>
-            <div className="op reveal"><b>급여, 매출 장부</b><span>찍힌 근태가 그대로 급여로 넘어갑니다. 옮겨 적을 일이 없습니다.</span></div>
-            <div className="op reveal"><b>예약, 홈페이지</b><span>타임표부터 예약금, 환불 규정까지 한 화면에서 봅니다.</span></div>
-            <div className="op reveal"><b>쿠폰</b><span>발행하고 나면 누가 언제 썼는지 남습니다.</span></div>
-          </div>
-          <p className="lead reveal" style={{ margin: "20px 0 0" }}>지금 우리 매장 3곳에서 쓰고 있는 그대로입니다.</p>
-        </section>
-
-        {/* 먼저 말씀드립니다 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">먼저 말씀드립니다</div>
-          <h2 className="reveal">경쟁사한테 사는 거 아니냐,<br />하실 겁니다.</h2>
-          <p className="lead reveal">맞습니다. 저희도 강남에서 방탈출을 합니다. 그래서 말로 하지 않고 계약서에 넣습니다.</p>
-          <div className="trust">
-            <div className="reveal"><b>시나리오는 안 가져갑니다</b><span>고객사 시나리오랑 문제 구조는 우리 매장 어디에도 안 씁니다.</span></div>
-            <div className="reveal"><b>매장 이름 안 밝힙니다</b><span>원하시면 납품 사례에서 빼드립니다.</span></div>
-            <div className="reveal"><b>데이터는 따로 둡니다</b><span>매장 예약이랑 매출이 우리 쪽 데이터와 섞이지 않습니다.</span></div>
-            <div className="reveal"><b>제어기만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
-          </div>
-        </section>
-
-        {/* FAQ */}
+        {/* FAQ — 장치·공사·고장 이야기라 제어기 탭에 둔다 */}
         <section className="bz-sec">
           <div className="kicker reveal">자주 묻는 것</div>
           <h2 className="reveal">이런 걸 물어보십니다.</h2>
@@ -353,6 +364,80 @@ export default function BusinessPage() {
               <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
                 원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
             </details>
+          </div>
+        </section>
+      </>}
+
+      {/* ══════════ 매장 운영 프로그램(소프트웨어) 탭 ══════════ */}
+      {tab === "sw" && <>
+        <section className="bz-sec">
+          <div className="kicker reveal">방 밖에서 쓰는 것</div>
+          <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
+          <p className="lead reveal">방 안 장치를 돌리는 게 제어기라면, 이건 사무실에서 하는 일입니다.
+            근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>
+
+          <div className="swtable reveal">
+            <div className="h">&nbsp;</div><div className="h">지금 이렇게 하고 계실 겁니다</div><div className="h usc">바뀌는 것</div>
+
+            <div className="rowlab">출퇴근 · 근무표</div>
+            <div className="t mut">출퇴근은 단톡에 카톡으로, 근무표는 엑셀 짜서 사진으로 올림</div>
+            <div className="usc t">폰으로 찍습니다. 대타도 서로 신청하고 승인합니다.</div>
+
+            <div className="rowlab">급여 · 매출 장부</div>
+            <div className="t mut">말일에 시급 계산기 두드림</div>
+            <div className="usc t">찍힌 근태가 그대로 급여로 넘어갑니다. 매출까지 한 화면에서.</div>
+
+            <div className="rowlab">예약 · 홈페이지</div>
+            <div className="t mut">외부 플랫폼 수수료, 손 안 대는 홈페이지</div>
+            <div className="usc t">자체 예약, 취소, 환불 규정까지. 홈페이지도 같이 갑니다.</div>
+
+            <div className="rowlab">쿠폰</div>
+            <div className="t mut">종이 쿠폰, 누가 썼는지 모름</div>
+            <div className="usc t">발행하고 나면 누가 언제 썼는지 남습니다.</div>
+          </div>
+
+          <p className="lead reveal" style={{ margin: "22px 0 0" }}>
+            전부 저희 매장 3곳에서 지금 이 순간 돌아가고 있는 것들입니다. 보여드리려고 만든 게 아닙니다.
+          </p>
+        </section>
+
+        <section className="bz-sec">
+          <div className="kicker reveal">입금 확인</div>
+          <h2 className="reveal">예약금 들어온 걸<br />사람이 안 봐도 됩니다.</h2>
+          <p className="lead reveal">예약금이 입금되면 그 예약이 알아서 확정으로 넘어갑니다.
+            이름과 금액이 맞는 건만 자동으로 처리하고, 애매한 건 사장님한테 남깁니다.
+            저희 매장에서 지금 이렇게 돌리고 있습니다.</p>
+          <div className="ops">
+            <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
+            <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
+          </div>
+        </section>
+
+        <section className="bz-sec">
+          <div className="kicker reveal">사후 관리</div>
+          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
+          <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
+          <div className="trust">
+            <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
+            <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
+            <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
+            <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
+          </div>
+          <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
+            프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다. 매장 규모에 따라 달라서 보러 가서 말씀드립니다.</p>
+        </section>
+      </>}
+
+        {/* 먼저 말씀드립니다 */}
+        <section className="bz-sec">
+          <div className="kicker reveal">먼저 말씀드립니다</div>
+          <h2 className="reveal">경쟁사한테 사는 거 아니냐,<br />하실 겁니다.</h2>
+          <p className="lead reveal">맞습니다. 저희도 강남에서 방탈출을 합니다. 그래서 말로 하지 않고 계약서에 넣습니다.</p>
+          <div className="trust">
+            <div className="reveal"><b>시나리오는 안 가져갑니다</b><span>고객사 시나리오랑 문제 구조는 우리 매장 어디에도 안 씁니다.</span></div>
+            <div className="reveal"><b>매장 이름 안 밝힙니다</b><span>원하시면 납품 사례에서 빼드립니다.</span></div>
+            <div className="reveal"><b>데이터는 따로 둡니다</b><span>매장 예약이랑 매출이 우리 쪽 데이터와 섞이지 않습니다.</span></div>
+            <div className="reveal"><b>제어기만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
           </div>
         </section>
 
