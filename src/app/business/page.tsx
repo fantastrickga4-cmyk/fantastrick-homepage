@@ -20,10 +20,12 @@ import "./business.css";
 const won = (n: number) => n.toLocaleString("ko-KR");
 const onlyNum = (s: string) => Number(String(s).replace(/[^0-9]/g, "")) || 0;
 
+/* short = 화면 가장자리 길잡이에 쓰는 짧은 이름.
+   본이름을 그대로 쓰면 길잡이가 168px 이 넘어 본문을 가린다(1440 화면에서 56px 겹침 실측). */
 const SCOPES = [
-  { id: "turnkey", label: "통째로 만들기", sub: "기획부터 시공까지" },
-  { id: "device", label: "제어기 · 장치", sub: "방에 들어가는 것" },
-  { id: "software", label: "매장 운영 프로그램", sub: "사무실에서 쓰는 것" },
+  { id: "turnkey", label: "통째로 만들기", short: "통째로", sub: "기획부터 시공까지" },
+  { id: "device", label: "제어기 · 장치", short: "제어기", sub: "방에 들어가는 것" },
+  { id: "software", label: "매장 운영 프로그램", short: "프로그램", sub: "사무실에서 쓰는 것" },
 ];
 
 const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
@@ -172,14 +174,10 @@ export default function BusinessPage() {
     setSending(false);
   }
 
-  // 폰에서 [다시 고르기] — 고르는 장으로 데려다준다
-  function backToPick() {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.getElementById("scopebar")?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
-  }
-
   return (
-    <div className="bizsys" ref={wrapRef}>
+    /* has-bar — 좁은 화면에서 아래 길잡이가 떠 있는 동안 페이지 끝에 그만큼 자리를 비운다.
+       안 그러면 마지막 줄(사업자 정보·문의 단추)이 길잡이에 가린다. */
+    <div className={`bizsys${showNav ? " has-bar" : ""}`} ref={wrapRef}>
       {/* ══════════ 화면 오른쪽 길잡이 (넓은 화면) ══════════
           고르는 장은 한 번 지나가면 화면에서 사라진다. 다시 고르려고 8,000px 을 거슬러 올라가는 건
           너무 멀다. 그래서 지나간 뒤부터 오른쪽에 세로로 붙여둔다.
@@ -191,17 +189,27 @@ export default function BusinessPage() {
             className={`sn-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
           >
             <i aria-hidden="true">{String(i + 1).padStart(2, "0")}</i>
-            <b>{s.label}</b>
+            {/* 눈에는 짧은 이름, 화면낭독기에는 본이름 */}
+            <b aria-hidden="true">{s.short}</b>
+            <span className="sr">{s.label}</span>
           </button>
         ))}
       </nav>
 
-      {/* 폰·태블릿에서는 세로 길잡이가 화면을 먹고 한 손 조작도 어렵다.
-          대신 단추 하나만 — 누르면 고르는 장으로 돌려보낸다.
-          ⚠️ 이 사이트는 폰에서 .float(예약) 를 **오른쪽 위**로 옮겨 두었으므로 오른쪽 아래는 비어 있다. */}
-      <button type="button" className={`backpick${showNav ? " on" : ""}`} onClick={backToPick}>
-        다시 고르기
-      </button>
+      {/* 좁은 화면 — 아래쪽에 세 제목을 나란히. 세로 목록은 화면을 먹고 한 손 조작도 어렵다.
+          ⚠️ 이 사이트는 폰에서 .float(예약)를 **오른쪽 위**로 옮겨 두었으므로 아래쪽은 비어 있다. */}
+      <nav className={`botnav${showNav ? " on" : ""}`} aria-label="범위 바꾸기">
+        {SCOPES.map((s, i) => (
+          <button
+            key={s.id} type="button" aria-current={here === s.id}
+            className={`bn-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
+          >
+            <i aria-hidden="true">{String(i + 1).padStart(2, "0")}</i>
+            <b aria-hidden="true">{s.short}</b>
+            <span className="sr">{s.label}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* HERO */}
       <section className="bz-hero">

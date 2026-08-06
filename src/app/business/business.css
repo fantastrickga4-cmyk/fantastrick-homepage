@@ -400,7 +400,11 @@
   background: rgba(4,12,32,.92); border: 1px solid rgba(255,255,255,.18);
   box-shadow: 0 18px 40px -20px rgba(0,0,0,.9);
 }
-@media (min-width: 1340px) {
+/* 🔴 1400px 부터 띄운다. 라벨을 펼쳐 두려면 그만큼 옆 여백이 있어야 한다.
+      계산: 본문 폭 1180 + 좌우 안쪽 여백 22 씩 → 글자 오른쪽 끝은 (화면-1180)/2 + 1180 - 22.
+      길잡이(118px, 오른쪽 14px)의 왼쪽 끝이 그보다 오른쪽이어야 안 겹친다 → 1400px 이 경계선.
+      그 아래 화면에서는 겹치므로 아래쪽 길잡이(.botnav)로 넘긴다. */
+@media (min-width: 1400px) {
   .bizsys .sidenav { display: flex; opacity: 0; visibility: hidden;
     transform: translateY(-50%) translateX(14px);
     transition: opacity .28s, transform .28s, visibility 0s .28s }
@@ -408,22 +412,17 @@
     transform: translateY(-50%) translateX(0); transition-delay: 0s }
 }
 .bizsys .sidenav button {
-  display: flex; align-items: center; gap: 10px; overflow: hidden;
-  width: 44px; height: 42px; padding: 0 0 0 13px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 9px;
+  width: 118px; height: 42px; padding: 0 12px 0 11px; cursor: pointer; font-family: inherit;
   background: transparent; border: 0; border-left: 3px solid transparent; border-radius: 8px;
-  color: #a9b8d6; transition: width .22s cubic-bezier(.2,.7,.2,1), background .16s, color .16s;
+  color: #a9b8d6; transition: background .16s, color .16s;
 }
 .bizsys .sidenav button i {
   font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .08em;
   font-family: "IBM Plex Mono", ui-monospace, monospace; flex: 0 0 auto;
 }
-/* 라벨은 접혀 있어도 DOM 에 남긴다 — 화면낭독기는 번호가 아니라 이름을 읽어야 한다 */
-.bizsys .sidenav button b {
-  font-size: 13px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap;
-  opacity: 0; transition: opacity .18s;
-}
-.bizsys .sidenav:hover button, .bizsys .sidenav:focus-within button { width: 172px }
-.bizsys .sidenav:hover button b, .bizsys .sidenav:focus-within button b { opacity: 1 }
+/* 눈에는 짧은 이름. 본이름은 .sr 로 낭독기에만 간다. */
+.bizsys .sidenav button b { font-size: 13.5px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap }
 .bizsys .sidenav button:hover { background: rgba(255,255,255,.07); color: #e9f0ff }
 .bizsys .sidenav button:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px }
 /* 고른 것 = 그 화면의 색으로 된 글자 + 왼쪽 굵은 선. 채움을 쓰지 않아 어느 배경 위에서도 보인다. */
@@ -434,21 +433,42 @@
   .bizsys .sidenav button, .bizsys .sidenav button b { transition: none }
 }
 
-/* ── 좁은 화면: 세로 길잡이 대신 단추 하나 ────────────────
-   폰에서 세로 목록은 화면을 먹고 한 손 조작도 어렵다. 셋을 나열하는 대신
-   "고르는 자리로 돌려보내는" 단추 하나만 둔다. 순서대로 넘어가는 건 [이어서 보기]가 이미 맡는다. */
-.bizsys .backpick {
-  position: fixed; right: 14px; bottom: 16px; z-index: 110; display: none;
-  align-items: center; min-height: 44px; padding: 11px 18px; cursor: pointer; font-family: inherit;
-  font-size: 13.5px; font-weight: 800; letter-spacing: -.01em;
-  color: #06122e; background: #8fb6ff; border: 0; border-radius: 999px;
-  box-shadow: 0 10px 26px -10px rgba(0,0,0,.8);
+/* ── 좁은 화면: 아래쪽 길잡이 (세 제목을 나란히) ──────────
+   세로 목록은 화면을 먹고 한 손 조작도 어렵다. 대신 아래에 얇게 깔고 셋을 한눈에 보여준다.
+   ⚠️ 화면을 덮으므로 `.bizsys.has-bar` 가 페이지 끝에 그만큼 자리를 비운다(마지막 줄 가림 방지). */
+.bizsys .botnav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 110; display: none;
+  gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: rgba(4,12,32,.95); border-top: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 -14px 34px -22px rgba(0,0,0,.9);
 }
-@media (max-width: 1199px) {
-  .bizsys .backpick { opacity: 0; visibility: hidden; transform: translateY(8px);
+@media (max-width: 1399px) {
+  .bizsys .botnav { display: grid; grid-template-columns: repeat(3, 1fr);
+    opacity: 0; visibility: hidden; transform: translateY(100%);
     transition: opacity .24s, transform .24s, visibility 0s .24s }
-  .bizsys .backpick.on { display: inline-flex; opacity: 1; visibility: visible;
-    transform: none; transition-delay: 0s }
+  .bizsys .botnav.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s }
+  .bizsys.has-bar { padding-bottom: 68px }
+}
+.bizsys .botnav button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 46px; padding: 6px 4px; cursor: pointer; font-family: inherit;
+  background: transparent; color: #a9b8d6;
+  border: 1px solid transparent; border-radius: 10px; transition: .16s;
+}
+.bizsys .botnav button i {
+  font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .1em;
+  font-family: "IBM Plex Mono", ui-monospace, monospace; opacity: .8;
+}
+.bizsys .botnav button b { font-size: 13px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap }
+/* 고른 것은 그 화면 색 글자 + 옅은 채움. 판이 늘 어두워서 어느 화면 위에서도 읽힌다. */
+.bizsys .botnav .bn-turnkey.on { color: #f3efe6; background: rgba(243,239,230,.14); border-color: rgba(243,239,230,.45) }
+.bizsys .botnav .bn-device.on { color: #6fe6ff; background: rgba(0,212,255,.14); border-color: rgba(0,212,255,.5) }
+.bizsys .botnav .bn-software.on { color: #cfe0ff; background: rgba(96,165,250,.16); border-color: rgba(96,165,250,.55) }
+
+/* 화면낭독기에만 읽히는 본이름 (눈에는 짧은 이름이 보인다) */
+.bizsys .sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
 /* ── 범위 표제 — 그 화면이 어디서 시작하는지 못 박는다 ──────
