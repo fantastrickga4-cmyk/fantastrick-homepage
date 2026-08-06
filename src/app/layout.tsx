@@ -59,7 +59,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                              제목이 세리프로 안 보인다**(실측: 나눔명조가 아예 안 쓰이고 Pretendard로 렌더).
                              게다가 이 경우에도 Pretendard 가 늦게 뜨며 여전히 튀었다 → 문제 해결도 안 됨.
                진짜 원인은 "글꼴이 바뀌며 제목 줄 수가 3줄↔2줄로 달라지는 것" 이라, globals.css 의
-               `.biz-hero h1` 에 **자리를 미리 잡아두는 것**으로 해결했다. */}
+               임시 글꼴 `"Pretendard 임시"`(size-adjust 85.4%)로 **폭을 미리 맞춰** 해결했다.
+               ※ 2026-08-06 /business 를 새로 만들며 옛 `.biz-hero` 는 사라졌지만, 이 해결책은
+                  글꼴 단위라 전 페이지에 그대로 적용된다(새 히어로 `.bz-hero` 포함). */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

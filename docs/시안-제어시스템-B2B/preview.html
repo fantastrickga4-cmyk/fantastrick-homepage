@@ -1,0 +1,593 @@
+<title>판타스트릭 비즈니스 — 시안</title>
+<style>
+:root{
+  --bg:#041d57; --deep:#070c18; --base:#0b1020; --lift:#12224f; --bridge:#062a80;
+  --text:#e9f0ff; --muted:#a9b8d6; --faint:#8090b4;
+  --brand:#6ea8ff; --bright:#8fb6ff; --violet:#c9b6ff;
+  --ok:#5fd3a0; --warn:#f0b84d; --bad:#ff7b73;
+  --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.13);
+  --r:14px; --r-sm:10px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--text);font-size:16px;line-height:1.7;
+  font-family:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,#062a80 0%,#05236c 45%,#041d57 100%);background-attachment:fixed}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+section{padding:96px 0;border-top:1px solid rgba(255,255,255,.09)}
+@media(max-width:640px){section{padding:64px 0}}
+
+/* 상단 바 */
+.top{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+  background:rgba(6,18,46,.82);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;height:60px}
+.logo{font-weight:800;letter-spacing:.14em;font-size:14px}
+.logo span{color:var(--brand)}
+.top .sp{flex:1}
+.top a{font-size:13px;color:var(--muted);text-decoration:none}
+.top .btn{margin-left:6px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:14px;font-weight:700;padding:12px 22px;border-radius:999px;border:1px solid transparent;
+  cursor:pointer;text-decoration:none;transition:.15s;font-family:inherit}
+.btn.primary{background:var(--brand);color:#06122e}
+.btn.primary:hover{background:var(--bright)}
+.btn.ghost{border-color:var(--line);color:var(--text);background:transparent}
+.btn.ghost:hover{border-color:var(--brand);color:var(--bright)}
+.btn.sm{font-size:13px;padding:9px 17px}
+
+/* ── 히어로: 관제실 ── */
+.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;
+  min-height:clamp(540px,78vh,780px);
+  background:radial-gradient(120% 92% at 50% -12%,var(--lift) 0%,var(--base) 56%,var(--deep) 100%),
+             linear-gradient(180deg,transparent 74%,var(--bridge) 100%)}
+.hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(143,182,255,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(143,182,255,.055) 1px,transparent 1px);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(80% 72% at 50% 46%,#000 16%,transparent 100%);
+          mask-image:radial-gradient(80% 72% at 50% 46%,#000 16%,transparent 100%)}
+.hero .scan{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent 0%,rgba(143,182,255,.06) 44%,rgba(143,182,255,.13) 50%,rgba(143,182,255,.06) 56%,transparent 100%);
+  background-size:44% 100%;background-repeat:no-repeat;animation:scan 22s linear infinite}
+@keyframes scan{from{background-position:-46% 0}to{background-position:146% 0}}
+@media(prefers-reduced-motion:reduce){.hero .scan{animation:none;opacity:.4}}
+.hero .wrap{position:relative;z-index:3;padding:100px 22px 70px}
+.eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.2em;color:var(--brand);margin-bottom:18px}
+.hero h1{font-size:clamp(29px,5.2vw,54px);font-weight:800;line-height:1.17;letter-spacing:-.025em;margin:0 0 18px}
+.hero .sub{color:#c3d2ee;font-size:clamp(15px,1.9vw,18.5px);max-width:640px;margin:0 0 30px}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap}
+.hero .note{margin-top:16px;font-size:12.5px;color:var(--faint)}
+
+/* 숫자 스트립 */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:44px}
+.strip>div{background:rgba(8,14,30,.9);padding:20px 18px}
+.strip b{display:block;font-size:clamp(19px,2.6vw,27px);font-weight:800;line-height:1.15;font-feature-settings:"tnum"}
+.strip span{display:block;margin-top:4px;font-size:11.5px;color:var(--faint)}
+@media(max-width:700px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* 공통 */
+.shead{margin-bottom:34px}
+.shead .kicker{font-size:11.5px;font-weight:800;letter-spacing:.18em;color:var(--brand);margin-bottom:12px}
+h2{font-size:clamp(24px,3.6vw,38px);font-weight:800;letter-spacing:-.025em;line-height:1.25;margin:0 0 12px}
+.lead{color:var(--muted);font-size:15.5px;max-width:740px;margin:0}
+h3{font-size:19px;font-weight:800;margin:38px 0 14px;letter-spacing:-.01em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+.pull{font-size:clamp(19px,2.7vw,27px);font-weight:800;line-height:1.45;color:var(--bright);
+  border-left:3px solid var(--bright);padding-left:20px;margin:32px 0;letter-spacing:-.015em}
+.small{font-size:13px;color:var(--faint)}
+
+/* 손실 카드 */
+.loss{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
+.loss h4{margin:0 0 8px;font-size:16px;font-weight:800}
+.loss p{margin:0;color:var(--muted);font-size:14.5px}
+
+/* 계산기 */
+.calc{background:rgba(0,0,0,.28);border:1px solid rgba(143,182,255,.28);border-radius:var(--r);padding:28px 30px;margin-top:24px}
+.calcrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:16px}
+.calc input{width:130px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:var(--r-sm);
+  color:var(--text);padding:12px 14px;font-size:17px;font-family:inherit;font-weight:700;text-align:right;
+  font-feature-settings:"tnum"}
+.calc input:focus{outline:none;border-color:var(--brand)}
+.calc .eq{font-size:22px;color:var(--faint)}
+.calc .out{margin-top:22px;padding-top:22px;border-top:1px dashed rgba(143,182,255,.3)}
+.calc .out .n{font-size:clamp(30px,5.5vw,50px);font-weight:800;color:var(--bright);
+  font-feature-settings:"tnum";letter-spacing:-.02em;line-height:1.1}
+.calc .out .l{font-size:14px;color:var(--muted);margin-top:6px}
+
+/* 마스터-슬레이브 */
+.dia{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:28px 24px;
+  background:rgba(0,0,0,.26);border:1px solid var(--line);border-radius:var(--r);margin:18px 0}
+.node{border:1px solid rgba(143,182,255,.34);background:rgba(143,182,255,.09);border-radius:var(--r-sm);
+  padding:14px 16px;text-align:center;min-width:92px;transition:.2s}
+.node b{display:block;font-size:13px;font-weight:800}
+.node span{font-size:10.5px;color:var(--faint)}
+.node.master{border-color:var(--brand);background:rgba(110,168,255,.22);min-width:112px}
+.node.master b{color:var(--bright)}
+.node.add{border-style:dashed;opacity:.55}
+.rail{flex:1;height:1px;background:rgba(143,182,255,.35);min-width:12px}
+@media(max-width:640px){.dia{flex-direction:column}.rail{width:1px;height:16px;flex:none}}
+
+.counter{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:20px}
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.stepper button{background:rgba(255,255,255,.06);border:none;color:var(--text);width:44px;height:44px;
+  font-size:19px;cursor:pointer;font-family:inherit;transition:.15s}
+.stepper button:hover{background:var(--brand);color:#06122e}
+.stepper .v{padding:0 20px;font-weight:800;font-size:15px;font-feature-settings:"tnum";white-space:nowrap}
+.chout{font-size:clamp(26px,4vw,40px);font-weight:800;color:var(--bright);font-feature-settings:"tnum";letter-spacing:-.02em}
+.chout small{font-size:14px;color:var(--faint);font-weight:400;margin-left:8px;letter-spacing:0}
+
+/* 표 */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14.5px}
+th,td{text-align:left;padding:16px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--faint);font-weight:800;letter-spacing:.04em;white-space:nowrap}
+td.them{color:var(--faint)}
+td.us{color:var(--text);background:rgba(143,182,255,.06);
+  border-left:1px solid rgba(143,182,255,.22);border-right:1px solid rgba(143,182,255,.22)}
+tr:first-child td.us{border-top:1px solid rgba(143,182,255,.22);
+  border-top-left-radius:var(--r);border-top-right-radius:var(--r)}
+tr:last-child td.us{border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r)}
+.note{margin-top:14px;font-size:12px;color:var(--faint)}
+
+/* 등급 */
+.tier{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px;position:relative}
+.tier.hot{border-color:rgba(143,182,255,.4);background:rgba(143,182,255,.08)}
+.tier .badge{position:absolute;top:-11px;left:24px;background:var(--brand);color:#06122e;
+  font-size:10.5px;font-weight:800;padding:4px 12px;border-radius:999px;letter-spacing:.03em}
+.tier h4{margin:0 0 4px;font-size:20px;font-weight:800}
+.tier .ch{font-size:13px;color:var(--brand);font-weight:700;margin-bottom:16px}
+.tier .price{font-size:26px;font-weight:800;font-feature-settings:"tnum";letter-spacing:-.02em;margin:14px 0 2px}
+.tier .price s{font-size:15px;color:var(--faint);font-weight:400;margin-right:9px}
+.tier .vat{font-size:11.5px;color:var(--faint);margin-bottom:16px}
+.tier ul{margin:0;padding-left:17px;font-size:13.8px;color:var(--muted)}
+.tier li{margin:6px 0}
+
+/* 워치독 3단 */
+.wd{border-radius:var(--r);padding:22px 24px;border:1px solid var(--line);background:var(--card)}
+.wd .who{font-size:12px;font-weight:800;letter-spacing:.05em;margin-bottom:8px}
+.wd .res{font-size:14.5px;color:var(--muted);margin:0 0 12px}
+.wd .cost{font-size:22px;font-weight:800;font-feature-settings:"tnum"}
+.wd.a{border-color:rgba(255,123,115,.3)} .wd.a .who,.wd.a .cost{color:var(--bad)}
+.wd.b{border-color:rgba(240,184,77,.3)} .wd.b .who,.wd.b .cost{color:var(--warn)}
+.wd.c{border-color:rgba(95,211,160,.36);background:rgba(95,211,160,.07)} .wd.c .who,.wd.c .cost{color:var(--ok)}
+
+/* 정직 박스 */
+.honest{border:1px dashed rgba(255,255,255,.25);border-radius:var(--r);padding:24px 26px;background:rgba(0,0,0,.18)}
+.honest h4{margin:0 0 10px;font-size:16px;font-weight:800;color:var(--muted)}
+
+/* before/after */
+.ba{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin:10px 0}
+.ba .lab{font-size:13px;color:var(--faint);font-weight:700}
+.gantt{display:flex;gap:3px;height:36px}
+.gantt i{border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11.5px;
+  font-style:normal;white-space:nowrap;overflow:hidden}
+.gantt.b i{background:rgba(255,255,255,.07);color:var(--faint)}
+.gantt.a i{background:rgba(143,182,255,.17);color:#dbe9ff;border:1px solid rgba(143,182,255,.3)}
+@media(max-width:640px){.ba{grid-template-columns:1fr;gap:4px}.gantt i{font-size:0}}
+
+/* FAQ */
+details{border:1px solid var(--line);border-radius:var(--r);padding:0;margin-bottom:10px;background:var(--card)}
+summary{cursor:pointer;padding:18px 22px;font-weight:700;font-size:15.5px;list-style:none;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:22px;color:var(--brand);font-size:19px;font-weight:400}
+details[open] summary::after{content:"−"}
+details .body{padding:0 22px 20px;color:var(--muted);font-size:14.5px}
+
+/* 프로세스 */
+.step{display:flex;gap:18px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--line)}
+.step .n{width:34px;height:34px;flex:0 0 auto;border-radius:50%;border:1px solid var(--brand);
+  color:var(--brand);display:grid;place-items:center;font-weight:800;font-size:14px}
+.step h4{margin:0 0 4px;font-size:17px;font-weight:800}
+.step p{margin:0;color:var(--muted);font-size:14.5px}
+
+/* CTA */
+.ctabox{background:radial-gradient(120% 140% at 50% 0%,rgba(110,168,255,.16) 0%,transparent 62%),rgba(0,0,0,.24);
+  border:1px solid rgba(143,182,255,.3);border-radius:20px;padding:52px 40px;text-align:center}
+.ctabox h2{margin-bottom:14px}
+.ctabox .micro{margin-top:20px;font-size:13px;color:var(--faint);line-height:2}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:620px;margin:28px auto 0;text-align:left}
+.form .full{grid-column:1/-1}
+.form label{display:block;font-size:12px;color:var(--faint);margin-bottom:6px;font-weight:700}
+.form input,.form textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:var(--r-sm);color:var(--text);padding:12px 14px;font-size:14.5px;font-family:inherit}
+.form input:focus,.form textarea:focus{outline:none;border-color:var(--brand)}
+.form textarea{min-height:88px;resize:vertical}
+@media(max-width:640px){.form{grid-template-columns:1fr}.ctabox{padding:38px 22px}}
+
+/* 모바일 하단 고정 */
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:8px;padding:10px 14px;
+  background:rgba(6,18,46,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.mbar .btn{flex:1}
+@media(max-width:760px){.mbar{display:flex}body{padding-bottom:74px}}
+
+footer{padding:56px 0 40px;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
+.proto{position:fixed;top:66px;right:14px;z-index:70;background:rgba(240,184,77,.16);
+  border:1px solid rgba(240,184,77,.45);color:var(--warn);font-size:11px;font-weight:800;
+  padding:6px 12px;border-radius:999px;letter-spacing:.04em}
+@media(max-width:760px){.proto{display:none}}
+</style>
+
+<div class="proto">시안 · 실제 미반영</div>
+
+<div class="top"><div class="wrap">
+  <div class="logo">FANTA<span>STRICK</span> · BUSINESS</div>
+  <div class="sp"></div>
+  <a href="#compare">비교</a>
+  <a href="#faq">자주 묻는 질문</a>
+  <a class="btn primary sm" href="#cta">무료 진단 신청</a>
+</div></div>
+
+<!-- ═══ 히어로 ═══ -->
+<div class="hero">
+  <div class="scan"></div>
+  <div class="wrap">
+    <div class="eyebrow">방탈출 테마 중앙제어 · 매장 운영 솔루션</div>
+    <h1>저희도 강남에서 방탈출 합니다.<br>11년째, 지금도.</h1>
+    <p class="sub">판타스트릭은 직영 3개 매장을 11년째 직접 운영하고 있습니다.
+      저희가 매일 쓰려고 만든 테마 제어 시스템과 매장 운영 도구를, 이제 사장님 매장에도 넣어드립니다.
+      <b style="color:var(--text)">만든 사람이 곧 쓰는 사람입니다.</b></p>
+    <div class="cta">
+      <a class="btn primary" href="#cta">우리 매장 무료 진단 받기</a>
+      <a class="btn ghost" href="#cta">강남 직영 매장에서 실물 보기</a>
+    </div>
+    <p class="note">진단은 무료입니다 · 진단 후 안 하셔도 됩니다 · 영업 전화 안 드립니다</p>
+
+    <div class="strip">
+      <div><b>11년</b><span>직영 매장 운영</span></div>
+      <div><b>3개 매장</b><span>강남 직영 1·2·3호점</span></div>
+      <div><b>24시간</b><span>워치독 무인 감시</span></div>
+      <div><b>+32ch</b><span>모듈 단위 무제한 확장</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══ 손실 자각 ═══ -->
+<section>
+  <div class="shead">
+    <div class="kicker">지금 새고 있는 것</div>
+    <h2>지난달, 장치 때문에 못 돌린<br>회차가 몇 번이었습니까.</h2>
+    <p class="lead">방탈출은 재고가 시간인 장사입니다. 오후 2시 타임을 못 팔면 그 매출은 영원히 사라집니다.
+      다음 날 두 배로 받을 수 없으니까요.</p>
+  </div>
+
+  <div class="grid2" style="gap:14px">
+    <div class="loss"><h4>멈춘 시간 = 사라진 매출</h4>
+      <p>테마가 하루 멈추면 그날 회차는 되돌아오지 않습니다. 환불해드리고, 사과하고, 리뷰까지 깎입니다.</p></div>
+    <div class="loss"><h4>채널이 모자라서 포기한 기믹</h4>
+      <p>장치 하나 더 넣으려다 채널이 없어서 접어본 적 있으시죠. 컨트롤러를 통째로 바꾸는 견적을 보고 그냥 접습니다.</p></div>
+    <div class="loss"><h4>고장을 손님이 먼저 압니다</h4>
+      <p>지금 장치가 죽었는지, 알바가 인터폰으로 알려주기 전까지 아무도 모릅니다.</p></div>
+    <div class="loss"><h4>새벽 2시의 엑셀</h4>
+      <p>마감하고 근태 정리, 스케줄 짜고, 말일엔 급여. 이거 다 사장님 시간입니다.</p></div>
+  </div>
+
+  <div class="calc">
+    <div class="calcrow">
+      <span>한 회차 매출</span>
+      <input id="c1" type="text" inputmode="numeric" value="60,000">
+      <span class="eq">×</span>
+      <span>하루 회차 수</span>
+      <input id="c2" type="text" inputmode="numeric" value="12">
+    </div>
+    <div class="out">
+      <div class="n" id="cout">720,000원</div>
+      <div class="l">테마 하나가 <b style="color:var(--text)">하루 멈출 때</b> 사라지는 금액입니다.
+        <span class="small">(사장님 매장 숫자를 직접 넣어보세요)</span></div>
+    </div>
+  </div>
+
+  <div class="pull">저희도 11년간 똑같이 겪었습니다.<br>그래서 사서 쓰는 걸 포기하고, 직접 만들었습니다.</div>
+</section>
+
+<!-- ═══ 단락 1 ═══ -->
+<section id="control">
+  <div class="shead">
+    <div class="kicker">01 · 테마 중앙제어 시스템</div>
+    <h2>채널이 모자라서 연출을<br>포기하는 일은 없어야 합니다.</h2>
+    <p class="lead">마스터 1대가 두뇌입니다. 여기에 I/O 모듈을 붙일 때마다 쓸 수 있는 채널이 늘어납니다.
+      장치를 더 넣고 싶으면 모듈 한 장 더 붙이면 끝입니다. 본체는 그대로 둡니다.</p>
+  </div>
+
+  <div class="dia" id="dia">
+    <div class="node master"><b>마스터</b><span>두뇌 · 콘솔</span></div>
+    <div class="rail"></div>
+    <div class="node"><b>I/O 모듈</b><span>+32ch</span></div>
+    <div class="rail"></div>
+    <div class="node"><b>I/O 모듈</b><span>+32ch</span></div>
+    <div class="rail"></div>
+    <div class="node add"><b>+ N</b><span>계속</span></div>
+  </div>
+
+  <div class="counter">
+    <div class="stepper">
+      <button onclick="ch(-1)" aria-label="모듈 빼기">−</button>
+      <span class="v">I/O 모듈 <b id="cn">2</b>장</span>
+      <button onclick="ch(1)" aria-label="모듈 추가">+</button>
+    </div>
+    <div class="chout"><span id="chv">96</span> 채널<small>직접 눌러보세요</small></div>
+  </div>
+
+  <div class="pull">기존 방식은 채널이 부족하면 컨트롤러를 바꿉니다.<br>저희는 모듈을 더 붙입니다.</div>
+
+  <h3>등급 3종</h3>
+  <div class="grid3">
+    <div class="tier">
+      <h4>소형</h4><div class="ch">23채널 이하</div>
+      <div class="price"><s>250만</s>199만</div><div class="vat">런칭 할인가 · VAT 별도</div>
+      <ul>
+        <li>제어 장비</li>
+        <li><b style="color:var(--muted)">확장은 안 됩니다</b> — 정직하게 말씀드립니다</li>
+        <li>대신 표준으로 넘어가실 때 <b style="color:var(--bright)">쓰시던 제품값을 쳐드립니다</b></li>
+        <li>소규모 테마 · 1실 리뉴얼</li>
+      </ul>
+    </div>
+    <div class="tier hot">
+      <span class="badge">가장 많이 선택</span>
+      <h4>표준</h4><div class="ch">32채널 기본 · 무제한 확장</div>
+      <div class="price"><s>450만</s>399만</div><div class="vat">런칭 할인가 · VAT 별도</div>
+      <ul>
+        <li>산업용 표준 I/O 모듈</li>
+        <li><b style="color:var(--bright)">+32채널 단위로 계속 확장</b> (모듈 1식 120만)</li>
+        <li>24시간 워치독 감시</li>
+        <li>신규 오픈 · 본격 운영</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <h4>턴키</h4><div class="ch">128채널 풀 테마</div>
+      <div class="price"><s>1,290만</s>1,190만</div><div class="vat">런칭 할인가 · VAT 별도</div>
+      <ul>
+        <li><b style="color:var(--bright)">콘텐츠 기획 · 연출 · 장치 설계까지</b></li>
+        <li>중앙제어 마스터 + 확장 모듈 3세트</li>
+        <li>현장 배선 · 설치 · 통신 구축</li>
+        <li>통합 검수 · 연출 튜닝 · 교육</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">설치·안정화 80만원 별도 (3일 기준) · 보증: 보드·모듈 1년 / 부품 6개월 무상</p>
+
+  <div class="card" style="margin-top:20px">
+    <p style="margin:0;font-size:15px">견적은 매장마다 다릅니다. 다만 한 가지는 말씀드릴 수 있습니다.<br>
+      <b>저희는 턴키 시공을 남에게 맡기지 않습니다. 기획도, 장치도, 설치도 저희 팀이 합니다.</b>
+      중간 마진이 붙는 단계가 없다는 뜻이고, 그게 견적서에 그대로 나타납니다.</p>
+  </div>
+
+  <h3>워치독 — 고장을 누가 먼저 발견하느냐</h3>
+  <div class="grid3">
+    <div class="wd a"><div class="who">손님이 발견</div>
+      <p class="res">게임 중단 → 환불 + 보상쿠폰 + 부정 리뷰</p><div class="cost">회차당 12만원 + 평판</div></div>
+    <div class="wd b"><div class="who">직원이 발견</div>
+      <p class="res">당일 회차 취소 → 예약 재배치</p><div class="cost">회차당 6만원</div></div>
+    <div class="wd c"><div class="who">시스템이 발견</div>
+      <p class="res">영업 시작 전 원격 진단 · 복구</p><div class="cost">0원</div></div>
+  </div>
+  <p class="note" style="margin-top:16px">통신이 끊기거나 장치가 응답하지 않으면 손님보다, 알바보다 먼저 저희가 압니다.
+    사장님 휴대폰으로 알림이 갑니다 — <b style="color:var(--text)">"3번 방 전자석 응답 없음."</b></p>
+
+  <div class="pull">고장은 못 막습니다.<br>하지만 '모르는 시간'은 없앨 수 있습니다.</div>
+
+  <div class="honest">
+    <h4>워치독이 못 막는 것 — 정직하게 말씀드립니다</h4>
+    <p style="margin:0;color:var(--muted);font-size:14.5px">손님이 뜯은 소품, 끊어진 배선, 정전, 소품 자체의 물리 고장은
+      워치독으로 막을 수 없습니다. <b style="color:var(--text)">워치독은 고장을 없애지 않습니다. 모르는 시간을 없앨 뿐입니다.</b></p>
+  </div>
+</section>
+
+<!-- ═══ 단락 2 ═══ -->
+<section id="ops">
+  <div class="shead">
+    <div class="kicker">02 · 매장 운영 솔루션</div>
+    <h2>테마는 잘 만드셨는데,<br>매장은 아직 엑셀로 돌아갑니다.</h2>
+    <p class="lead">예약 타임표 ↔ GM 배치 ↔ 근무 기록 ↔ 급여가 한 줄로 붙습니다.
+      범용 근태 앱은 "몇 시에 어느 방에 GM이 붙어야 하는가"를 모릅니다.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th style="width:140px">무엇을</th><th>지금</th><th class="us" style="width:38%">도입 후</th></tr></thead>
+    <tbody>
+      <tr><td><b>근태 · 스케줄</b></td>
+        <td class="them">알바 출퇴근 카톡으로 받고, 스케줄은 엑셀로 짜서 단톡에 사진</td>
+        <td class="us">폰으로 출퇴근 찍고, 스케줄은 앱에서. 대타도 서로 신청·승인</td></tr>
+      <tr><td><b>급여 · 매출 장부</b></td>
+        <td class="them">말일에 시급 계산기 두드리기</td>
+        <td class="us">근태가 그대로 급여로. 매출까지 한 화면</td></tr>
+      <tr><td><b>예약 + 홈페이지</b></td>
+        <td class="them">외부 플랫폼 수수료, 손 안 대는 홈페이지</td>
+        <td class="us">테마별 타임 그리드 · 예약금 입금확인 · 환불 규정까지. 홈페이지도 같이</td></tr>
+      <tr><td><b>쿠폰 발행기</b></td>
+        <td class="them">종이 쿠폰, 관리 안 됨</td>
+        <td class="us">발행 · 사용 이력 관리</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="pull">전부 저희 매장 3곳에서 지금 이 순간 돌아가고 있는 것들입니다.<br>데모용으로 만든 게 아닙니다.</div>
+
+  <h3>케어 — 장비 사후관리</h3>
+  <div class="grid3">
+    <div class="card"><b>워치독 24시간 감시</b><p class="small" style="margin:8px 0 0">이상이 감지되면 저희가 먼저 확인합니다</p></div>
+    <div class="card"><b>원격 버그·에러 대응</b><p class="small" style="margin:8px 0 0">사람이 갈 때까지 기다리지 않습니다</p></div>
+    <div class="card"><b>자사 장비 AS 직접</b><p class="small" style="margin:8px 0 0">제조사·시공사 사이에서 떠넘겨지지 않습니다</p></div>
+  </div>
+  <div class="pull" style="margin-bottom:0">전화 한 통이면 끝납니다.<br>어디에 전화해야 하는지 고민하실 일이 없습니다.</div>
+</section>
+
+<!-- ═══ 비교표 ═══ -->
+<section id="compare">
+  <div class="shead">
+    <div class="kicker">왜 우리는 다르게 만드나</div>
+    <h2>구조가 다르면<br>1년 뒤가 다릅니다.</h2>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th style="width:22%"></th><th>개별 제작 방식</th><th>직접 구축(자작)</th><th class="us">판타스트릭</th></tr></thead>
+    <tbody>
+      <tr><td><b>채널 추가</b></td><td class="them">본체 교체가 필요한 경우</td><td class="them">배선·코드를 다시 손봐야</td><td class="us"><b>모듈 한 장 추가</b></td></tr>
+      <tr><td><b>부품 조달</b></td><td class="them">업체 전용 기판에 의존</td><td class="them">취미용 부품</td><td class="us"><b>산업용 표준품 · 국내 제조</b><br><span class="small">다른 자동화 업체도 이어받을 수 있습니다</span></td></tr>
+      <tr><td><b>고장 감지</b></td><td class="them">사람이 발견해야</td><td class="them">사람이 발견해야</td><td class="us"><b>24시간 자동 감지 + 알림</b></td></tr>
+      <tr><td><b>장애 대응 경로</b></td><td class="them">시공사 → 제작사 → 부품사</td><td class="them">사장님 본인</td><td class="us"><b>한 팀. 전화 받는 사람이 만든 사람</b></td></tr>
+      <tr><td><b>매장 운영 SW</b></td><td class="them">없음</td><td class="them">없음</td><td class="us"><b>근태·급여·예약·쿠폰 포함</b></td></tr>
+      <tr><td><b>콘텐츠 기획까지</b></td><td class="them">별도 외주</td><td class="them">사장님 본인</td><td class="us"><b>턴키에 포함</b></td></tr>
+      <tr><td><b>만든 회사가<br>방탈출을 직접 운영</b></td><td class="them">—</td><td class="them">—</td><td class="us"><b>강남 3개 매장 · 11년</b></td></tr>
+      <tr><td><b>비용 구조</b></td><td class="them">확장할 때마다 큰 지출</td><td class="them">초기엔 싸지만 시간이 큰 비용</td><td class="us"><b>초기 + 모듈 단위 소액 증설</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">※ 위 비교는 업계에서 일반적으로 사용되는 방식과 저희 제품의 구조적 차이를 정리한 것입니다.
+    특정 업체의 제품을 지칭하지 않으며, 개별 제품에 따라 사양은 다를 수 있습니다.</p>
+
+  <h3 style="margin-top:44px">테마 하나 세울 때</h3>
+  <div class="ba"><div class="lab">직접 구성</div>
+    <div class="gantt b"><i style="flex:1.2">견적</i><i style="flex:1">발주</i><i style="flex:2">배선</i><i style="flex:1.8">디버깅</i><i style="flex:1.4">재작업</i><i style="flex:.8">오픈</i></div></div>
+  <div class="ba"><div class="lab">판타스트릭</div>
+    <div class="gantt a"><i style="flex:2.2">설치·안정화</i><i style="flex:1">오픈</i></div></div>
+</section>
+
+<!-- ═══ 신뢰 ═══ -->
+<section>
+  <div class="shead">
+    <div class="kicker">11년의 증거</div>
+    <h2>이 목록이 이 제품의<br>요구사항 문서였습니다.</h2>
+    <p class="lead">11년 동안 저희 매장에서 실제로 벌어진 일들입니다.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">🔓 도어락이 게임 도중에 풀림</div>
+    <div class="card">🧩 손님이 소품을 뜯어버림</div>
+    <div class="card">⚡ 정전 후 리셋이 안 됨</div>
+    <div class="card">📢 GM이 힌트를 못 보냄</div>
+    <div class="card">🔌 채널이 없어서 기믹을 접음</div>
+    <div class="card">🌙 마감 후 새벽까지 근태 정리</div>
+  </div>
+  <div class="pull">저희 매장에 안 넣을 물건은 팔지 않습니다.</div>
+
+  <div class="card">
+    <h4 style="margin:0 0 10px;font-size:17px">직접 오셔서 보셔도 됩니다</h4>
+    <p style="margin:0;color:var(--muted);font-size:14.5px">강남 직영 1·2·3호점에서 지금 돌아가고 있습니다.
+      제어반 실물도, 워치독 알림도, 운영 화면도 그 자리에서 보여드립니다.</p>
+  </div>
+</section>
+
+<!-- ═══ 락인 없음 ═══ -->
+<section>
+  <div class="shead">
+    <div class="kicker">먼저 말씀드립니다</div>
+    <h2>저희도 방탈출을 합니다.<br>그래서 이건 계약서에 씁니다.</h2>
+    <p class="lead">같은 업을 하는 회사에서 사는 게 마음에 걸리실 수 있습니다. 당연한 걱정입니다.
+      그래서 저희가 먼저 꺼냅니다.</p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h4 style="margin:0 0 8px;font-size:16px">시나리오는 가져가지 않습니다</h4>
+      <p class="small" style="margin:0">고객사의 시나리오·퍼즐 구조는 판타스트릭 직영 테마에 사용하지 않습니다. 계약서에 명문화합니다.</p></div>
+    <div class="card"><h4 style="margin:0 0 8px;font-size:16px">시공 사례를 비공개할 수 있습니다</h4>
+      <p class="small" style="margin:0">요청하시면 저희 레퍼런스 목록에 매장을 올리지 않습니다.</p></div>
+    <div class="card"><h4 style="margin:0 0 8px;font-size:16px">운영 데이터는 분리됩니다</h4>
+      <p class="small" style="margin:0">직영 운영팀은 고객사의 예약·매출 데이터에 접근하지 않습니다.</p></div>
+    <div class="card"><h4 style="margin:0 0 8px;font-size:16px">하드웨어만 사셔도 됩니다</h4>
+      <p class="small" style="margin:0">콘텐츠 기획이 부담스러우시면 제어 장비만 공급받는 경로가 따로 있습니다.</p></div>
+  </div>
+</section>
+
+<!-- ═══ 프로세스 ═══ -->
+<section>
+  <div class="shead"><div class="kicker">도입 절차</div><h2>세 단계면 끝납니다.</h2></div>
+  <div class="step"><div class="n">1</div><div><h4>매장 방문 진단 (무료)</h4>
+    <p>지금 쓰시는 장비, 테마 수, 불편한 점을 봅니다. 진단만 받고 안 하셔도 됩니다.</p></div></div>
+  <div class="step"><div class="n">2</div><div><h4>설계 · 견적</h4>
+    <p>필요한 채널 수와 범위를 정해 견적서 한 장으로 드립니다.</p></div></div>
+  <div class="step"><div class="n">3</div><div><h4>설치 · 인수인계 · 케어 시작</h4>
+    <p>설치 후 GM 교육까지. 그다음부터는 워치독이 봅니다.</p></div></div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section id="faq">
+  <div class="shead"><div class="kicker">자주 묻는 질문</div><h2>이런 것들을 물어보십니다.</h2></div>
+  <details><summary>지금 다른 회사 시스템을 쓰고 있는데 갈아탈 수 있나요?</summary>
+    <div class="body">쓰시던 전자석·마그네틱 센서·조명 같은 엔드 장치는 대부분 선만 옮겨 물리면 됩니다.
+      무엇을 재활용할 수 있는지는 <b>무료 진단에서 그 자리에서 확인해</b> 드립니다.</div></details>
+  <details><summary>공사하는 동안 영업을 못 하나요?</summary>
+    <div class="body">설치·안정화는 3일 기준입니다. 테마 한 실씩 나눠 진행하면 매장 전체를 닫지 않아도 됩니다.
+      일정은 예약이 적은 요일에 맞춰 잡습니다.</div></details>
+  <details><summary>강남이 아니어도 되나요?</summary>
+    <div class="body">됩니다. 다만 동시에 여러 현장을 맡지 않습니다. <b>한 번에 한 곳씩 끝까지 봅니다.</b>
+      그래서 일정이 밀릴 수 있고, 그건 미리 말씀드립니다.</div></details>
+  <details><summary>고장 나면 얼마나 빨리 와주시나요?</summary>
+    <div class="body">워치독이 이상을 감지하면 <b>저희가 먼저 확인하고 연락</b>드립니다.
+      원격으로 되는 건 방문 없이 처리합니다. 그리고 전화를 받는 사람이 그 장비를 만든 사람입니다 —
+      시공사에서 제작사로, 다시 부품사로 넘어가며 시간이 가는 일이 없습니다.</div></details>
+  <details><summary>나중에 다른 업체로 옮기면 시스템을 못 쓰게 되나요?</summary>
+    <div class="body">저희는 <b>산업용 표준 부품</b>을 씁니다. 저희만 아는 비밀 규격이 아니라,
+      시중에서 구할 수 있고 다른 자동화 업체도 다룰 수 있는 방식입니다.</div></details>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section id="cta">
+  <div class="ctabox">
+    <div class="kicker">CONTACT</div>
+    <h2>우리 매장, 한번 봐주세요.</h2>
+    <p class="lead" style="margin:0 auto;max-width:520px">지금 쓰시는 시스템이 있어도 괜찮습니다.
+      그대로 두고, 볼 수 있는 것부터 봅니다.</p>
+
+    <form class="form" onsubmit="event.preventDefault();alert('시안입니다 — 실제 전송되지 않습니다.')">
+      <div><label>매장명</label><input type="text" placeholder="○○이스케이프"></div>
+      <div><label>연락처</label><input type="text" placeholder="010-0000-0000"></div>
+      <div><label>운영 테마 수</label><input type="text" placeholder="3"></div>
+      <div><label>지역</label><input type="text" placeholder="서울 강남"></div>
+      <div class="full"><label>지금 가장 불편한 것 (선택)</label>
+        <textarea placeholder="예: 3번 방 전자석이 자꾸 안 먹혀요"></textarea></div>
+      <div class="full"><button class="btn primary" style="width:100%">무료 진단 신청하기</button></div>
+    </form>
+
+    <div class="micro">진단은 무료입니다. 진단 후 안 하셔도 됩니다.<br>
+      영업 전화는 드리지 않습니다. 카톡으로만 연락드려요.</div>
+  </div>
+</section>
+
+<footer>
+  <div>FANTASTRICK · 강남 직영 1·2·3호점 · fantastrick@fantastrick.co.kr</div>
+  <div style="margin-top:8px;color:rgba(240,184,77,.85)">⚠️ 이 페이지는 <b>구성 시안</b>입니다. 실제 사이트에 반영되지 않았습니다.</div>
+</footer>
+</div>
+
+<div class="mbar">
+  <a class="btn ghost sm" href="tel:0000">전화 걸기</a>
+  <a class="btn primary sm" href="#cta">무료 진단 신청</a>
+</div>
+
+<script>
+// 손실 계산기 — 사장님이 자기 숫자를 넣는다
+const f = n => n.toLocaleString('ko-KR');
+const num = s => Number(String(s).replace(/[^0-9]/g,'')) || 0;
+function calc(){
+  const a = num(document.getElementById('c1').value);
+  const b = num(document.getElementById('c2').value);
+  document.getElementById('cout').textContent = f(a*b) + '원';
+}
+['c1','c2'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{
+    const v = num(el.value);
+    el.value = v ? f(v) : '';
+    calc();
+  });
+});
+
+// 채널 카운터 — "무한 확장"을 손으로 눌러 확인
+let mods = 2;
+function ch(d){
+  mods = Math.max(0, Math.min(8, mods + d));
+  document.getElementById('cn').textContent = mods;
+  document.getElementById('chv').textContent = 32 + mods*32;
+  const dia = document.getElementById('dia');
+  dia.innerHTML = '<div class="node master"><b>마스터</b><span>두뇌 · 콘솔</span></div>';
+  for(let i=0;i<mods;i++){
+    dia.insertAdjacentHTML('beforeend','<div class="rail"></div><div class="node"><b>I/O 모듈</b><span>+32ch</span></div>');
+  }
+  dia.insertAdjacentHTML('beforeend','<div class="rail"></div><div class="node add"><b>+ N</b><span>계속</span></div>');
+}
+</script>

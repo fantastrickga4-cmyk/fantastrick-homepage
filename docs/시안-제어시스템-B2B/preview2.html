@@ -1,0 +1,452 @@
+<title>판타스트릭 비즈니스 — 시안 v2</title>
+<style>
+:root{
+  --deep:#070c18; --base:#0b1020; --lift:#12224f; --bridge:#062a80; --surf:#071b4d;
+  --text:#e9f0ff; --muted:#a9b8d6; --faint:#8090b4;
+  --brand:#6ea8ff; --bright:#8fb6ff;
+  /* 차트 색 — 검증 통과 (dark, surface #071b4d): L밴드·채도·색약분리·정상시야·대비 전부 PASS */
+  --c-us:#3585ea; --c-them:#c48226;
+  --s-bad:#d9534f; --s-warn:#d99a2b; --s-good:#3fa66f;
+  --line:rgba(255,255,255,.13); --card:rgba(255,255,255,.05);
+  --r:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--text);font-size:16px;line-height:1.65;
+  font-family:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,#062a80 0%,#05236c 45%,#041d57 100%);background-attachment:fixed}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+section{padding:74px 0;border-top:1px solid rgba(255,255,255,.09)}
+@media(max-width:640px){section{padding:52px 0}}
+
+.top{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(6,18,46,.85);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:56px}
+.logo{font-weight:800;letter-spacing:.14em;font-size:13px}.logo span{color:var(--brand)}
+.top .sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:700;
+  padding:12px 22px;border-radius:999px;border:1px solid transparent;cursor:pointer;text-decoration:none;
+  transition:.15s;font-family:inherit}
+.btn.primary{background:var(--brand);color:#06122e}.btn.primary:hover{background:var(--bright)}
+.btn.ghost{border-color:var(--line);color:var(--text)}.btn.ghost:hover{border-color:var(--brand)}
+.btn.sm{font-size:13px;padding:9px 16px}
+
+/* 히어로 */
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;min-height:clamp(460px,66vh,640px);
+  background:radial-gradient(120% 92% at 50% -12%,var(--lift) 0%,var(--base) 56%,var(--deep) 100%),
+             linear-gradient(180deg,transparent 76%,var(--bridge) 100%)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(143,182,255,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(143,182,255,.055) 1px,transparent 1px);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(80% 72% at 50% 46%,#000 16%,transparent 100%);
+          mask-image:radial-gradient(80% 72% at 50% 46%,#000 16%,transparent 100%)}
+.hero .scan{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(143,182,255,.06) 44%,rgba(143,182,255,.13) 50%,rgba(143,182,255,.06) 56%,transparent);
+  background-size:44% 100%;background-repeat:no-repeat;animation:scan 22s linear infinite}
+@keyframes scan{from{background-position:-46% 0}to{background-position:146% 0}}
+@media(prefers-reduced-motion:reduce){.hero .scan{animation:none;opacity:.4}}
+.hero .wrap{position:relative;z-index:3;padding:80px 22px 56px}
+.hero h1{font-size:clamp(28px,5.4vw,52px);font-weight:800;line-height:1.16;letter-spacing:-.03em;margin:0 0 16px}
+.hero .sub{color:#c3d2ee;font-size:clamp(15px,1.9vw,18px);max-width:520px;margin:0 0 26px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.2em;color:var(--brand);margin-bottom:16px}
+
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:36px}
+.strip>div{background:rgba(8,14,30,.9);padding:18px 16px}
+.strip b{display:block;font-size:clamp(18px,2.5vw,25px);font-weight:800;font-feature-settings:"tnum";line-height:1.15}
+.strip span{display:block;margin-top:3px;font-size:11px;color:var(--faint)}
+@media(max-width:700px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* 섹션 헤더 — 짧게 */
+h2{font-size:clamp(23px,3.6vw,36px);font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:0 0 10px}
+.lead{color:var(--muted);font-size:15px;max-width:640px;margin:0 0 28px}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--brand);margin-bottom:11px}
+
+/* ── 차트 공통 ── */
+figure{margin:0;background:var(--surf);border:1px solid var(--line);border-radius:var(--r);padding:24px 26px}
+figcaption{font-size:13px;color:var(--faint);margin-top:16px;line-height:1.6}
+.ftitle{font-size:15px;font-weight:800;margin:0 0 18px}
+
+/* 회차 픽토그램 */
+.slots{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:18px}
+.slot{width:38px;height:52px;border-radius:6px;background:var(--c-us);position:relative;transition:.25s}
+.slot.dead{background:rgba(255,255,255,.09);box-shadow:inset 0 0 0 1px rgba(255,255,255,.13)}
+.slot.dead::after{content:"✕";position:absolute;inset:0;display:grid;place-items:center;
+  color:var(--s-bad);font-size:17px;font-weight:800}
+@media(max-width:520px){.slot{width:28px;height:42px}}
+.calcrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14.5px;color:var(--muted);margin-bottom:20px}
+.calcrow input{width:112px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:9px;
+  color:var(--text);padding:10px 12px;font-size:16px;font-weight:800;text-align:right;font-family:inherit;
+  font-feature-settings:"tnum"}
+.calcrow input:focus{outline:none;border-color:var(--brand)}
+.bignum{font-size:clamp(32px,6vw,54px);font-weight:800;color:var(--bright);font-feature-settings:"tnum";
+  letter-spacing:-.03em;line-height:1.05}
+
+/* 가로 막대 */
+.bars{display:flex;flex-direction:column;gap:16px}
+.bar{display:grid;grid-template-columns:118px 1fr;gap:14px;align-items:center}
+.bar .lab{font-size:13.5px;color:var(--muted);text-align:right;line-height:1.35}
+.bar .lab b{display:block;color:var(--text);font-size:14.5px}
+.bar .track{position:relative;height:44px;display:flex;align-items:center}
+.bar .fill{height:44px;border-radius:0 6px 6px 0;display:flex;align-items:center;padding-right:14px;
+  justify-content:flex-end;font-weight:800;font-size:15px;font-feature-settings:"tnum";
+  color:#fff;min-width:74px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar .fill.z{background:transparent;color:var(--s-good);justify-content:flex-start;padding-left:2px;min-width:0}
+@media(max-width:640px){.bar{grid-template-columns:1fr;gap:5px}.bar .lab{text-align:left}}
+
+/* 계단 차트 */
+.step-chart{position:relative;height:210px;margin:8px 0 4px}
+.step-chart svg{width:100%;height:100%;overflow:visible}
+.gl{stroke:rgba(255,255,255,.10);stroke-width:1}
+.axl{fill:var(--faint);font-size:11px}
+.dot{fill:var(--surf);stroke:var(--c-us);stroke-width:2}
+.dlab{fill:var(--text);font-size:12px;font-weight:800}
+
+/* 블록 확장 */
+.blocks{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:78px}
+.blk{border-radius:9px;padding:13px 15px;text-align:center;min-width:84px;
+  border:1px solid rgba(53,133,234,.5);background:rgba(53,133,234,.2)}
+.blk b{display:block;font-size:12.5px;font-weight:800}
+.blk span{font-size:10.5px;color:var(--faint)}
+.blk.main{border-color:var(--brand);background:rgba(110,168,255,.28);min-width:96px}
+.blk.ghost{border-style:dashed;opacity:.45}
+.plus{color:var(--faint);font-size:15px}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.stepper button{background:rgba(255,255,255,.07);border:none;color:var(--text);width:42px;height:42px;
+  font-size:19px;cursor:pointer;font-family:inherit}
+.stepper button:hover{background:var(--brand);color:#06122e}
+.stepper .v{padding:0 16px;font-weight:800;font-size:14px;white-space:nowrap}
+
+/* 비교 그리드 */
+.cmp{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;font-size:14px}
+.cmp>div{background:var(--surf);padding:15px 16px;display:flex;align-items:center;gap:9px}
+.cmp .h{background:rgba(255,255,255,.04);font-size:11.5px;font-weight:800;color:var(--faint);letter-spacing:.03em}
+.cmp .h.usc{color:var(--bright)}
+.cmp .rowlab{font-weight:700;font-size:14px}
+.cmp .usc{background:rgba(53,133,234,.13)}
+.ic{width:22px;height:22px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+.ic.y{background:rgba(63,166,111,.22);color:var(--s-good)}
+.ic.n{background:rgba(255,255,255,.09);color:var(--faint)}
+.cmp .t{font-size:13px}
+.cmp .t.mut{color:var(--faint)}
+@media(max-width:640px){.cmp{grid-template-columns:1fr 1fr}.cmp .rowlab{grid-column:1/-1;background:rgba(255,255,255,.04)}}
+
+/* 등급 */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:820px){.tiers{grid-template-columns:1fr}}
+.tier{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;position:relative}
+.tier.hot{border-color:rgba(143,182,255,.45);background:rgba(143,182,255,.09)}
+.tier .badge{position:absolute;top:-10px;left:22px;background:var(--brand);color:#06122e;font-size:10px;
+  font-weight:800;padding:4px 11px;border-radius:999px}
+.tier h4{margin:0 0 12px;font-size:19px;font-weight:800}
+.devbar{height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:7px}
+.devbar i{display:block;height:100%;background:var(--c-us);border-radius:6px}
+.devn{font-size:13px;color:var(--muted);margin-bottom:14px}
+.devn b{color:var(--text);font-size:15px}
+.tier .price{font-size:24px;font-weight:800;font-feature-settings:"tnum";letter-spacing:-.02em}
+.tier .price s{font-size:14px;color:var(--faint);font-weight:400;margin-right:8px}
+.tier .vat{font-size:11px;color:var(--faint);margin-bottom:12px}
+.tier p{margin:0;font-size:13.5px;color:var(--muted)}
+
+/* 운영 4아이콘 */
+.ops{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:820px){.ops{grid-template-columns:repeat(2,1fr)}}
+.op{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 18px;text-align:center}
+.op .em{font-size:30px;line-height:1;margin-bottom:11px}
+.op b{display:block;font-size:14.5px;margin-bottom:5px}
+.op span{font-size:12.5px;color:var(--faint)}
+
+.pull{font-size:clamp(20px,3vw,29px);font-weight:800;line-height:1.4;color:var(--bright);
+  text-align:center;letter-spacing:-.025em;margin:0}
+.trust{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:820px){.trust{grid-template-columns:repeat(2,1fr)}}
+.trust>div{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;font-size:13.5px}
+.trust b{display:block;font-size:14.5px;margin-bottom:4px}
+
+details{border:1px solid var(--line);border-radius:var(--r);margin-bottom:9px;background:var(--card)}
+summary{cursor:pointer;padding:16px 20px;font-weight:700;font-size:15px;list-style:none;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:20px;color:var(--brand);font-size:18px;font-weight:400}
+details[open] summary::after{content:"−"}
+details .b{padding:0 20px 18px;color:var(--muted);font-size:14px}
+
+.ctabox{background:radial-gradient(120% 140% at 50% 0%,rgba(110,168,255,.17) 0%,transparent 62%),rgba(0,0,0,.24);
+  border:1px solid rgba(143,182,255,.3);border-radius:20px;padding:46px 36px;text-align:center}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:11px;max-width:560px;margin:24px auto 0;text-align:left}
+.form .full{grid-column:1/-1}
+.form label{display:block;font-size:11.5px;color:var(--faint);margin-bottom:5px;font-weight:700}
+.form input{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:9px;
+  color:var(--text);padding:11px 13px;font-size:14.5px;font-family:inherit}
+.form input:focus{outline:none;border-color:var(--brand)}
+@media(max-width:640px){.form{grid-template-columns:1fr}.ctabox{padding:34px 20px}}
+.micro{margin-top:18px;font-size:12.5px;color:var(--faint);line-height:1.9}
+
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:8px;padding:10px 14px;
+  background:rgba(6,18,46,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.mbar .btn{flex:1}
+@media(max-width:760px){.mbar{display:flex}body{padding-bottom:72px}}
+footer{padding:44px 0 34px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px}
+.proto{position:fixed;top:62px;right:14px;z-index:70;background:rgba(240,184,77,.16);
+  border:1px solid rgba(240,184,77,.45);color:#f0b84d;font-size:11px;font-weight:800;padding:5px 11px;border-radius:999px}
+@media(max-width:760px){.proto{display:none}}
+</style>
+
+<div class="proto">시안 v2 · 실제 미반영</div>
+
+<div class="top"><div class="wrap">
+  <div class="logo">FANTA<span>STRICK</span> · BUSINESS</div><div class="sp"></div>
+  <a class="btn primary sm" href="#cta">무료 진단 신청</a>
+</div></div>
+
+<!-- 히어로 -->
+<div class="hero"><div class="scan"></div><div class="wrap">
+  <div class="eyebrow">방탈출 장치 제어 · 매장 운영</div>
+  <h1>저희도 강남에서<br>방탈출 합니다.<br>11년째, 지금도.</h1>
+  <p class="sub">저희 매장 3곳에서 매일 쓰는 장비와 프로그램을, 그대로 넣어드립니다.</p>
+  <a class="btn primary" href="#cta">우리 매장 무료 진단</a>
+  <div class="strip">
+    <div><b>11년</b><span>매장 직접 운영</span></div>
+    <div><b>3곳</b><span>강남 직영점</span></div>
+    <div><b>24시간</b><span>고장 자동 감시</span></div>
+    <div><b>128개</b><span>장치까지 한 대로</span></div>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+<!-- ① 하루 손실 -->
+<section>
+  <div class="kicker">지금 새고 있는 것</div>
+  <h2>장치 하나 고장 나면<br>그날 팔 수 있는 시간이 사라집니다.</h2>
+  <p class="lead">방탈출은 시간을 파는 장사입니다. 오후 2시 타임을 못 팔면 그 돈은 다시 안 옵니다.</p>
+
+  <figure>
+    <p class="ftitle">사장님 매장 숫자를 넣어보세요</p>
+    <div class="calcrow">
+      <span>한 타임 매출</span><input id="c1" inputmode="numeric" value="60,000"><span>원</span>
+      <span style="margin-left:8px">하루</span><input id="c2" inputmode="numeric" value="12"><span>타임</span>
+    </div>
+    <div class="slots" id="slots"></div>
+    <div class="bignum" id="out">720,000원</div>
+    <figcaption>테마 한 개가 <b style="color:var(--text)">하루 멈추면</b> 사라지는 돈입니다.
+      회색 칸이 못 파는 타임입니다.</figcaption>
+  </figure>
+</section>
+
+<!-- ② 누가 먼저 아느냐 -->
+<section>
+  <div class="kicker">고장은 못 막습니다</div>
+  <h2>대신 <span style="color:var(--bright)">언제 아느냐</span>를<br>바꿀 수 있습니다.</h2>
+
+  <figure>
+    <p class="ftitle">고장을 누가 먼저 발견하느냐에 따라 — 손실</p>
+    <div class="bars">
+      <div class="bar"><div class="lab"><b>😖 손님이 발견</b>게임 도중 중단</div>
+        <div class="track"><div class="fill" style="width:100%;background:var(--s-bad)">약 12만원 + 나쁜 후기</div></div></div>
+      <div class="bar"><div class="lab"><b>😐 직원이 발견</b>그 타임 취소</div>
+        <div class="track"><div class="fill" style="width:50%;background:var(--s-warn)">약 6만원</div></div></div>
+      <div class="bar"><div class="lab"><b>✅ 저희가 먼저</b>문 열기 전에 고침</div>
+        <div class="track"><div class="fill z">0원</div></div></div>
+    </div>
+    <figcaption>저희 장비는 <b style="color:var(--text)">스스로 상태를 확인</b>합니다.
+      장치가 응답을 안 하면 사장님 휴대폰으로 알림이 갑니다 — "3번 방 전자석 응답 없음".<br>
+      <span style="color:var(--muted)">단, 손님이 뜯은 소품·끊어진 배선·정전은 못 막습니다.
+      고장을 없애는 게 아니라 <b style="color:var(--text)">모르는 시간</b>을 없애는 것입니다.</span></figcaption>
+  </figure>
+</section>
+
+<!-- ③ 장치 더 붙이기 -->
+<section>
+  <div class="kicker">장치를 더 넣고 싶을 때</div>
+  <h2>본체는 그대로 두고,<br>블록만 더 붙입니다.</h2>
+  <p class="lead">자물쇠·전자석·조명·센서 — 방에 들어가는 장치 하나하나를 "장치 1개"로 셉니다.</p>
+
+  <figure>
+    <p class="ftitle">블록을 붙일수록 장치를 더 넣을 수 있습니다</p>
+    <div class="blocks" id="blocks"></div>
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:20px">
+      <div class="stepper">
+        <button onclick="ch(-1)" aria-label="빼기">−</button>
+        <span class="v">블록 <b id="cn">2</b>개</span>
+        <button onclick="ch(1)" aria-label="추가">+</button>
+      </div>
+      <div><span class="bignum" style="font-size:clamp(24px,4vw,38px)" id="devn">96</span>
+        <span style="font-size:15px;color:var(--muted);margin-left:6px">개까지 장치 연결</span></div>
+    </div>
+    <figcaption>블록 하나에 장치 32개. <b style="color:var(--text)">본체는 처음 한 번만 사면 됩니다.</b></figcaption>
+  </figure>
+
+  <figure style="margin-top:14px">
+    <p class="ftitle">장치를 늘려갈 때 드는 돈</p>
+    <div class="step-chart"><svg viewBox="0 0 620 200" preserveAspectRatio="none" aria-label="장치 수에 따른 누적 비용 계단 그래프">
+      <line class="gl" x1="40" y1="20" x2="600" y2="20"/>
+      <line class="gl" x1="40" y1="70" x2="600" y2="70"/>
+      <line class="gl" x1="40" y1="120" x2="600" y2="120"/>
+      <line class="gl" x1="40" y1="170" x2="600" y2="170"/>
+      <text class="axl" x="0" y="24">800만</text><text class="axl" x="0" y="124">400만</text><text class="axl" x="0" y="174">0</text>
+      <polyline fill="none" stroke="#3585ea" stroke-width="3" stroke-linejoin="round"
+        points="60,70 190,70 190,55 320,55 320,40 450,40 450,25 580,25"/>
+      <circle class="dot" cx="60" cy="70" r="5"/><circle class="dot" cx="190" cy="55" r="5"/>
+      <circle class="dot" cx="320" cy="40" r="5"/><circle class="dot" cx="450" cy="25" r="5"/>
+      <text class="dlab" x="60" y="58" text-anchor="middle">399만</text>
+      <text class="dlab" x="190" y="43" text-anchor="middle">519만</text>
+      <text class="dlab" x="320" y="28" text-anchor="middle">639만</text>
+      <text class="dlab" x="450" y="13" text-anchor="middle">759만</text>
+      <text class="axl" x="60" y="192" text-anchor="middle">장치 32개</text>
+      <text class="axl" x="190" y="192" text-anchor="middle">64개</text>
+      <text class="axl" x="320" y="192" text-anchor="middle">96개</text>
+      <text class="axl" x="450" y="192" text-anchor="middle">128개</text>
+    </svg></div>
+    <figcaption>블록 하나 추가에 <b style="color:var(--text)">120만원</b>씩. 계단이 완만합니다.
+      본체를 다시 사야 하는 구조면 이 선이 매번 처음 높이로 뛰어오릅니다.
+      <span style="color:var(--faint)">(저희 정가 기준 · VAT 별도)</span></figcaption>
+  </figure>
+</section>
+
+<!-- ④ 등급 -->
+<section>
+  <div class="kicker">세 가지 중에 고르시면 됩니다</div>
+  <h2>매장 크기에 맞춰서.</h2>
+  <div class="tiers">
+    <div class="tier"><h4>소형</h4>
+      <div class="devbar"><i style="width:18%"></i></div>
+      <div class="devn">장치 <b>23개</b>까지</div>
+      <div class="price"><s>250만</s>199만</div><div class="vat">VAT 별도</div>
+      <p>작은 방 한 칸. <b style="color:var(--muted)">더 못 늘립니다</b> — 나중에 표준으로 바꾸실 때 쓰시던 값을 쳐드립니다.</p></div>
+    <div class="tier hot"><span class="badge">많이 선택</span><h4>표준</h4>
+      <div class="devbar"><i style="width:25%"></i></div>
+      <div class="devn">장치 <b>32개</b>부터 <span style="color:var(--bright)">계속 추가</span></div>
+      <div class="price"><s>450만</s>399만</div><div class="vat">VAT 별도 · 블록 추가 120만</div>
+      <p>새로 여는 매장. 블록만 붙이면 장치가 계속 늘어납니다.</p></div>
+    <div class="tier"><h4>턴키</h4>
+      <div class="devbar"><i style="width:100%"></i></div>
+      <div class="devn">장치 <b>128개</b> · 방 하나 통째로</div>
+      <div class="price"><s>1,290만</s>1,190만</div><div class="vat">VAT 별도</div>
+      <p>이야기 기획부터 연출·장치 설계·설치·교육까지 저희가 다 합니다.</p></div>
+  </div>
+  <p class="lead" style="margin:16px 0 0;font-size:13.5px">설치 80만원 별도(3일 기준) · 보증 1년(부품 6개월)</p>
+</section>
+
+<!-- ⑤ 비교 -->
+<section>
+  <div class="kicker">뭐가 다른가</div>
+  <h2>1년 뒤가 다릅니다.</h2>
+  <div class="cmp">
+    <div class="h">　</div><div class="h">보통 방식</div><div class="h usc">판타스트릭</div>
+
+    <div class="rowlab">장치를 더 넣고 싶을 때</div>
+    <div><span class="ic n">✕</span><span class="t mut">본체를 다시</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">블록만 추가</span></div>
+
+    <div class="rowlab">고장을 알아채는 방법</div>
+    <div><span class="ic n">✕</span><span class="t mut">사람이 발견</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">24시간 자동 알림</span></div>
+
+    <div class="rowlab">고장 났을 때 연락처</div>
+    <div><span class="ic n">✕</span><span class="t mut">시공사 → 제작사 → 부품사</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">만든 사람이 직접 받음</span></div>
+
+    <div class="rowlab">부품을 못 구하면</div>
+    <div><span class="ic n">✕</span><span class="t mut">그 업체만 만드는 기판</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">시중에서 구할 수 있는 부품</span></div>
+
+    <div class="rowlab">매장 운영 프로그램</div>
+    <div><span class="ic n">✕</span><span class="t mut">없음</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">출퇴근·급여·예약·쿠폰</span></div>
+
+    <div class="rowlab">만든 회사가 방탈출을 함</div>
+    <div><span class="ic n">✕</span><span class="t mut">—</span></div>
+    <div class="usc"><span class="ic y">✓</span><span class="t">강남 3곳 · 11년</span></div>
+  </div>
+  <p style="font-size:11.5px;color:var(--faint);margin-top:12px">※ 업계에서 일반적으로 쓰이는 방식과의 구조 차이를 정리한 것입니다.
+    특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
+</section>
+
+<!-- ⑥ 운영 -->
+<section>
+  <div class="kicker">장비만 드리는 게 아닙니다</div>
+  <h2>매장 돌아가는 것도<br>같이 넣어드립니다.</h2>
+  <div class="ops">
+    <div class="op"><div class="em">🕐</div><b>출퇴근 · 스케줄</b><span>폰으로 찍고, 대타도 앱에서</span></div>
+    <div class="op"><div class="em">💰</div><b>급여 · 매출 장부</b><span>근태가 그대로 급여로</span></div>
+    <div class="op"><div class="em">📅</div><b>예약 · 홈페이지</b><span>타임표·예약금·환불까지</span></div>
+    <div class="op"><div class="em">🎟️</div><b>쿠폰 발행</b><span>발행·사용 이력 관리</span></div>
+  </div>
+  <p class="pull" style="margin-top:30px">저희 매장 3곳에서<br>지금 이 순간 돌아가는 것들입니다.</p>
+</section>
+
+<!-- ⑦ 신뢰 + 안심 -->
+<section>
+  <div class="kicker">먼저 말씀드립니다</div>
+  <h2>저희도 방탈출을 합니다.<br>그래서 이건 계약서에 씁니다.</h2>
+  <div class="trust">
+    <div><b>🔒 시나리오 안 가져갑니다</b>고객사 이야기·퍼즐은 저희 매장에 쓰지 않습니다</div>
+    <div><b>🙈 사례 비공개 가능</b>원하시면 저희 실적에 안 올립니다</div>
+    <div><b>🗄️ 데이터 분리</b>저희 운영팀은 고객사 예약·매출을 못 봅니다</div>
+    <div><b>🔧 장비만 사셔도 됩니다</b>기획이 부담스러우면 장비만</div>
+  </div>
+</section>
+
+<!-- ⑧ FAQ -->
+<section>
+  <div class="kicker">자주 묻는 것</div>
+  <h2>이런 걸 물어보십니다.</h2>
+  <details><summary>지금 쓰는 장비랑 바꿔 달 수 있나요?</summary>
+    <div class="b">쓰시던 전자석·센서·조명은 대부분 선만 옮기면 됩니다. 뭘 살릴 수 있는지는 무료 진단에서 그 자리에 확인해 드립니다.</div></details>
+  <details><summary>공사하는 동안 문 닫아야 하나요?</summary>
+    <div class="b">3일 기준이고, 방 한 칸씩 나눠 하면 매장 전체를 닫지 않아도 됩니다. 예약 적은 요일에 맞춰 잡습니다.</div></details>
+  <details><summary>고장 나면 얼마나 빨리 오시나요?</summary>
+    <div class="b">장비가 이상을 알리면 <b>저희가 먼저 확인하고 연락</b>드립니다. 원격으로 되는 건 방문 없이 처리합니다.
+      그리고 전화를 받는 사람이 그 장비를 만든 사람입니다.</div></details>
+</section>
+
+<!-- ⑨ CTA -->
+<section id="cta">
+  <div class="ctabox">
+    <div class="kicker">CONTACT</div>
+    <h2 style="margin-bottom:12px">우리 매장, 한번 봐주세요.</h2>
+    <p class="lead" style="margin:0 auto;max-width:460px">지금 쓰시는 장비가 있어도 괜찮습니다. 그대로 두고 볼 수 있는 것부터 봅니다.</p>
+    <form class="form" onsubmit="event.preventDefault();alert('시안입니다 — 실제 전송되지 않습니다.')">
+      <div><label>매장명</label><input placeholder="○○이스케이프"></div>
+      <div><label>연락처</label><input placeholder="010-0000-0000"></div>
+      <div><label>방 개수</label><input placeholder="3"></div>
+      <div><label>지역</label><input placeholder="서울 강남"></div>
+      <div class="full"><button class="btn primary" style="width:100%">무료 진단 신청하기</button></div>
+    </form>
+    <div class="micro">진단은 무료 · 진단만 받고 안 하셔도 됩니다 · 영업 전화 안 드립니다</div>
+  </div>
+</section>
+
+<footer>FANTASTRICK · 강남 직영 1·2·3호점
+  <div style="margin-top:6px;color:rgba(240,184,77,.85)">⚠️ 구성 시안입니다. 실제 사이트에 반영되지 않았습니다.</div></footer>
+</div>
+
+<div class="mbar">
+  <a class="btn ghost sm" href="tel:0000">전화</a>
+  <a class="btn primary sm" href="#cta">무료 진단 신청</a>
+</div>
+
+<script>
+const f=n=>n.toLocaleString('ko-KR'), num=s=>Number(String(s).replace(/[^0-9]/g,''))||0;
+function draw(){
+  const a=num(c1.value), b=Math.max(0,Math.min(24,num(c2.value)));
+  out.textContent=f(a*b)+'원';
+  slots.innerHTML='';
+  for(let i=0;i<b;i++) slots.insertAdjacentHTML('beforeend','<div class="slot dead"></div>');
+}
+['c1','c2'].forEach(id=>{const el=document.getElementById(id);
+  el.addEventListener('input',()=>{const v=num(el.value);el.value=v?f(v):'';draw();});});
+draw();
+
+let m=2;
+function ch(d){
+  m=Math.max(0,Math.min(6,m+d));
+  cn.textContent=m; devn.textContent=32+m*32;
+  blocks.innerHTML='<div class="blk main"><b>본체</b><span>장치 32개</span></div>';
+  for(let i=0;i<m;i++) blocks.insertAdjacentHTML('beforeend',
+    '<span class="plus">+</span><div class="blk"><b>블록</b><span>+32개</span></div>');
+  blocks.insertAdjacentHTML('beforeend','<span class="plus">+</span><div class="blk ghost"><b>…</b><span>계속</span></div>');
+}
+ch(0);
+</script>
