@@ -6,11 +6,15 @@
    색은 globals.css 의 .site-dark 토큰(--brand #6ea8ff · --text #e9f0ff · --line)을 그대로 쓴다.
    여기서 새로 정하는 건 그래프·상태색뿐이다. */
 
+/* 🔴 채움색과 글자색을 나눠 둔다 (2026-08-06 대비 실측 후 수정).
+   전에는 빨강·주황 막대를 그대로 채우고 그 위에 흰 글자를 얹었는데 실제로 재보니
+     · 흰색 on #d99a2b = 2.45:1   · 흰색 on #d9534f = 4.02:1   · #d9534f 글자 on 딥블루 = 3.17:1
+   로 AA(4.5) 미달이었다. 채움은 연한 틴트 + 왼쪽 굵은 선으로 바꾸고, 글자는 밝은 잉크색을 쓴다. */
 .bizsys {
   --c-us: #3585ea;       /* 우리 쪽 데이터 색 — 회색과 ΔE 15 이상 확보한 값(색약 검사 통과) */
-  --s-bad: #d9534f;
-  --s-warn: #d99a2b;
-  --s-good: #3fa66f;
+  --s-bad: #d9534f;   --s-bad-ink: #ff9b96;
+  --s-warn: #d99a2b;  --s-warn-ink: #f5c26b;
+  --s-good: #3fa66f;  --s-good-ink: #5ec98e;
   --surf: #071b4d;
   --card: rgba(255, 255, 255, .05);
 }
@@ -118,7 +122,7 @@
 }
 @media (max-width: 520px) { .bizsys .slot { width: 27px; height: 40px } }
 .bizsys .daylab { font-size: 12.5px; font-weight: 800; color: var(--muted); margin-bottom: 8px }
-.bizsys .daylab.bad { color: var(--s-bad) }
+.bizsys .daylab.bad { color: var(--s-bad-ink) }
 .bizsys .calcrow { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; font-size: 14.5px; color: var(--muted); margin-bottom: 22px }
 .bizsys .calcrow input {
   width: 108px; background: rgba(255,255,255,.08); border: 1px solid var(--line); border-radius: 9px;
@@ -138,11 +142,15 @@
 .bizsys .bar { display: grid; grid-template-columns: 104px 1fr; gap: 14px; align-items: center }
 .bizsys .bar .lab { font-size: 14px; font-weight: 800; text-align: right }
 .bizsys .bar .track { position: relative; height: 46px; display: flex; align-items: center }
-.bizsys .bar .fill { height: 46px; border-radius: 0 6px 6px 0; display: flex; align-items: center; padding: 0 14px; font-size: 14px; color: #fff; min-width: 110px }
+/* 막대 3종을 같은 문법으로 — 연한 틴트 + 왼쪽 굵은 선 + 밝은 글자.
+   전에는 bad/warn 만 진하게 채우고 z 만 아웃라인이라 셋이 따로 놀았고, 대비도 미달이었다. */
+.bizsys .bar .fill { height: 46px; border-radius: 0 6px 6px 0; display: flex; align-items: center;
+  padding: 0 14px; font-size: 14px; min-width: 110px; border-left: 4px solid transparent }
 .bizsys .bar .fill b { font-weight: 800; font-feature-settings: "tnum"; margin-right: 8px }
-.bizsys .bar .fill.bad { width: 100%; background: var(--s-bad) }
-.bizsys .bar .fill.warn { width: 52%; background: var(--s-warn) }
-.bizsys .bar .fill.z { background: rgba(63,166,111,.16); border: 1px solid rgba(63,166,111,.45); color: var(--s-good); min-width: 0 }
+.bizsys .bar .fill.bad { width: 100%; background: rgba(217,83,79,.18); border-left-color: var(--s-bad); color: var(--s-bad-ink) }
+.bizsys .bar .fill.warn { width: 52%; background: rgba(217,154,43,.18); border-left-color: var(--s-warn); color: var(--s-warn-ink) }
+.bizsys .bar .fill.z { background: rgba(63,166,111,.16); border: 1px solid rgba(63,166,111,.45);
+  border-left: 4px solid var(--s-good); color: var(--s-good-ink); min-width: 0 }
 @media (max-width: 640px) {
   .bizsys .bar { grid-template-columns: 1fr; gap: 5px }
   .bizsys .bar .lab { text-align: left }

@@ -240,73 +240,81 @@ export default function BusinessPage() {
             <figcaption>모듈 하나 달면 32개씩 늘어납니다. 제어기는 처음 한 번만 사시면 되고요.</figcaption>
           </figure>
 
+          {/* 방 늘릴 때 드는 돈 — 두 방식 비교.
+              ⚠️ 금액을 쓰지 않는다(사장님 지시 2026-08-06: 가격은 최소·비공개).
+                 그래도 논지는 살아야 해서 "얼마"가 아니라 "어떻게 늘어나느냐"로 바꿨다.
+                 세로축에 숫자를 안 쓰는 대신 두 선을 나란히 놓아 기울기 차이로 읽게 한다. */}
           <figure className="reveal" style={{ marginTop: 14 }}>
-            <p className="ftitle">방 늘려갈 때 드는 돈</p>
+            <p className="ftitle">방을 늘려갈 때</p>
             <div className="step-chart">
-              <svg viewBox="0 0 620 200" role="img" aria-label="장치 수에 따른 누적 비용 계단 그래프. 32개 399만원에서 시작해 32개 늘 때마다 120만원씩 올라 128개에서 759만원.">
+              <svg viewBox="0 0 620 200" role="img" aria-label="방을 늘릴 때 드는 돈 비교. 제어기를 다시 사는 구조는 방을 늘릴 때마다 처음 금액이 다시 들어 가파르게 올라가고, 모듈만 더하는 구조는 완만하게 올라간다.">
                 <line className="gl" x1="46" y1="20" x2="600" y2="20" />
                 <line className="gl" x1="46" y1="95" x2="600" y2="95" />
                 <line className="gl" x1="46" y1="170" x2="600" y2="170" />
-                <text className="axl" x="0" y="24">800만</text>
-                <text className="axl" x="0" y="99">400만</text>
-                <text className="axl" x="0" y="174">0</text>
+                <text className="axl" x="0" y="26">드는</text>
+                <text className="axl" x="0" y="38">돈</text>
+
+                {/* 제어기를 다시 사는 구조 — 가파른 계단 */}
+                <polyline
+                  fill="none" stroke="#8ea0c4" strokeWidth="2.5" strokeDasharray="7 5"
+                  strokeLinejoin="round" strokeLinecap="round"
+                  points="60,158 190,158 190,112 320,112 320,66 450,66 450,24 580,24"
+                />
+                <text className="dlab mut" x="516" y="17" textAnchor="middle">제어기를 다시</text>
+
+                {/* 모듈만 더하는 구조 — 완만한 계단 */}
                 <polyline
                   fill="none" stroke="#3585ea" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
-                  points="60,95.2 190,95.2 190,72.7 320,72.7 320,50.2 450,50.2 450,27.7 580,27.7"
+                  points="60,158 190,158 190,143 320,143 320,128 450,128 450,113 580,113"
                 />
-                <circle className="dot" cx="60" cy="95.2" r="5" />
-                <circle className="dot" cx="190" cy="72.7" r="5" />
-                <circle className="dot" cx="320" cy="50.2" r="5" />
-                <circle className="dot" cx="450" cy="27.7" r="5" />
-                <text className="dlab" x="60" y="83" textAnchor="middle">399만</text>
-                <text className="dlab" x="190" y="60" textAnchor="middle">519만</text>
-                <text className="dlab" x="320" y="38" textAnchor="middle">639만</text>
-                <text className="dlab" x="450" y="15" textAnchor="middle">759만</text>
+                <circle className="dot" cx="60" cy="158" r="5" />
+                <circle className="dot" cx="190" cy="143" r="5" />
+                <circle className="dot" cx="320" cy="128" r="5" />
+                <circle className="dot" cx="450" cy="113" r="5" />
+                <text className="dlab" x="516" y="106" textAnchor="middle">모듈만 추가</text>
+
                 <text className="axl" x="60" y="190" textAnchor="middle">장치 32개</text>
                 <text className="axl" x="190" y="190" textAnchor="middle">64개</text>
                 <text className="axl" x="320" y="190" textAnchor="middle">96개</text>
                 <text className="axl" x="450" y="190" textAnchor="middle">128개</text>
               </svg>
             </div>
-            <figcaption>모듈 하나에 120만원입니다. 제어기를 다시 사야 하는 구조라면,
-              방 늘릴 때마다 처음 냈던 금액이 또 나갑니다.</figcaption>
+            <figcaption>제어기를 다시 사야 하는 구조라면 방을 늘릴 때마다 처음 냈던 금액이 또 나갑니다.
+              모듈만 더하면 되는 구조는 처음 한 번으로 끝납니다.</figcaption>
           </figure>
         </section>
 
-        {/* 등급 */}
+        {/* 구성 — 금액은 적지 않는다(사장님 지시 2026-08-06).
+            방 개수·장치 수로 자기 자리를 찾게만 하고, 숫자는 보러 가서 말한다. */}
         <section className="bz-sec">
-          <div className="kicker reveal">등급</div>
+          <div className="kicker reveal">구성</div>
           <h2 className="reveal">방 몇 개짜리세요?</h2>
           <div className="tiers">
             <div className="tier reveal">
               <h3>소형</h3>
               <div className="devbar"><i style={{ width: "18%" }} /></div>
               <div className="devn">장치 <b>23개</b>까지</div>
-              <div className="price"><s>250만</s>199만</div>
-              <div className="vat">VAT 별도</div>
               <p>방 한 칸으로 시작하시는 분들. 23개에서 더는 안 늘어납니다. 나중에 표준으로 올리실 때
                 쓰시던 제어기는 값을 쳐드려요.</p>
             </div>
+            {/* ⚠️ "많이 선택" 배지는 뺐다(2026-08-06) — 판매 실적을 암시하는데 댈 근거가 없다.
+                   표시광고법상 근거 없는 우량오인 표시가 될 수 있고, 사장님끼리는 금방 들통난다. */}
             <div className="tier hot reveal">
-              <span className="badge">많이 선택</span>
               <h3>표준</h3>
               <div className="devbar"><i style={{ width: "25%" }} /></div>
               <div className="devn">장치 <b>32개</b>부터</div>
-              <div className="price"><s>450만</s>399만</div>
-              <div className="vat">VAT 별도, 모듈 추가 120만</div>
               <p>새로 여는 매장은 대부분 이걸로 갑니다. 모듈만 달면 계속 붙습니다. 위로 끝이 없어요.</p>
             </div>
             <div className="tier reveal">
               <h3>턴키</h3>
               <div className="devbar"><i style={{ width: "100%" }} /></div>
               <div className="devn">장치 <b>128개</b>까지</div>
-              <div className="price"><s>1,290만</s>1,190만</div>
-              <div className="vat">VAT 별도</div>
               <p>시나리오부터 연출, 장치 설계, 시공, GM 교육까지 우리가 합니다.
                 사장님은 오픈 날짜만 잡으시면 됩니다.</p>
             </div>
           </div>
-          <p className="note reveal">설치 80만원 별도, 3일 기준. 보증은 보드와 모듈 1년, 부품 6개월.</p>
+          <p className="note reveal">설치는 3일 기준입니다. 보증은 보드와 모듈 1년, 부품 6개월.
+            금액은 방 개수와 장치 수에 따라 달라서 보러 가서 말씀드립니다.</p>
         </section>
 
         {/* 비교 */}
@@ -344,28 +352,6 @@ export default function BusinessPage() {
             특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
         </section>
 
-        {/* FAQ — 장치·공사·고장 이야기라 제어기 탭에 둔다 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">자주 묻는 것</div>
-          <h2 className="reveal">이런 걸 물어보십니다.</h2>
-          <div className="reveal">
-            <details>
-              <summary>지금 매장에 있는 장치, 안 뜯고 그대로 쓸 수 있나요?</summary>
-              <div className="b">쓰시던 전자석이랑 센서, 조명은 대부분 선만 옮기면 됩니다.
-                뭘 살릴 수 있는지는 보러 가서 그 자리에 알려드립니다.</div>
-            </details>
-            <details>
-              <summary>공사하는 동안 매장 닫아야 하나요?</summary>
-              <div className="b">3일 기준입니다. 방 한 칸씩 나눠 하면 매장 전체를 닫지 않아도 됩니다.
-                예약 적은 요일에 맞춰 잡습니다.</div>
-            </details>
-            <details>
-              <summary>장치가 작동을 안 하면 얼마나 빨리 오시나요?</summary>
-              <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
-                원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
-            </details>
-          </div>
-        </section>
       </>}
 
       {/* ══════════ 매장 운영 프로그램(소프트웨어) 탭 ══════════ */}
@@ -414,19 +400,26 @@ export default function BusinessPage() {
         </section>
 
         <section className="bz-sec">
-          <div className="kicker reveal">사후 관리</div>
-          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
-          <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
-          <div className="trust">
-            <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
-            <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
-            <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
-            <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
-          </div>
-          <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
+          <p className="note reveal" style={{ margin: 0 }}>제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다. 매장 규모에 따라 달라서 보러 가서 말씀드립니다.</p>
         </section>
       </>}
+
+      {/* ══════════ 여기서부터는 탭과 상관없이 항상 보이는 것 ══════════
+          🔴 사후 관리와 자주 묻는 것은 원래 탭 안에 있었다(사후 관리=프로그램 탭, FAQ=제어기 탭).
+             그러면 **제어기만 보러 온 사장님이 "고장 나면 어떻게 해주나"를 못 보고 나간다.**
+             둘 다 상품과 무관하게 궁금한 것이라 밖으로 뺐다(2026-08-06). */}
+      <section className="bz-sec">
+        <div className="kicker reveal">사후 관리</div>
+        <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
+        <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
+        <div className="trust">
+          <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
+          <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
+          <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
+          <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
+        </div>
+      </section>
 
         {/* 먼저 말씀드립니다 */}
         <section className="bz-sec">
