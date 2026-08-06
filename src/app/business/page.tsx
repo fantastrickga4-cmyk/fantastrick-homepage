@@ -22,7 +22,11 @@ export default function BusinessPage() {
   const [slots, setSlots] = useState(12);
   // 확장 도해 — 모듈을 붙였다 뗐다 하며 "장치를 몇 개까지 물리나"를 손으로 확인하게 한다.
   const [mods, setMods] = useState(2);
+  // 문의 폼 — 보낸 내용은 관리자 › 도입 문의 탭에 쌓인다(/api/business/inquiry).
+  const [form, setForm] = useState({ storeName: "", phone: "", rooms: "", area: "" });
+  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [formErr, setFormErr] = useState("");
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -35,6 +39,28 @@ export default function BusinessPage() {
 
   const lost = fee * slots;
   const devices = 32 + mods * 32;
+
+  async function sendInquiry(e: React.FormEvent) {
+    e.preventDefault();
+    if (sending) return;
+    setFormErr("");
+    if (!form.storeName.trim()) { setFormErr("매장명을 입력해 주세요."); return; }
+    if (form.phone.replace(/[^0-9]/g, "").length < 9) { setFormErr("연락처를 확인해 주세요."); return; }
+    setSending(true);
+    try {
+      const res = await fetch("/api/business/inquiry", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
+      });
+      if (res.ok) setSent(true);
+      else {
+        const j = await res.json().catch(() => ({}));
+        setFormErr(j.error || "보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    } catch {
+      setFormErr("보내지 못했습니다. 인터넷 연결을 확인해 주세요.");
+    }
+    setSending(false);
+  }
 
   return (
     <div className="bizsys">
@@ -337,20 +363,44 @@ export default function BusinessPage() {
             <h2>한번 보러 가겠습니다.</h2>
             <p className="lead center">지금 쓰시는 게 있어도 괜찮습니다. 안 뜯고 볼 수 있는 것부터 봅니다.
               방 몇 개인지, 장치가 몇 개 붙어 있는지, 고장 나면 지금 어떻게 하시는지. 그 정도만 보면 됩니다.</p>
-            <form className="bzform" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
-              <div><label htmlFor="bz-store">매장명</label><input id="bz-store" placeholder="○○이스케이프" /></div>
-              <div><label htmlFor="bz-tel">연락처</label><input id="bz-tel" placeholder="010-0000-0000" /></div>
-              <div><label htmlFor="bz-rooms">방 개수</label><input id="bz-rooms" placeholder="3" /></div>
-              <div><label htmlFor="bz-area">지역</label><input id="bz-area" placeholder="서울 강남" /></div>
-              <div className="full">
-                <button type="submit" className="btn primary" style={{ width: "100%" }}>도입 문의하기</button>
+            {sent ? (
+              <div className="bzdone">
+                <b>문의 잘 받았습니다.</b>
+                <p>영업일 기준 하루 안에 전화 드립니다. 급하시면 <b>fantastrick@fantastrick.co.kr</b> 로도 연락 주세요.</p>
               </div>
-            </form>
-            <div className="micro">
-              {sent
-                ? <>문의 접수 기능은 연결 중입니다. 지금은 <b>fantastrick@fantastrick.co.kr</b> 로 메일 주시면 바로 답 드립니다.</>
-                : <>보고 나서 안 하셔도 됩니다.<br />연락은 한 번만 드립니다.</>}
-            </div>
+            ) : (
+              <>
+                <form className="bzform" onSubmit={sendInquiry}>
+                  <div>
+                    <label htmlFor="bz-store">매장명</label>
+                    <input id="bz-store" maxLength={60} placeholder="○○이스케이프" autoComplete="organization"
+                      value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-tel">연락처</label>
+                    <input id="bz-tel" inputMode="tel" maxLength={20} placeholder="010-0000-0000" autoComplete="tel"
+                      value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-rooms">방 개수</label>
+                    <input id="bz-rooms" inputMode="numeric" maxLength={4} placeholder="3"
+                      value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-area">지역</label>
+                    <input id="bz-area" maxLength={40} placeholder="서울 강남"
+                      value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+                  </div>
+                  <div className="full">
+                    <button type="submit" className="btn primary" style={{ width: "100%" }} disabled={sending}>
+                      {sending ? "보내는 중…" : "도입 문의하기"}
+                    </button>
+                  </div>
+                </form>
+                {formErr && <div className="bzerr">{formErr}</div>}
+                <div className="micro">보고 나서 안 하셔도 됩니다.<br />연락은 한 번만 드립니다.</div>
+              </>
+            )}
           </div>
         </section>
       </div>

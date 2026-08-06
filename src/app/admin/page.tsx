@@ -46,6 +46,7 @@ function Phone({ v }: { v: string }) {
 // 예약 탭이 기본 화면(사장님 지시 2026-07-30) — 로그인하면 바로 예약 목록부터.
 const TABS = [
   { k: "res", label: "예약" }, { k: "money", label: "입금·환불" },
+  { k: "biz", label: "도입 문의" },
   { k: "cont", label: "리뷰·공지" }, { k: "set", label: "설정" },
 ];
 
@@ -71,6 +72,19 @@ export default function AdminPage() {
       .catch(() => {});
     f();
     const t = setInterval(f, 30000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // 도입 문의 뱃지 — 새 문의는 하루에 몇 건 안 되지만, 놓치면 그게 곧 매출이라 눈에 띄게 둔다.
+  const [bizNew, setBizNew] = useState(0);
+  useEffect(() => {
+    if (phase !== "in") return;
+    const f = () => fetch("/api/admin/inquiries?status=new")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j) setBizNew(j.newCount || 0); })
+      .catch(() => {});
+    f();
+    const t = setInterval(f, 60000);
     return () => clearInterval(t);
   }, [phase]);
 
@@ -110,11 +124,13 @@ export default function AdminPage() {
           <a key={t.k} className={tab === t.k ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTab(t.k)}>
             {t.label}
             {t.k === "money" && todo > 0 && <span className="vt-badge">{todo}</span>}
+            {t.k === "biz" && bizNew > 0 && <span className="vt-badge">{bizNew}</span>}
           </a>
         ))}
       </div>
       {tab === "res" && <ReservationsTab />}
       {tab === "money" && <MoneyTab />}
+      {tab === "biz" && <InquiriesTab />}
       {tab === "cont" && <ContentTab />}
       {tab === "set" && <SettingsHub />}
     </div>
@@ -140,6 +156,130 @@ function ReservationsTab() {
 }
 
 /* 리뷰·공지 — 둘 다 "손님에게 보이는 것" 관리라 묶음 */
+/* ============ 도입 문의 탭 (비즈니스 B2B) ============
+   /business 페이지의 [도입 문의하기] 폼이 여기로 쌓인다.
+   손님 예약과 성격이 달라 예약 표와 섞지 않고 biz_inquiries 에 따로 둔다.
+   흐름은 딱 네 칸: 새 문의 → 연락함 → 계약/설치까지 감 → 안 하기로. */
+type Inquiry = {
+  id: string; store_name: string; phone: string; rooms: number | null; area: string | null;
+  status: string; admin_note: string | null; created_at: string; contacted_at: string | null;
+};
+const INQ_ST: Record<string, { label: string; cls: string }> = {
+  new: { label: "새 문의", cls: "pending" },
+  contacted: { label: "연락함", cls: "confirmed" },
+  done: { label: "진행/완료", cls: "confirmed" },
+  dropped: { label: "안 함", cls: "cancelled" },
+};
+
+function InquiriesTab() {
+  const [status, setStatus] = useState("all");
+  const [list, setList] = useState<Inquiry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = useCallback(async () => {
+    setLoaded(false); setErr("");
+    const res = await fetch(`/api/admin/inquiries?status=${status}`);
+    if (res.ok) { const j = await res.json(); setList(j.inquiries || []); }
+    else { const j = await res.json().catch(() => ({})); setErr(j.error || "문의를 불러오지 못했습니다."); }
+    setLoaded(true);
+  }, [status]);
+  useEffect(() => { load(); }, [load]);
+
+  async function patch(id: string, body: Record<string, unknown>) {
+    const res = await fetch("/api/admin/inquiries", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...body }),
+    });
+    if (res.ok) load(); else { const j = await res.json().catch(() => ({})); alert(j.error || "처리 실패"); }
+  }
+  async function remove(id: string) {
+    if (!confirm("이 문의를 지울까요? 되돌릴 수 없습니다.")) return;
+    const res = await fetch(`/api/admin/inquiries?id=${id}`, { method: "DELETE" });
+    if (res.ok) load(); else alert("삭제 실패");
+  }
+
+  return (
+    <>
+      <div className="admin-tools">
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">전체</option>
+          <option value="new">새 문의</option>
+          <option value="contacted">연락함</option>
+          <option value="done">진행/완료</option>
+          <option value="dropped">안 함</option>
+        </select>
+        <button className="btn sm" onClick={load}>새로고침</button>
+      </div>
+      {err && <div className="notice info" style={{ marginBottom: 12 }}>{err}</div>}
+      <div style={{ marginBottom: 10, fontSize: 13, color: "var(--muted)" }}>총 {list.length}건</div>
+      {!loaded ? <p style={{ color: "var(--muted)" }}>불러오는 중…</p> :
+        list.length === 0 && !err ? <div className="notice info">아직 들어온 문의가 없습니다.</div> :
+        list.map((q) => {
+          const st = INQ_ST[q.status] || { label: q.status, cls: "pending" };
+          return (
+            <div key={q.id} className="rrow open">
+              <div className="head" style={{ cursor: "default" }}>
+                <span className="tname">{q.store_name}</span>
+                <span className="who"><Phone v={q.phone} /></span>
+                {q.rooms != null && <span className="src-tag">방 {q.rooms}개</span>}
+                {q.area && <span className="src-tag">{q.area}</span>}
+                <span className={`badge-st st-${st.cls}`}>{st.label}</span>
+              </div>
+              <div className="detail">
+                <div style={{ fontSize: 12, color: "var(--faint)", marginBottom: 10 }}>
+                  받은 때 {formatStamp(q.created_at)}
+                  {q.contacted_at && ` · 연락한 때 ${formatStamp(q.contacted_at)}`}
+                </div>
+                <MemoLineInq id={q.id} note={q.admin_note} onSaved={(m) => setList((l) => l.map((x) => x.id === q.id ? { ...x, admin_note: m } : x))} />
+                <div className="act-row" style={{ marginTop: 10 }}>
+                  {q.status === "new" && <button className="btn sm ok" onClick={() => patch(q.id, { status: "contacted" })}>연락함</button>}
+                  {q.status === "contacted" && <>
+                    <button className="btn sm ok" onClick={() => patch(q.id, { status: "done" })}>진행/완료</button>
+                    <button className="btn sm ghost" onClick={() => patch(q.id, { status: "new" })}>새 문의로 되돌리기</button>
+                  </>}
+                  {(q.status === "done" || q.status === "dropped") &&
+                    <button className="btn sm ghost" onClick={() => patch(q.id, { status: "contacted" })}>연락함으로 되돌리기</button>}
+                  {q.status !== "dropped" && <button className="btn sm" onClick={() => patch(q.id, { status: "dropped" })}>안 하기로</button>}
+                  <button className="btn sm danger" onClick={() => remove(q.id)}>삭제</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+    </>
+  );
+}
+
+/* 문의용 한 줄 메모 — 예약의 MemoLine 과 같은 조작감이지만 부르는 API 가 달라 따로 둔다. */
+function MemoLineInq({ id, note, onSaved }: { id: string; note?: string | null; onSaved: (m: string) => void }) {
+  const [v, setV] = useState(note || "");
+  const [st, setSt] = useState<"idle" | "saving" | "saved" | "err">("idle");
+  useEffect(() => { setV(note || ""); }, [note]);
+  async function save() {
+    if (v.trim() === (note || "").trim()) return;
+    setSt("saving");
+    const res = await fetch("/api/admin/inquiries", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, admin_note: v.trim() }),
+    });
+    if (res.ok) { setSt("saved"); onSaved(v.trim()); setTimeout(() => setSt("idle"), 1500); }
+    else setSt("err");
+  }
+  return (
+    <span className="memoline">
+      <input
+        value={v} placeholder="메모 (통화 내용, 다음에 할 일)" maxLength={200}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      />
+      {st === "saving" && <em className="ml-st">저장 중…</em>}
+      {st === "saved" && <em className="ml-st ok">저장됨</em>}
+      {st === "err" && <em className="ml-st err">저장 실패 — 다시 시도</em>}
+    </span>
+  );
+}
+
 function ContentTab() {
   const [v, setV] = useState<"rev" | "notice">("rev");
   return (

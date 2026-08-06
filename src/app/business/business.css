@@ -198,3 +198,7 @@
   .bizsys .ctabox { padding: 34px 20px }
 }
 .bizsys .micro { margin-top: 18px; font-size: 13px; color: var(--faint); line-height: 2 }
+.bizsys .bzerr { margin-top: 14px; font-size: 13.5px; color: #ffb4b0; background: rgba(217,83,79,.14); border: 1px solid rgba(217,83,79,.4); border-radius: 10px; padding: 10px 14px }
+.bizsys .bzdone { margin: 26px auto 0; max-width: 480px; padding: 24px 22px; border-radius: 14px; background: rgba(63,166,111,.12); border: 1px solid rgba(63,166,111,.42) }
+.bizsys .bzdone b { display: block; font-size: 17px; margin-bottom: 8px; color: var(--text) }
+.bizsys .bzdone p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.75 }
