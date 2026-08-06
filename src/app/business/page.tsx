@@ -99,17 +99,25 @@ export default function BusinessPage() {
   const lost = fee * slots;
   const devices = 32 + mods * 32;
 
-  /* 범위 바꾸기 — 이동이 아니라 내용 교체다.
-     바꾼 뒤에는 선택 줄 바로 아래부터 보게 한다. 그대로 두면 아까 보던 높이에 남아
-     "아무 일도 안 일어난 것"처럼 보인다. 이미 위쪽(히어로·질문)에 있으면 건드리지 않는다. */
+  /* 범위 바꾸기 — 내용을 갈아끼우고 **그 범위의 맨 처음으로 올려보낸다.**
+     아래쪽 내용을 보다가 탭을 눌렀는데 그 자리에 그대로 있으면, 화면만 바뀌고
+     지금 어디를 보는 건지 알 수 없다.
+
+     ⚠️ 기준을 선택 줄(.scope)로 잡으면 안 된다 — sticky 라 스크롤을 내리면 화면 위에 붙어 있어서
+        `rect.top + scrollY` 가 항상 "지금 스크롤 위치"로 나온다(= 이동이 0px). 실제로 그래서 안 움직였다.
+        그래서 **바뀐 범위의 첫 섹션**을 기준으로 잡고, 고정 헤더(67) + 선택 줄 높이만큼 뺀다. */
   function pick(id: string) {
     if (id === here) return;
     setHere(id);
     history.replaceState(null, "", id === "turnkey" ? " " : `#${id}`);
-    const bar = document.getElementById("scopebar");
-    if (!bar) return;
-    const top = bar.getBoundingClientRect().top + window.scrollY - 68;
-    if (window.scrollY > top) window.scrollTo({ top, behavior: "smooth" });
+    // 새 내용이 화면에 붙은 다음에 재야 위치가 맞는다
+    requestAnimationFrame(() => {
+      const sec = document.getElementById(id);
+      if (!sec) return;
+      const barH = document.getElementById("scopebar")?.offsetHeight ?? 0;
+      const y = sec.getBoundingClientRect().top + window.scrollY - 68 - barH;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    });
   }
 
   async function sendInquiry(e: React.FormEvent) {
