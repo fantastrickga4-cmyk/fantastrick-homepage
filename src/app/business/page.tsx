@@ -28,13 +28,38 @@ const SCOPES = [
 
 const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
 
+/* 지금 보는 범위 끝에서 나머지 둘로 넘어가는 줄.
+   탭으로 나누면 "고른 것만 보고 나머지는 있는 줄도 모른다"가 늘 따라온다(NN/g).
+   맨 아래에 다음 칸을 깔아두면 위로 되돌아가 탭을 누르지 않아도 이어서 보게 된다. */
+function NextUp({ here, pick }: { here: string; pick: (id: string) => void }) {
+  const rest = SCOPES.filter((s) => s.id !== here);
+  return (
+    <div className="nextup reveal">
+      <span className="nu-lab">이어서 보기</span>
+      <div className="nu-btns">
+        {rest.map((s) => (
+          <button key={s.id} type="button" onClick={() => pick(s.id)}>
+            <b>{s.label}</b><span>{s.sub}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function BusinessPage() {
   // 손실 계산기 — 사장님이 자기 매장 숫자를 넣어보는 곳. 우리가 금액을 단정하지 않는다.
   const [fee, setFee] = useState(60000);
   const [slots, setSlots] = useState(12);
   // 확장 도해 — 모듈을 붙였다 뗐다 하며 "장치를 몇 개까지 물리나"를 손으로 확인하게 한다.
   const [mods, setMods] = useState(2);
-  // 지금 어느 범위를 보고 있는지 (위 선택기의 켜진 칸)
+  /* 지금 펼쳐 놓은 범위. 누르면 그 자리로 이동하는 게 아니라 **내용만 바뀐다**(사장님 지시 2026-08-06).
+     한 페이지에 셋을 다 이어 붙였더니 12,000px 이 넘어서, 긴 것 자체가 문제였다.
+
+     ⚠️ 대신 "안 고른 것은 영영 안 본다"는 탭의 고질병을 두 가지로 막는다(NN/g 지적).
+        ① 각 범위 맨 아래에 나머지 둘로 넘어가는 [이어서 보기] 줄
+        ② 비교표·사후관리·경쟁사 우려·자주 묻는 것·문의는 **범위와 상관없이 늘 아래에 있다**
+        (셋 다 상품과 무관하게 궁금한 것들이라 어느 범위를 보든 눈에 들어와야 한다) */
   const [here, setHere] = useState("turnkey");
   // 문의
   const [form, setForm] = useState({ storeName: "", phone: "", rooms: "", area: "" });
@@ -44,7 +69,9 @@ export default function BusinessPage() {
   const [formErr, setFormErr] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // 스크롤 등장
+  /* 스크롤 등장.
+     ⚠️ here 를 의존성에 반드시 넣을 것 — 범위를 바꾸면 화면에 새 요소가 붙는데,
+        처음 한 번만 관찰하면 그 요소들은 opacity:0 인 채로 영영 안 보인다. */
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
@@ -52,29 +79,28 @@ export default function BusinessPage() {
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [here]);
 
-  // 선택기의 켜진 칸을 스크롤 위치에 맞춘다. 누르는 것만 표시하면 손으로 스크롤한 사람은
-  // 지금 어디를 보는지 모른 채로 남는다.
+  // 주소에 #device·#software 가 붙어 오면 그 범위로 연다 (다른 곳에서 링크 걸 수 있게)
   useEffect(() => {
-    const secs = SCOPES.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
-    if (!secs.length) return;
-    const io = new IntersectionObserver(
-      (es) => {
-        const seen = es.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (seen) setHere(seen.target.id);
-      },
-      { rootMargin: "-140px 0px -55% 0px", threshold: [0.05, 0.3] }
-    );
-    secs.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+    const h = window.location.hash.replace("#", "");
+    if (SCOPES.some((s) => s.id === h)) setHere(h);
   }, []);
 
   const lost = fee * slots;
   const devices = 32 + mods * 32;
 
-  function goTo(id: string) {
-    document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  /* 범위 바꾸기 — 이동이 아니라 내용 교체다.
+     바꾼 뒤에는 선택 줄 바로 아래부터 보게 한다. 그대로 두면 아까 보던 높이에 남아
+     "아무 일도 안 일어난 것"처럼 보인다. 이미 위쪽(히어로·질문)에 있으면 건드리지 않는다. */
+  function pick(id: string) {
+    if (id === here) return;
+    setHere(id);
+    history.replaceState(null, "", id === "turnkey" ? " " : `#${id}`);
+    const bar = document.getElementById("scopebar");
+    if (!bar) return;
+    const top = bar.getBoundingClientRect().top + window.scrollY - 68;
+    if (window.scrollY > top) window.scrollTo({ top, behavior: "smooth" });
   }
 
   async function sendInquiry(e: React.FormEvent) {
@@ -124,24 +150,8 @@ export default function BusinessPage() {
         </div>
       </section>
 
-      {/* 범위 선택기 — 아래에 세 범위가 순서대로 다 있고, 여기서는 그 자리로 옮겨만 준다 */}
-      <div className="scope">
-        <div className="wrap">
-          <div className="scope-in" role="tablist" aria-label="보실 범위">
-            {SCOPES.map((s) => (
-              <button
-                key={s.id} role="tab" aria-selected={here === s.id}
-                className={here === s.id ? "on" : ""} onClick={() => goTo(s.id)}
-              >
-                <b>{s.label}</b><span>{s.sub}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      {/* 고민 질문 — 범위와 상관없이 항상. 금액이나 스펙을 먼저 들이대면 방어가 걸린다 */}
       <div className="wrap">
-        {/* 고민 질문 — 상품보다 먼저. 금액을 먼저 들이대면 방어가 걸린다 */}
         <section className="bz-sec">
           <div className="kicker reveal">이런 걸 물어보십니다</div>
           <h2 className="reveal">혹시 이런 적 있으십니까.</h2>
@@ -152,8 +162,27 @@ export default function BusinessPage() {
             <div className="ask reveal">예약이랑 근무표를 아직 엑셀이랑 단톡으로 하고 있다</div>
           </div>
         </section>
+      </div>
 
-        {/* ══════════ ① 통째로 만들기 ══════════ */}
+      {/* 범위 선택 — 누르면 아래 내용이 통째로 바뀐다 */}
+      <div className="scope" id="scopebar">
+        <div className="wrap">
+          <div className="scope-in" role="tablist" aria-label="보실 범위">
+            {SCOPES.map((s) => (
+              <button
+                key={s.id} role="tab" aria-selected={here === s.id}
+                className={here === s.id ? "on" : ""} onClick={() => pick(s.id)}
+              >
+                <b>{s.label}</b><span>{s.sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="wrap">
+      {/* ══════════ ① 통째로 만들기 ══════════ */}
+      {here === "turnkey" && <>
         <section className="bz-sec" id="turnkey">
           <div className="kicker reveal">통째로 만들기</div>
           <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
@@ -249,8 +278,11 @@ export default function BusinessPage() {
           </div>
           <p className="note reveal">값은 방 크기랑 하시려는 연출에 따라 달라서 보고 나서 말씀드립니다.</p>
         </section>
+        <NextUp here={here} pick={pick} />
+      </>}
 
-        {/* ══════════ ② 제어기 · 장치 ══════════ */}
+      {/* ══════════ ② 제어기 · 장치 ══════════ */}
+      {here === "device" && <>
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
           <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
@@ -475,8 +507,11 @@ export default function BusinessPage() {
             </figcaption>
           </figure>
         </section>
+        <NextUp here={here} pick={pick} />
+      </>}
 
-        {/* ══════════ ③ 매장 운영 프로그램 ══════════ */}
+      {/* ══════════ ③ 매장 운영 프로그램 ══════════ */}
+      {here === "software" && <>
         <section className="bz-sec" id="software">
           <div className="kicker reveal">방 밖에서 쓰는 것</div>
           <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
@@ -519,7 +554,10 @@ export default function BusinessPage() {
           <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
+        <NextUp here={here} pick={pick} />
+      </>}
 
+        {/* ══════════ 여기서부터는 어느 범위를 보든 항상 나온다 ══════════ */}
         {/* 비교 */}
         <section className="bz-sec">
           <div className="kicker reveal">비교</div>
