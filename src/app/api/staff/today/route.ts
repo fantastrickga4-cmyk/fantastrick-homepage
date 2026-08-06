@@ -14,6 +14,13 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
  *  예약금·환불계좌·메모·관리자메모는 **일부러 뺐다.** 문자 보내는 데 필요 없고,
  *  직원 폰이 분실되면 그대로 새는 정보다. 필요해지면 그때 명시적으로 추가할 것.
  *
+ * [누구를 안 주나]
+ *  **미입금(deposit_paid=false)은 뺀다** (2026-08-06). 예약금이 안 들어온 건 아직 확정이
+ *  아니라, 안내문자를 받으면 손님은 확정된 줄 안다. 30분 미입금 자동취소(lib/expire.ts)가
+ *  대부분 걸러주지만, 관리자가 손으로 넣은 예약이나 옛 사이트에서 가져온 건은 미입금인 채로
+ *  당일까지 남는다. 대신 **몇 건 뺐는지는 알려준다**(excludedUnpaid) — 소리 없이 사라지면
+ *  직원은 손님이 누락된 줄 모른다.
+ *
  * [토큰이 새면]
  *  STAFF_TOKEN 값만 바꾸면 즉시 막힌다(관리자 비밀번호는 안 건드려도 된다). 그게 문을
  *  따로 낸 이유이기도 하다.
@@ -86,9 +93,10 @@ export async function GET(req: NextRequest) {
   const themeRaw = req.nextUrl.searchParams.get("theme") || "";
   const theme = /^[a-z0-9-]{1,40}$/.test(themeRaw) ? themeRaw : "";
 
+  // deposit_paid 는 거르려고 읽을 뿐, 응답에는 넣지 않는다(위 "무엇을 안 주나" 참고).
   let query = db
     .from("reservations")
-    .select("id, store_id, theme_id, theme_name, date, time, people, name, phone, status")
+    .select("id, store_id, theme_id, theme_name, date, time, people, name, phone, status, deposit_paid")
     .eq("date", date)
     .neq("status", "cancelled");
   if (theme) query = query.eq("theme_id", theme);
@@ -99,8 +107,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500, headers: cors });
   }
 
+  // 미입금은 여기서 잘라낸다. DB 쿼리로 안 자르고 받아서 세는 건 **뺀 건수를 알려주려고**다.
+  const rows = data || [];
+  const reservations = rows
+    .filter((r) => r.deposit_paid)
+    .map(({ deposit_paid: _unused, ...rest }) => rest);
+  const excludedUnpaid = rows.length - reservations.length;
+
   return NextResponse.json(
-    { ok: true, date, theme: theme || null, reservations: data || [] },
+    { ok: true, date, theme: theme || null, excludedUnpaid, reservations },
     { headers: { ...cors, "Cache-Control": "no-store" } },
   );
 }

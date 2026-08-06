@@ -1,45 +1,50 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { THEMES } from "@/lib/data";
 import "./business.css";
 
-/* 비즈니스(B2B) — 방탈출 매장에 파는 "테마 제어기 + 매장 운영 프로그램" 소개.
-   2026-08-06: 회사 소개형(역량 3축·서비스·5단계·레퍼런스) → 제품 판매형으로 전면 교체.
-   근거 = 사업설계 브리핑(2026-08-02) + 경쟁사(헬리드) 조사. 시안 원본은 docs/시안-제어시스템-B2B/.
+/* 비즈니스(B2B) — 방탈출 매장 사장님·창업 준비자용.
+   파는 것: ①통째로 만들기(턴키) ②제어기·장치(마스터·슬레이브) ③매장 운영 프로그램.
+   브랜드·기관 협업은 보는 사람이 아예 다르므로 /business/collab 로 나눠 뒀다(2026-08-06).
 
    ⚠️ 카피 규칙 (에이전트 2종 조사 + 사장님 확인으로 굳힌 것 — 고칠 때 지킬 것)
      · 이모지 금지. 문장 속 대시(—) 금지. "A가 아니라 B입니다" 반복 금지.
      · 업계어: 장비(X) → 장치 / 블록(X) → 제어기·모듈 / 리셋(X) → 세팅.
      · 고장은 "작동을 안 한다"로 쓴다(죽었다·먹통 같은 은어는 사장님이 안 쓰신다).
-     · 타임은 "찬다". 방마다 장치 수가 다르므로 "보통 몇 개" 같은 기준선 문장은 쓰지 않는다. */
+     · 타임은 "찬다". 방마다 장치 수가 다르므로 "보통 몇 개" 같은 기준선 문장은 쓰지 않는다.
+     · 금액은 쓰지 않는다(사장님 지시 2026-08-06). 값은 보러 가서 말한다.
+     · 근거 못 대는 우량 표시("많이 선택", "업계 1위") 금지. */
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 const onlyNum = (s: string) => Number(String(s).replace(/[^0-9]/g, "")) || 0;
 
+const SCOPES = [
+  { id: "turnkey", label: "통째로 만들기", sub: "기획부터 시공까지" },
+  { id: "device", label: "제어기 · 장치", sub: "방에 들어가는 것" },
+  { id: "software", label: "매장 운영 프로그램", sub: "사무실에서 쓰는 것" },
+];
+
+const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
+
 export default function BusinessPage() {
-  /* 하드웨어(제어기)와 소프트웨어(운영 프로그램)를 탭으로 나눈다 (사장님 지시 2026-08-06).
-     둘은 사는 결정이 아예 다르다 — 하드웨어는 수백만원 한 번, 운영 프로그램은 매달 쓰는 것.
-     한 페이지에 섞어 놓으면 둘 다 흐려진다는 게 8/5 분석의 결론이기도 했다. */
-  const [tab, setTab] = useState<"hw" | "sw">("hw");
   // 손실 계산기 — 사장님이 자기 매장 숫자를 넣어보는 곳. 우리가 금액을 단정하지 않는다.
   const [fee, setFee] = useState(60000);
   const [slots, setSlots] = useState(12);
   // 확장 도해 — 모듈을 붙였다 뗐다 하며 "장치를 몇 개까지 물리나"를 손으로 확인하게 한다.
   const [mods, setMods] = useState(2);
-  // 문의 폼 — 보낸 내용은 관리자 › 도입 문의 탭에 쌓인다(/api/business/inquiry).
+  // 지금 어느 범위를 보고 있는지 (위 선택기의 켜진 칸)
+  const [here, setHere] = useState("turnkey");
+  // 문의
   const [form, setForm] = useState({ storeName: "", phone: "", rooms: "", area: "" });
+  const [kind, setKind] = useState(KINDS[0]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [formErr, setFormErr] = useState("");
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  // 주소에 #sw 가 붙어 오면 운영 프로그램 탭으로 연다 (다른 곳에서 링크 걸 수 있게)
-  useEffect(() => {
-    if (window.location.hash === "#sw") setTab("sw");
-  }, []);
-
-  /* 스크롤 등장 애니메이션.
-     ⚠️ tab 을 의존성에 반드시 넣을 것 — 탭을 바꾸면 화면에 새 요소가 붙는데,
-        처음 한 번만 관찰하면 그 요소들은 `opacity:0` 인 채로 영영 안 보인다. */
+  // 스크롤 등장
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
@@ -47,19 +52,30 @@ export default function BusinessPage() {
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [tab]);
+  }, []);
 
-  function switchTab(next: "hw" | "sw") {
-    if (next === tab) return;
-    setTab(next);
-    history.replaceState(null, "", next === "sw" ? "#sw" : " ");
-    // 탭을 바꾸면 바뀐 내용의 첫 줄부터 보게 한다. 그대로 두면 아까 보던 높이에 남아
-    // "아무 일도 안 일어난 것"처럼 보인다.
-    document.getElementById("bztabs")?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }
+  // 선택기의 켜진 칸을 스크롤 위치에 맞춘다. 누르는 것만 표시하면 손으로 스크롤한 사람은
+  // 지금 어디를 보는지 모른 채로 남는다.
+  useEffect(() => {
+    const secs = SCOPES.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
+    if (!secs.length) return;
+    const io = new IntersectionObserver(
+      (es) => {
+        const seen = es.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (seen) setHere(seen.target.id);
+      },
+      { rootMargin: "-140px 0px -55% 0px", threshold: [0.05, 0.3] }
+    );
+    secs.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, []);
 
   const lost = fee * slots;
   const devices = 32 + mods * 32;
+
+  function goTo(id: string) {
+    document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
 
   async function sendInquiry(e: React.FormEvent) {
     e.preventDefault();
@@ -70,7 +86,8 @@ export default function BusinessPage() {
     setSending(true);
     try {
       const res = await fetch("/api/business/inquiry", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, kind }),
       });
       if (res.ok) setSent(true);
       else {
@@ -84,54 +101,162 @@ export default function BusinessPage() {
   }
 
   return (
-    <div className="bizsys">
+    <div className="bizsys" ref={wrapRef}>
       {/* HERO */}
       <section className="bz-hero">
         <div className="scan" />
         <div className="wrap">
-          <div className="kicker">테마 제어기 · 매장 운영 프로그램</div>
-          <h1>제조사가 아니라,<br />방탈출 매장입니다.</h1>
+          <div className="kicker">방탈출 제작 · 제어기 · 매장 운영</div>
+          <h1>방을 통째로<br />만듭니다.</h1>
           <p className="sub">
-            강남에서 3곳, 11년째 하고 있습니다. 우리 매장에서 쓰던 제어기랑 운영 프로그램을
-            그대로 넣어드립니다. 따로 만들어드리는 게 아니라 같은 걸 쓰시는 겁니다.
+            이야기 짜는 것부터 벽 세우고 배선 넣고 장치 만들어 붙이는 것까지 저희 사람이 합니다.
+            강남에서 3곳, 11년째 직접 운영하면서 쌓은 방식 그대로입니다.
           </p>
           <div className="bz-cta">
-            <a className="btn primary" href="#cta">도입 문의하기</a>
-            <Link href="/" className="btn ghost">테마 보러 가기</Link>
+            <a className="btn primary" href="#cta">한번 보러 오세요</a>
+            <a className="btn ghost" href="#turnkey">무엇을 하는지 보기</a>
           </div>
           <div className="strip">
             <div><b>11년째</b><span>직접 운영 중</span></div>
             <div><b>강남 3곳</b><span>직영</span></div>
-            <div><b>장치 128개</b><span>한 대로</span></div>
+            <div><b>한 팀</b><span>기획 · 시공 · 장치</span></div>
           </div>
         </div>
       </section>
 
-      {/* 탭 — 제어기(하드웨어) / 운영 프로그램(소프트웨어).
-          스크롤을 내려도 따라오게 붙여둔다. 페이지가 길어서 위로 되돌아가기 번거롭다. */}
-      <div className="bztabs" id="bztabs">
+      {/* 범위 선택기 — 아래에 세 범위가 순서대로 다 있고, 여기서는 그 자리로 옮겨만 준다 */}
+      <div className="scope">
         <div className="wrap">
-          <div className="bztabs-in" role="tablist" aria-label="상품 구분">
-            <button role="tab" aria-selected={tab === "hw"} className={tab === "hw" ? "on" : ""} onClick={() => switchTab("hw")}>
-              <b>제어기 · 장치</b><span>방에 들어가는 것</span>
-            </button>
-            <button role="tab" aria-selected={tab === "sw"} className={tab === "sw" ? "on" : ""} onClick={() => switchTab("sw")}>
-              <b>매장 운영 프로그램</b><span>사무실에서 쓰는 것</span>
-            </button>
+          <div className="scope-in" role="tablist" aria-label="보실 범위">
+            {SCOPES.map((s) => (
+              <button
+                key={s.id} role="tab" aria-selected={here === s.id}
+                className={here === s.id ? "on" : ""} onClick={() => goTo(s.id)}
+              >
+                <b>{s.label}</b><span>{s.sub}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="wrap">
-      {tab === "hw" && <>
-        {/* 손실 */}
+        {/* 고민 질문 — 상품보다 먼저. 금액을 먼저 들이대면 방어가 걸린다 */}
         <section className="bz-sec">
+          <div className="kicker reveal">이런 걸 물어보십니다</div>
+          <h2 className="reveal">혹시 이런 적 있으십니까.</h2>
+          <div className="asks">
+            <div className="ask reveal">방 하나 새로 여는데 어디부터 맡겨야 할지 모르겠다</div>
+            <div className="ask reveal">장치가 작동을 안 하는데 어디로 전화해야 할지 헷갈린다</div>
+            <div className="ask reveal">방 늘릴 때마다 제어기부터 다시 사야 한다고 들었다</div>
+            <div className="ask reveal">예약이랑 근무표를 아직 엑셀이랑 단톡으로 하고 있다</div>
+          </div>
+        </section>
+
+        {/* ══════════ ① 통째로 만들기 ══════════ */}
+        <section className="bz-sec" id="turnkey">
+          <div className="kicker reveal">통째로 만들기</div>
+          <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
+          <p className="lead reveal">
+            대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다. 저희는 세 가지를 다 합니다.
+            방탈출을 11년 하면서 필요해서 하나씩 갖춘 것들입니다.
+          </p>
+
+          <div className="trio">
+            <div className="tri reveal">
+              <div className="en">Contents</div>
+              <h3>이야기 · 문제</h3>
+              <p>세계관을 짜고 방 안에서 손님이 무엇을 하게 할지 설계합니다.</p>
+              <ul>
+                <li>시나리오 · 세계관</li>
+                <li>문제 · 장치 게임 설계</li>
+                <li>연출 · 사운드 디렉팅</li>
+                <li>운영 매뉴얼 · GM 교육</li>
+              </ul>
+            </div>
+            <div className="tri reveal">
+              <div className="en">Space</div>
+              <h3>공간 · 인테리어</h3>
+              <p>도면을 그리고 벽을 세우고 마감까지 합니다.</p>
+              <ul>
+                <li>평면 · 동선 설계</li>
+                <li>세트 제작 · 인테리어 시공</li>
+                <li>조명 · 음향 설치</li>
+                <li>전기 배선</li>
+              </ul>
+            </div>
+            <div className="tri reveal">
+              <div className="en">Device</div>
+              <h3>장치 · 제어</h3>
+              <p>장치를 만들어 붙이고, 그걸 돌리는 제어기까지 저희가 만듭니다.</p>
+              <ul>
+                <li>잠금 장치(전자석 · 기계식)</li>
+                <li>센서 · 트리거</li>
+                <li>연출 제어(조명 · 음향 · 영상)</li>
+                <li>마스터 · 슬레이브 제어기</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 전화할 곳이 몇 군데냐 — 비교표 한 줄로 묻기엔 아까운 차별점이라 도해로 올렸다 */}
+          <div className="who2 reveal" style={{ marginTop: 22 }}>
+            <div className="them">
+              <h4>보통은</h4>
+              <div className="cnt">전화할 곳 다섯 군데</div>
+              <ul>
+                <li>시나리오 작가</li><li>인테리어</li><li>전기</li><li>장치 제작</li><li>시공</li>
+              </ul>
+            </div>
+            <div className="us">
+              <h4>저희는</h4>
+              <div className="cnt">전화할 곳 한 군데</div>
+              <ul>
+                <li>기획</li><li>인테리어</li><li>전기</li><li>장치</li><li>시공</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 공정 5단계 */}
+          <h3 className="reveal" style={{ margin: "40px 0 0", fontSize: 17, fontWeight: 800 }}>진행은 이렇게 합니다</h3>
+          <div className="rail reveal" style={{ marginTop: 18 }}>
+            <div><b>보러 감</b><span>현장 보고 방 개수·장치 세기</span><i>자체 인력</i></div>
+            <div><b>기획 · 시나리오</b><span>이야기와 문제 설계</span><i>자체 인력</i></div>
+            <div><b>설계 · 인테리어</b><span>도면, 세트, 마감</span><i>자체 인력</i></div>
+            <div><b>전기 · 장치</b><span>배선, 장치 제작, 제어기</span><i>자체 인력</i></div>
+            <div><b>시공 · 오픈</b><span>현장 셋업, GM 교육</span><i>자체 인력</i></div>
+          </div>
+
+          {/* 우리가 만든 방들 */}
+          <h3 className="reveal" style={{ margin: "44px 0 0", fontSize: 17, fontWeight: 800 }}>저희가 만들어 저희가 돌리고 있는 방들</h3>
+          <p className="lead reveal" style={{ margin: "10px 0 18px" }}>
+            남의 매장에 넣어드리기 전에 저희 매장에서 먼저 씁니다. 아래 넷 다 저희 손으로 만들어 지금도 손님을 받고 있습니다.
+          </p>
+          <div className="works">
+            {THEMES.map((t) => (
+              <div className="work reveal" key={t.id}>
+                <div className="th">
+                  <Image src={t.poster} alt={t.name} width={78} height={104} sizes="78px" />
+                </div>
+                <div>
+                  <h4>{t.name}</h4>
+                  <div className="kv">{t.storeTag} · {t.genres.join(" · ")} · {t.minutes}분</div>
+                  <div className="tags">
+                    <span>기획</span><span>공간</span><span>배선</span><span>장치</span><span>제어</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="note reveal">값은 방 크기랑 하시려는 연출에 따라 달라서 보고 나서 말씀드립니다.</p>
+        </section>
+
+        {/* ══════════ ② 제어기 · 장치 ══════════ */}
+        <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
           <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
           <p className="lead reveal">
             2시 타임 한 번 비면 그날 매출에서 그냥 빠져요. 내일 두 팀 받는다고 메워지는 것도 아니고요.
             주말에 타임이 다 차는 방일수록 손해가 큽니다.
-            장치를 얼마에 샀느냐보다, 그 장치 때문에 몇 타임을 못 받았느냐가 큽니다.
           </p>
 
           <figure className="reveal">
@@ -168,6 +293,155 @@ export default function BusinessPage() {
           </figure>
         </section>
 
+        {/* 새 제어기 */}
+        <section className="bz-sec">
+          <div className="kicker reveal">새로 만든 것</div>
+          <h2 className="reveal">마스터 · 슬레이브 제어기</h2>
+          <p className="lead reveal">
+            마스터 한 대가 장치 32개를 맡습니다. 모자라면 슬레이브 모듈을 답니다.
+            저희가 만들어 저희 매장에 넣고 쓰는 물건입니다.
+          </p>
+
+          <div className="pcbstage reveal">
+            <span className="newbadge">NEW</span>
+            <svg className="pcb" viewBox="0 0 660 300" role="img"
+              aria-label="마스터 제어기 한 대에 슬레이브 모듈이 이어진 구조 도해. 마스터가 장치 32개를 맡고 모듈을 달 때마다 32개씩 늘어납니다.">
+              <defs>
+                <pattern id="pcbgrid" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <path d="M14 0H0V14" fill="none" stroke="#8fb6ff" strokeOpacity=".08" strokeWidth="1" />
+                </pattern>
+                <linearGradient id="busfade" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stopColor="#6ea8ff" stopOpacity=".95" />
+                  <stop offset="1" stopColor="#6ea8ff" stopOpacity=".25" />
+                </linearGradient>
+              </defs>
+
+              {/* 마스터 */}
+              <rect x="16" y="40" width="250" height="200" rx="12"
+                fill="url(#pcbgrid)" stroke="#6ea8ff" strokeOpacity=".72" strokeWidth="1.5" />
+              <circle cx="34" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle cx="248" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle cx="34" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <circle cx="248" cy="222" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
+              <text className="silk-brand" x="52" y="78">FANTASTRICK</text>
+              <text className="silk-model" x="52" y="103">마스터</text>
+              <text className="silk-role" x="52" y="122">MASTER</text>
+              <rect x="52" y="140" width="58" height="58" rx="4"
+                fill="#8fb6ff" fillOpacity=".14" stroke="#8fb6ff" strokeOpacity=".7" />
+              <text className="silk-tiny" x="81" y="173" textAnchor="middle">MCU</text>
+              {Array.from({ length: 32 }, (_, i) => (
+                <rect key={i} x={130 + (i % 8) * 16} y={142 + Math.floor(i / 8) * 16}
+                  width="10" height="10" rx="2"
+                  fill="#6ea8ff" fillOpacity=".22" stroke="#6ea8ff" strokeOpacity=".7" />
+              ))}
+              <text className="silk-tiny" x="130" y="224">장치 32개</text>
+              <circle cx="232" cy="100" r="5" fill="#5ec98e" />
+
+              {/* 확장 버스 + 슬레이브 */}
+              <path d="M266 140 H660" stroke="url(#busfade)" strokeWidth="2" fill="none" />
+              <path className="pulse" d="M266 140 H660" strokeWidth="2.6" fill="none" />
+              {[0, 1, 2].map((i) => (
+                <g key={i} opacity={1 - i * 0.26}>
+                  <rect x={300 + i * 118} y="96" width="98" height="88" rx="9"
+                    fill="url(#pcbgrid)" stroke="#6ea8ff" strokeOpacity=".65" strokeWidth="1.2"
+                    strokeDasharray={i === 2 ? "5 5" : "0"} />
+                  <text className="silk-model sm" x={349 + i * 118} y="132" textAnchor="middle">슬레이브</text>
+                  <text className="silk-tiny" x={349 + i * 118} y="152" textAnchor="middle">+32개</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          <div className="spec reveal">
+            <div><dt>마스터 한 대</dt><span className="dots" /><dd>장치 32개</dd></div>
+            <div><dt>모듈 하나 달 때마다</dt><span className="dots" /><dd>32개씩</dd></div>
+            <div><dt>한 대로 늘릴 수 있는 데까지</dt><span className="dots" /><dd>128개</dd></div>
+            <div><dt>상태 감시</dt><span className="dots" /><dd>장치마다 응답 확인</dd></div>
+            <div><dt>부품</dt><span className="dots" /><dd>시중에서 구할 수 있는 것</dd></div>
+            <div><dt>보증</dt><span className="dots" /><dd>보드 · 모듈 1년, 부품 6개월</dd></div>
+          </div>
+
+          <figure className="reveal" style={{ marginTop: 26 }}>
+            <p className="ftitle">모자라면 모듈을 답니다</p>
+            <div className="blocks">
+              <div className="blk main"><b>마스터</b><span>장치 32개</span></div>
+              {Array.from({ length: mods }, (_, i) => (
+                <span key={i} className="blkpair">
+                  <span className="plus">+</span>
+                  <span className="blk"><b>슬레이브</b><span>+32개</span></span>
+                </span>
+              ))}
+              <span className="blkpair">
+                <span className="plus">+</span>
+                <span className="blk ghost"><b>…</b><span>계속</span></span>
+              </span>
+            </div>
+            <div className="steprow">
+              <div className="stepper">
+                <button type="button" onClick={() => setMods((m) => Math.max(0, m - 1))} aria-label="모듈 빼기">&#8722;</button>
+                <span className="v">모듈 <b>{mods}</b>개</span>
+                <button type="button" onClick={() => setMods((m) => Math.min(6, m + 1))} aria-label="모듈 추가">+</button>
+              </div>
+              <div>
+                <span className="bignum sm">{devices}</span>
+                <span className="devsuf">개까지 물립니다</span>
+              </div>
+            </div>
+            <figcaption>모듈 하나 달면 32개씩 늘어납니다. 마스터는 처음 한 번만 사시면 되고요.</figcaption>
+          </figure>
+
+          {/* 방 늘릴 때 드는 돈 — 금액을 쓰지 않는다. 기울기 차이로만 읽게 한다. */}
+          <figure className="reveal" style={{ marginTop: 14 }}>
+            <p className="ftitle">방을 늘려갈 때</p>
+            <div className="step-chart">
+              <svg viewBox="0 0 620 200" role="img"
+                aria-label="방을 늘릴 때 드는 돈 비교. 제어기를 다시 사는 구조는 늘릴 때마다 처음 금액이 다시 들어 가파르게 올라가고, 모듈만 더하는 구조는 완만하게 올라갑니다.">
+                <line className="gl" x1="46" y1="20" x2="600" y2="20" />
+                <line className="gl" x1="46" y1="95" x2="600" y2="95" />
+                <line className="gl" x1="46" y1="170" x2="600" y2="170" />
+                <text className="axl" x="0" y="26">드는</text>
+                <text className="axl" x="0" y="38">돈</text>
+                <polyline fill="none" stroke="#8ea0c4" strokeWidth="2.5" strokeDasharray="7 5"
+                  strokeLinejoin="round" strokeLinecap="round"
+                  points="60,158 190,158 190,112 320,112 320,66 450,66 450,24 580,24" />
+                <text className="dlab" x="516" y="17" textAnchor="middle" fill="#8ea0c4">제어기를 다시</text>
+                <polyline fill="none" stroke="#3585ea" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
+                  points="60,158 190,158 190,143 320,143 320,128 450,128 450,113 580,113" />
+                <circle className="dot" cx="60" cy="158" r="5" />
+                <circle className="dot" cx="190" cy="143" r="5" />
+                <circle className="dot" cx="320" cy="128" r="5" />
+                <circle className="dot" cx="450" cy="113" r="5" />
+                <text className="dlab" x="516" y="106" textAnchor="middle">모듈만 추가</text>
+                <text className="axl" x="60" y="190" textAnchor="middle">장치 32개</text>
+                <text className="axl" x="190" y="190" textAnchor="middle">64개</text>
+                <text className="axl" x="320" y="190" textAnchor="middle">96개</text>
+                <text className="axl" x="450" y="190" textAnchor="middle">128개</text>
+              </svg>
+            </div>
+            <figcaption>제어기를 다시 사야 하는 구조라면 방을 늘릴 때마다 처음 냈던 금액이 또 나갑니다.
+              모듈만 더하면 되는 구조는 처음 한 번으로 끝납니다.</figcaption>
+          </figure>
+
+          {/* 구성 — 금액 없음 */}
+          <h3 className="reveal" style={{ margin: "44px 0 0", fontSize: 17, fontWeight: 800 }}>방 몇 개짜리세요?</h3>
+          <div className="tiers" style={{ marginTop: 16, gridTemplateColumns: "repeat(2,1fr)" }}>
+            <div className="tier reveal">
+              <h3>소형</h3>
+              <div className="devbar"><i style={{ width: "18%" }} /></div>
+              <div className="devn">장치 <b>23개</b>까지</div>
+              <p>방 한 칸으로 시작하시는 분들. 23개에서 더는 안 늘어납니다. 나중에 표준으로 올리실 때
+                쓰시던 제어기는 값을 쳐드려요.</p>
+            </div>
+            <div className="tier hot reveal">
+              <h3>표준</h3>
+              <div className="devbar"><i style={{ width: "25%" }} /></div>
+              <div className="devn">장치 <b>32개</b>부터</div>
+              <p>새로 여는 매장은 대부분 이걸로 갑니다. 모듈만 달면 계속 붙습니다. 위로 끝이 없어요.</p>
+            </div>
+          </div>
+          <p className="note reveal">설치는 3일 기준입니다. 금액은 방 개수와 장치 수에 따라 달라서 보러 가서 말씀드립니다.</p>
+        </section>
+
         {/* 누가 먼저 아느냐 */}
         <section className="bz-sec">
           <div className="kicker reveal">누가 먼저 아느냐</div>
@@ -202,119 +476,48 @@ export default function BusinessPage() {
           </figure>
         </section>
 
-        {/* 확장 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">방 늘릴 때</div>
-          <h2 className="reveal">쓰던 건 안 뜯습니다.</h2>
-          <p className="lead reveal">
-            자물쇠, 전자석, 센서, 연출 조명. 방에 붙는 건 하나씩 다 셉니다.
-            제어기 한 대에 32개까지 물려요. 방마다 들어가는 개수가 다 다르니, 보러 가서 같이 세어봅니다.
+        {/* ══════════ ③ 매장 운영 프로그램 ══════════ */}
+        <section className="bz-sec" id="software">
+          <div className="kicker reveal">방 밖에서 쓰는 것</div>
+          <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
+          <p className="lead reveal">방 안 장치를 돌리는 게 제어기라면, 이건 사무실에서 하는 일입니다.
+            근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>
+
+          <div className="swtable reveal">
+            <div className="h">&nbsp;</div><div className="h">지금 이렇게 하고 계실 겁니다</div><div className="h usc">바뀌는 것</div>
+
+            <div className="rowlab">출퇴근 · 근무표</div>
+            <div className="t mut">출퇴근은 단톡에 카톡으로, 근무표는 엑셀 짜서 사진으로 올림</div>
+            <div className="usc t">폰으로 찍습니다. 대타도 서로 신청하고 승인합니다.</div>
+
+            <div className="rowlab">급여 · 매출 장부</div>
+            <div className="t mut">말일에 시급 계산기 두드림</div>
+            <div className="usc t">찍힌 근태가 그대로 급여로 넘어갑니다. 매출까지 한 화면에서.</div>
+
+            <div className="rowlab">예약 · 홈페이지</div>
+            <div className="t mut">외부 플랫폼 수수료, 손 안 대는 홈페이지</div>
+            <div className="usc t">자체 예약, 취소, 환불 규정까지. 홈페이지도 같이 갑니다.</div>
+
+            <div className="rowlab">쿠폰</div>
+            <div className="t mut">종이 쿠폰, 누가 썼는지 모름</div>
+            <div className="usc t">발행하고 나면 누가 언제 썼는지 남습니다.</div>
+          </div>
+
+          <p className="lead reveal" style={{ margin: "22px 0 0" }}>
+            전부 저희 매장 3곳에서 지금 이 순간 돌아가고 있는 것들입니다. 보여드리려고 만든 게 아닙니다.
           </p>
 
-          <figure className="reveal">
-            <p className="ftitle">모자라면 모듈을 답니다</p>
-            <div className="blocks">
-              <div className="blk main"><b>제어기</b><span>장치 32개</span></div>
-              {Array.from({ length: mods }, (_, i) => (
-                <span key={i} className="blkpair">
-                  <span className="plus">+</span>
-                  <span className="blk"><b>모듈</b><span>+32개</span></span>
-                </span>
-              ))}
-              <span className="blkpair">
-                <span className="plus">+</span>
-                <span className="blk ghost"><b>…</b><span>계속</span></span>
-              </span>
-            </div>
-            <div className="steprow">
-              <div className="stepper">
-                <button type="button" onClick={() => setMods((m) => Math.max(0, m - 1))} aria-label="모듈 빼기">&#8722;</button>
-                <span className="v">모듈 <b>{mods}</b>개</span>
-                <button type="button" onClick={() => setMods((m) => Math.min(6, m + 1))} aria-label="모듈 추가">+</button>
-              </div>
-              <div>
-                <span className="bignum sm">{devices}</span>
-                <span className="devsuf">개까지 물립니다</span>
-              </div>
-            </div>
-            <figcaption>모듈 하나 달면 32개씩 늘어납니다. 제어기는 처음 한 번만 사시면 되고요.</figcaption>
-          </figure>
-
-          {/* 방 늘릴 때 드는 돈 — 두 방식 비교.
-              ⚠️ 금액을 쓰지 않는다(사장님 지시 2026-08-06: 가격은 최소·비공개).
-                 그래도 논지는 살아야 해서 "얼마"가 아니라 "어떻게 늘어나느냐"로 바꿨다.
-                 세로축에 숫자를 안 쓰는 대신 두 선을 나란히 놓아 기울기 차이로 읽게 한다. */}
-          <figure className="reveal" style={{ marginTop: 14 }}>
-            <p className="ftitle">방을 늘려갈 때</p>
-            <div className="step-chart">
-              <svg viewBox="0 0 620 200" role="img" aria-label="방을 늘릴 때 드는 돈 비교. 제어기를 다시 사는 구조는 방을 늘릴 때마다 처음 금액이 다시 들어 가파르게 올라가고, 모듈만 더하는 구조는 완만하게 올라간다.">
-                <line className="gl" x1="46" y1="20" x2="600" y2="20" />
-                <line className="gl" x1="46" y1="95" x2="600" y2="95" />
-                <line className="gl" x1="46" y1="170" x2="600" y2="170" />
-                <text className="axl" x="0" y="26">드는</text>
-                <text className="axl" x="0" y="38">돈</text>
-
-                {/* 제어기를 다시 사는 구조 — 가파른 계단 */}
-                <polyline
-                  fill="none" stroke="#8ea0c4" strokeWidth="2.5" strokeDasharray="7 5"
-                  strokeLinejoin="round" strokeLinecap="round"
-                  points="60,158 190,158 190,112 320,112 320,66 450,66 450,24 580,24"
-                />
-                <text className="dlab mut" x="516" y="17" textAnchor="middle">제어기를 다시</text>
-
-                {/* 모듈만 더하는 구조 — 완만한 계단 */}
-                <polyline
-                  fill="none" stroke="#3585ea" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
-                  points="60,158 190,158 190,143 320,143 320,128 450,128 450,113 580,113"
-                />
-                <circle className="dot" cx="60" cy="158" r="5" />
-                <circle className="dot" cx="190" cy="143" r="5" />
-                <circle className="dot" cx="320" cy="128" r="5" />
-                <circle className="dot" cx="450" cy="113" r="5" />
-                <text className="dlab" x="516" y="106" textAnchor="middle">모듈만 추가</text>
-
-                <text className="axl" x="60" y="190" textAnchor="middle">장치 32개</text>
-                <text className="axl" x="190" y="190" textAnchor="middle">64개</text>
-                <text className="axl" x="320" y="190" textAnchor="middle">96개</text>
-                <text className="axl" x="450" y="190" textAnchor="middle">128개</text>
-              </svg>
-            </div>
-            <figcaption>제어기를 다시 사야 하는 구조라면 방을 늘릴 때마다 처음 냈던 금액이 또 나갑니다.
-              모듈만 더하면 되는 구조는 처음 한 번으로 끝납니다.</figcaption>
-          </figure>
-        </section>
-
-        {/* 구성 — 금액은 적지 않는다(사장님 지시 2026-08-06).
-            방 개수·장치 수로 자기 자리를 찾게만 하고, 숫자는 보러 가서 말한다. */}
-        <section className="bz-sec">
-          <div className="kicker reveal">구성</div>
-          <h2 className="reveal">방 몇 개짜리세요?</h2>
-          <div className="tiers">
-            <div className="tier reveal">
-              <h3>소형</h3>
-              <div className="devbar"><i style={{ width: "18%" }} /></div>
-              <div className="devn">장치 <b>23개</b>까지</div>
-              <p>방 한 칸으로 시작하시는 분들. 23개에서 더는 안 늘어납니다. 나중에 표준으로 올리실 때
-                쓰시던 제어기는 값을 쳐드려요.</p>
-            </div>
-            {/* ⚠️ "많이 선택" 배지는 뺐다(2026-08-06) — 판매 실적을 암시하는데 댈 근거가 없다.
-                   표시광고법상 근거 없는 우량오인 표시가 될 수 있고, 사장님끼리는 금방 들통난다. */}
-            <div className="tier hot reveal">
-              <h3>표준</h3>
-              <div className="devbar"><i style={{ width: "25%" }} /></div>
-              <div className="devn">장치 <b>32개</b>부터</div>
-              <p>새로 여는 매장은 대부분 이걸로 갑니다. 모듈만 달면 계속 붙습니다. 위로 끝이 없어요.</p>
-            </div>
-            <div className="tier reveal">
-              <h3>턴키</h3>
-              <div className="devbar"><i style={{ width: "100%" }} /></div>
-              <div className="devn">장치 <b>128개</b>까지</div>
-              <p>시나리오부터 연출, 장치 설계, 시공, GM 교육까지 우리가 합니다.
-                사장님은 오픈 날짜만 잡으시면 됩니다.</p>
-            </div>
+          <h3 className="reveal" style={{ margin: "44px 0 0", fontSize: 17, fontWeight: 800 }}>예약금 들어온 걸 사람이 안 봐도 됩니다</h3>
+          <p className="lead reveal" style={{ margin: "10px 0 18px" }}>
+            예약금이 입금되면 그 예약이 알아서 확정으로 넘어갑니다. 이름과 금액이 맞는 건만 자동으로 처리하고,
+            애매한 건 사장님한테 남깁니다.
+          </p>
+          <div className="ops">
+            <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
+            <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
           </div>
-          <p className="note reveal">설치는 3일 기준입니다. 보증은 보드와 모듈 1년, 부품 6개월.
-            금액은 방 개수와 장치 수에 따라 달라서 보러 가서 말씀드립니다.</p>
+          <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
+            프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
 
         {/* 비교 */}
@@ -323,6 +526,10 @@ export default function BusinessPage() {
           <h2 className="reveal">견적서에는 안 적히는 것들</h2>
           <div className="cmp reveal">
             <div className="h">&nbsp;</div><div className="h">보통 방식</div><div className="h usc">판타스트릭</div>
+
+            <div className="rowlab">기획부터 시공까지 어디까지 한 팀인가</div>
+            <div><span className="mk n">&times;</span><span className="t mut">따로따로 맡김</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">한 팀이 끝까지</span></div>
 
             <div className="rowlab">방을 늘리고 싶을 때</div>
             <div><span className="mk n">&times;</span><span className="t mut">제어기를 다시</span></div>
@@ -352,74 +559,18 @@ export default function BusinessPage() {
             특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
         </section>
 
-      </>}
-
-      {/* ══════════ 매장 운영 프로그램(소프트웨어) 탭 ══════════ */}
-      {tab === "sw" && <>
+        {/* 사후 관리 — 상품과 상관없이 궁금한 것이라 범위 밖에 둔다 */}
         <section className="bz-sec">
-          <div className="kicker reveal">방 밖에서 쓰는 것</div>
-          <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
-          <p className="lead reveal">방 안 장치를 돌리는 게 제어기라면, 이건 사무실에서 하는 일입니다.
-            근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>
-
-          <div className="swtable reveal">
-            <div className="h">&nbsp;</div><div className="h">지금 이렇게 하고 계실 겁니다</div><div className="h usc">바뀌는 것</div>
-
-            <div className="rowlab">출퇴근 · 근무표</div>
-            <div className="t mut">출퇴근은 단톡에 카톡으로, 근무표는 엑셀 짜서 사진으로 올림</div>
-            <div className="usc t">폰으로 찍습니다. 대타도 서로 신청하고 승인합니다.</div>
-
-            <div className="rowlab">급여 · 매출 장부</div>
-            <div className="t mut">말일에 시급 계산기 두드림</div>
-            <div className="usc t">찍힌 근태가 그대로 급여로 넘어갑니다. 매출까지 한 화면에서.</div>
-
-            <div className="rowlab">예약 · 홈페이지</div>
-            <div className="t mut">외부 플랫폼 수수료, 손 안 대는 홈페이지</div>
-            <div className="usc t">자체 예약, 취소, 환불 규정까지. 홈페이지도 같이 갑니다.</div>
-
-            <div className="rowlab">쿠폰</div>
-            <div className="t mut">종이 쿠폰, 누가 썼는지 모름</div>
-            <div className="usc t">발행하고 나면 누가 언제 썼는지 남습니다.</div>
-          </div>
-
-          <p className="lead reveal" style={{ margin: "22px 0 0" }}>
-            전부 저희 매장 3곳에서 지금 이 순간 돌아가고 있는 것들입니다. 보여드리려고 만든 게 아닙니다.
-          </p>
-        </section>
-
-        <section className="bz-sec">
-          <div className="kicker reveal">입금 확인</div>
-          <h2 className="reveal">예약금 들어온 걸<br />사람이 안 봐도 됩니다.</h2>
-          <p className="lead reveal">예약금이 입금되면 그 예약이 알아서 확정으로 넘어갑니다.
-            이름과 금액이 맞는 건만 자동으로 처리하고, 애매한 건 사장님한테 남깁니다.
-            저희 매장에서 지금 이렇게 돌리고 있습니다.</p>
-          <div className="ops">
-            <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
-            <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
+          <div className="kicker reveal">사후 관리</div>
+          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
+          <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
+          <div className="trust">
+            <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
+            <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
+            <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
+            <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
           </div>
         </section>
-
-        <section className="bz-sec">
-          <p className="note reveal" style={{ margin: 0 }}>제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
-            프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다. 매장 규모에 따라 달라서 보러 가서 말씀드립니다.</p>
-        </section>
-      </>}
-
-      {/* ══════════ 여기서부터는 탭과 상관없이 항상 보이는 것 ══════════
-          🔴 사후 관리와 자주 묻는 것은 원래 탭 안에 있었다(사후 관리=프로그램 탭, FAQ=제어기 탭).
-             그러면 **제어기만 보러 온 사장님이 "고장 나면 어떻게 해주나"를 못 보고 나간다.**
-             둘 다 상품과 무관하게 궁금한 것이라 밖으로 뺐다(2026-08-06). */}
-      <section className="bz-sec">
-        <div className="kicker reveal">사후 관리</div>
-        <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
-        <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
-        <div className="trust">
-          <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
-          <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
-          <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
-          <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
-        </div>
-      </section>
 
         {/* 먼저 말씀드립니다 */}
         <section className="bz-sec">
@@ -434,10 +585,43 @@ export default function BusinessPage() {
           </div>
         </section>
 
+        {/* FAQ */}
+        <section className="bz-sec">
+          <div className="kicker reveal">자주 묻는 것</div>
+          <h2 className="reveal">이런 걸 물어보십니다.</h2>
+          <div className="reveal">
+            <details>
+              <summary>지금 매장에 있는 장치, 안 뜯고 그대로 쓸 수 있나요?</summary>
+              <div className="b">쓰시던 전자석이랑 센서, 조명은 대부분 선만 옮기면 됩니다.
+                뭘 살릴 수 있는지는 보러 가서 그 자리에 알려드립니다.</div>
+            </details>
+            <details>
+              <summary>공사하는 동안 매장 닫아야 하나요?</summary>
+              <div className="b">3일 기준입니다. 방 한 칸씩 나눠 하면 매장 전체를 닫지 않아도 됩니다.
+                예약 적은 요일에 맞춰 잡습니다.</div>
+            </details>
+            <details>
+              <summary>장치가 작동을 안 하면 얼마나 빨리 오시나요?</summary>
+              <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
+                원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
+            </details>
+            <details>
+              <summary>방 하나만 새로 만들 수도 있나요?</summary>
+              <div className="b">됩니다. 방 한 칸만 하시는 분들도 있고, 매장 전체를 맡기시는 분들도 있습니다.
+                지금 쓰시는 것 중 살릴 게 있으면 살립니다.</div>
+            </details>
+            <details>
+              <summary>제어기만 사고 나머지는 저희가 해도 되나요?</summary>
+              <div className="b">됩니다. 제어기만 가져가셔도 되고, 운영 프로그램만 쓰셔도 됩니다.
+                어디까지 맡기실지는 보고 나서 같이 정합니다.</div>
+            </details>
+          </div>
+        </section>
+
         {/* 문의 */}
         <section className="bz-sec" id="cta">
           <div className="ctabox reveal">
-            <div className="kicker">CONTACT</div>
+            <div className="kicker" style={{ justifyContent: "center" }}>CONTACT</div>
             <h2>한번 보러 가겠습니다.</h2>
             <p className="lead center">지금 쓰시는 게 있어도 괜찮습니다. 안 뜯고 볼 수 있는 것부터 봅니다.
               방 몇 개인지, 장치가 몇 개 붙어 있는지, 고장 나면 지금 어떻게 하시는지. 그 정도만 보면 됩니다.</p>
@@ -448,6 +632,11 @@ export default function BusinessPage() {
               </div>
             ) : (
               <>
+                <div className="kinds" style={{ justifyContent: "center", margin: "22px 0 4px" }}>
+                  {KINDS.map((k) => (
+                    <button key={k} type="button" className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{k}</button>
+                  ))}
+                </div>
                 <form className="bzform" onSubmit={sendInquiry}>
                   <div>
                     <label htmlFor="bz-store">매장명</label>
@@ -471,7 +660,7 @@ export default function BusinessPage() {
                   </div>
                   <div className="full">
                     <button type="submit" className="btn primary" style={{ width: "100%" }} disabled={sending}>
-                      {sending ? "보내는 중…" : "도입 문의하기"}
+                      {sending ? "보내는 중…" : "한번 보러 와 달라고 하기"}
                     </button>
                   </div>
                 </form>
@@ -479,6 +668,11 @@ export default function BusinessPage() {
                 <div className="micro">보고 나서 안 하셔도 됩니다.<br />연락은 한 번만 드립니다.</div>
               </>
             )}
+          </div>
+
+          <div className="crossline reveal" style={{ marginTop: 22 }}>
+            <p>브랜드 팝업이나 기업 교육처럼 방탈출 매장이 아닌 곳에 만드는 일도 합니다.</p>
+            <Link href="/business/collab">협업 이야기 보기 →</Link>
           </div>
         </section>
       </div>

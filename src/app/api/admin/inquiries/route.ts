@@ -3,7 +3,9 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
 import { sanitizeText } from "@/lib/util";
 
-const COLS = "id, store_name, phone, rooms, area, status, admin_note, created_at, contacted_at";
+const COLS = "id, store_name, phone, rooms, area, kind, status, admin_note, created_at, contacted_at";
+// kind 칸을 아직 안 만든 상태에서도 목록이 떠야 한다(SQL 적용 전 사고 방지)
+const COLS_NO_KIND = "id, store_name, phone, rooms, area, status, admin_note, created_at, contacted_at";
 const STATUSES = ["new", "contacted", "done", "dropped"];
 
 /* 비즈니스(B2B) 도입 문의 — 관리자 › 문의 탭이 쓴다.
@@ -25,10 +27,17 @@ export async function GET(req: NextRequest) {
   if (!db) return NextResponse.json(DB_NOT_CONFIGURED, { status: 503 });
 
   const status = req.nextUrl.searchParams.get("status") || "all";
-  let q = db.from("biz_inquiries").select(COLS).order("created_at", { ascending: false }).limit(300);
-  if (status !== "all") q = q.eq("status", status);
+  const list = (cols: string) => {
+    let q = db.from("biz_inquiries").select(cols).order("created_at", { ascending: false }).limit(300);
+    if (status !== "all") q = q.eq("status", status);
+    return q;
+  };
 
-  const { data, error } = await q;
+  let { data, error } = await list(COLS);
+  // kind 칸이 아직 없으면(PGRST204) 그것만 빼고 다시 부른다
+  if (error && (error.code === "PGRST204" || /kind/.test(error.message || ""))) {
+    ({ data, error } = await list(COLS_NO_KIND));
+  }
   if (error) {
     if (isMissingTable(error.code)) return NextResponse.json({ error: NO_TABLE, needsMigration: true }, { status: 503 });
     return NextResponse.json({ error: "문의 조회 중 오류가 발생했습니다." }, { status: 500 });

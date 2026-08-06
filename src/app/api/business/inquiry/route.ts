@@ -38,9 +38,18 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (dup) return NextResponse.json({ ok: true, duplicated: true });
 
-  const { error } = await db.from("biz_inquiries").insert({
-    store_name: storeName, phone, rooms, area, status: "new",
-  });
+  // 어떤 걸 문의하는지(통째로 시공 / 제어기 / 운영 프로그램 / 협업). 사장님이 전화하기 전에
+  // 무슨 이야기를 할지 알고 걸 수 있어야 한다.
+  const kind = sanitizeText(String(body.kind || "")).slice(0, 30) || null;
+
+  const row = { store_name: storeName, phone, rooms, area, status: "new" };
+  let { error } = await db.from("biz_inquiries").insert({ ...row, kind });
+  // kind 칸을 아직 안 만든 상태(PGRST204)면 그것만 빼고 다시 넣는다.
+  // 문의는 무슨 일이 있어도 받아야 한다 — 칸 하나 때문에 손님을 돌려보내지 않는다.
+  if (error && (error.code === "PGRST204" || /kind/.test(error.message || ""))) {
+    console.error("[B2B 문의] kind 칸이 없어 빼고 저장함 — migration_biz_inquiry_kind_APPLY_ME.sql 적용 필요");
+    ({ error } = await db.from("biz_inquiries").insert(row));
+  }
   if (error) {
     // 표가 아직 없으면(SQL 미적용) 손님에게는 "메일 주세요"로 안내한다.
     // 손님 입장에선 우리 사정이 뭐든 "연락할 방법"이 보여야 한다.

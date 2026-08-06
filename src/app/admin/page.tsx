@@ -162,6 +162,7 @@ function ReservationsTab() {
    흐름은 딱 네 칸: 새 문의 → 연락함 → 계약/설치까지 감 → 안 하기로. */
 type Inquiry = {
   id: string; store_name: string; phone: string; rooms: number | null; area: string | null;
+  kind?: string | null; // 무엇을 문의했나 (통째로 시공 / 제어기 도입 / 협업 · 브랜드 팝업 …)
   status: string; admin_note: string | null; created_at: string; contacted_at: string | null;
 };
 const INQ_ST: Record<string, { label: string; cls: string }> = {
@@ -221,6 +222,7 @@ function InquiriesTab() {
               <div className="head" style={{ cursor: "default" }}>
                 <span className="tname">{q.store_name}</span>
                 <span className="who"><Phone v={q.phone} /></span>
+                {q.kind && <span className="src-tag">{q.kind}</span>}
                 {q.rooms != null && <span className="src-tag">방 {q.rooms}개</span>}
                 {q.area && <span className="src-tag">{q.area}</span>}
                 <span className={`badge-st st-${st.cls}`}>{st.label}</span>

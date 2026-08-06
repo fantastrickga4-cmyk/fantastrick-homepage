@@ -19,13 +19,26 @@
   --card: rgba(255, 255, 255, .05);
 }
 
-.bizsys .bz-sec { padding: 74px 0; border-top: 1px solid rgba(255,255,255,.09) }
-@media (max-width: 640px) { .bizsys .bz-sec { padding: 52px 0 } }
+/* 섹션 — 같은 사이트의 .site-dark .block 이 116px 인데 여기만 74px 이라 이 페이지만 빽빽했다.
+   여백은 돈이 안 드는 유일한 고급 신호라 다른 화면과 같은 급으로 올린다.
+   경계선도 방향을 준다(왼쪽만 밝게) — 전부 같은 톤이면 페이지가 표처럼 읽힌다. */
+.bizsys .bz-sec { padding: 110px 0; border-top: none; position: relative;
+  /* 탭바가 sticky(top:68) 라 앵커로 점프하면 제목이 가린다 */
+  scroll-margin-top: 124px }
+.bizsys .bz-sec::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, rgba(143,182,255,.34) 0%, rgba(255,255,255,.10) 34%, transparent 78%) }
+@media (max-width: 640px) { .bizsys .bz-sec { padding: 68px 0 } }
 
-.bizsys h2 { font-size: clamp(22px,3.4vw,34px); font-weight: 800; letter-spacing: -.03em; line-height: 1.3; margin: 0 0 12px }
-.bizsys .lead { color: var(--muted); font-size: 15.5px; max-width: 660px; margin: 0 0 28px }
-.bizsys .lead.center { margin: 0 auto; max-width: 480px }
-.bizsys .kicker { font-size: 11px; font-weight: 800; letter-spacing: .18em; color: var(--brand); margin-bottom: 11px }
+/* 글자 크기가 커질수록 자간을 조인다(h1 -.042 → h2 -.038 → lead -.01 → 본문 0).
+   규칙이 있으면 화면이 정돈돼 보인다. 홈 제목이 clamp(30,4.6vw,56)인데 여기만 34px 상한이라 작았다. */
+.bizsys h2 { font-size: clamp(26px,4.4vw,46px); font-weight: 800; letter-spacing: -.038em; line-height: 1.16; margin: 0 0 14px }
+.bizsys .lead { color: var(--muted); font-size: 17px; max-width: 42ch; line-height: 1.85; letter-spacing: -.01em; margin: 0 0 30px }
+.bizsys .lead.center { margin: 0 auto; max-width: 44ch }
+/* 키커 앞의 짧은 룰 — 사이트의 .shead::before 문법과 같게(새 챕터 신호 통일) */
+.bizsys .kicker { display: flex; align-items: center; gap: 10px;
+  font-size: 12px; font-weight: 800; letter-spacing: .22em; color: var(--brand-bright); margin-bottom: 14px }
+.bizsys .kicker::before { content: ""; width: 24px; height: 2px; border-radius: 2px; flex: 0 0 auto;
+  background: linear-gradient(90deg,#9cc2ff,#6ea8ff) }
 .bizsys .note { color: var(--muted); font-size: 13.5px; margin: 16px 0 0 }
 .bizsys .disc { font-size: 11.5px; color: var(--faint); margin-top: 12px }
 
@@ -57,13 +70,14 @@
 
 /* 헤더가 고정(position:fixed)이라 위쪽 여백을 크게 잡아야 제목이 안 가린다 */
 .bizsys .bz-hero .wrap { position: relative; z-index: 3; padding-top: 112px; padding-bottom: 52px }
-.bizsys .bz-hero h1 { font-size: clamp(27px,5.2vw,50px); font-weight: 800; line-height: 1.18; letter-spacing: -.03em; margin: 0 0 16px }
+.bizsys .bz-hero h1 { font-size: clamp(30px,6vw,62px); font-weight: 800; line-height: 1.06; letter-spacing: -.042em; margin: 0 0 18px }
 .bizsys .bz-hero .sub { color: #c3d2ee; font-size: clamp(15px,1.9vw,18px); max-width: 540px; margin: 0 0 26px }
 .bizsys .bz-cta { display: flex; gap: 12px; flex-wrap: wrap }
+/* 숫자 위계 — 큰 값 위, 작은 라벨 아래. 한 줄에 나란히 두면 위계가 없어 그냥 문장처럼 읽힌다. */
 .bizsys .strip { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px }
-.bizsys .strip > div { background: rgba(8,14,30,.86); border: 1px solid var(--line); border-radius: 11px; padding: 13px 18px }
-.bizsys .strip b { font-size: 19px; font-weight: 800; font-feature-settings: "tnum" }
-.bizsys .strip span { font-size: 12px; color: var(--faint); margin-left: 7px }
+.bizsys .strip > div { background: rgba(8,14,30,.86); border: 1px solid var(--line); border-radius: 11px; padding: 14px 20px }
+.bizsys .strip b { display: block; font-size: 27px; font-weight: 800; letter-spacing: -.02em; font-feature-settings: "tnum"; line-height: 1.1 }
+.bizsys .strip span { display: block; font-size: 11.5px; color: var(--faint); letter-spacing: .06em; margin-top: 4px }
 
 /* ── 상품 탭 (제어기 / 운영 프로그램) ────────────────────
    페이지가 길어서 위로 되돌아가기 번거롭다 → 스크롤을 내려도 따라온다.
@@ -105,8 +119,14 @@
   .bizsys .swtable .rowlab { grid-column: 1 / -1; background: rgba(255,255,255,.04) }
 }
 
-/* ── 도해 공통 ─────────────────────────────────────────── */
-.bizsys figure { margin: 0; background: var(--surf); border: 1px solid var(--line); border-radius: var(--r); padding: 24px 26px }
+/* ── 도해 공통 ───────────────────────────────────────────
+   도해가 이 페이지의 주인공인데 카드가 평면이라 배경에 묻혔다. 곡률 위계(도해 18 > 카드 14)와
+   안쪽 하이라이트로 한 겹 띄운다. */
+.bizsys figure { margin: 0; border-radius: 18px; padding: 30px 32px;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)), var(--surf);
+  border: 1px solid rgba(143,182,255,.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 18px 44px -28px rgba(0,0,0,.7) }
+@media (max-width: 640px) { .bizsys figure { padding: 22px 18px; border-radius: 14px } }
 .bizsys figcaption { font-size: 13.5px; color: var(--faint); margin-top: 16px; line-height: 1.75 }
 .bizsys figcaption p { margin: 0 0 8px }
 .bizsys figcaption p:last-child { margin: 0 }
@@ -246,6 +266,163 @@
   .bizsys .ctabox { padding: 34px 20px }
 }
 .bizsys .micro { margin-top: 18px; font-size: 13px; color: var(--faint); line-height: 2 }
+
+/* ═══════════ 2026-08-06 개편: 턴키 앞으로 · 범위 선택 · 제품 도해 ═══════════ */
+
+/* ── 이런 걸 물어보십니다 (고민 질문) ───────────────────
+   손실 계산기 앞에 둔다. 금액을 먼저 들이대면 "우리 매장은 잘 돌아가는데" 하고 방어가 걸린다. */
+.bizsys .asks { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px }
+@media (max-width: 700px) { .bizsys .asks { grid-template-columns: 1fr } }
+.bizsys .ask { background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 20px 22px; font-size: 15.5px; color: var(--text); line-height: 1.6;
+  display: flex; gap: 12px; align-items: flex-start }
+.bizsys .ask::before { content: ""; flex: 0 0 auto; width: 3px; height: 20px; margin-top: 3px;
+  border-radius: 2px; background: linear-gradient(180deg,#9cc2ff,#6ea8ff) }
+
+/* ── 범위 선택기 (탭 대체) ──────────────────────────────
+   탭은 "둘 중 하나 고르라"는 화면이라 사다리 맨 윗칸(통째로)이 영영 안 보인다.
+   여기서는 고른 칸으로 스크롤만 시키고, 아래에는 네 범위가 순서대로 전부 있다. */
+.bizsys .scope { position: sticky; top: 68px; z-index: 20;
+  background: rgba(6,18,46,.92); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line) }
+.bizsys .scope-in { display: flex; gap: 8px; padding: 10px 0; overflow-x: auto; scrollbar-width: none }
+.bizsys .scope-in::-webkit-scrollbar { display: none }
+.bizsys .scope button { flex: 1 0 auto; min-width: 138px; text-align: left; cursor: pointer;
+  font-family: inherit; background: transparent; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 15px; transition: .18s }
+.bizsys .scope button b { display: block; font-size: 14.5px; font-weight: 800; color: var(--text) }
+.bizsys .scope button span { font-size: 11.5px; color: var(--faint) }
+.bizsys .scope button:hover { border-color: rgba(143,182,255,.45) }
+.bizsys .scope button.on { background: rgba(110,168,255,.16); border-color: var(--brand) }
+.bizsys .scope button.on b { color: var(--brand-bright) }
+@media (max-width: 520px) {
+  .bizsys .scope button { min-width: 124px; padding: 9px 12px }
+  .bizsys .scope button b { font-size: 13px }
+  .bizsys .scope button span { font-size: 10.5px }
+}
+
+/* ── 역량 3축 ───────────────────────────────────────────
+   globals.css 의 .cap3 를 쓰지 않고 따로 둔다 — 그건 홈이 쓰는 것이라 같이 건드리면 홈이 바뀐다. */
+.bizsys .trio { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px }
+@media (max-width: 860px) { .bizsys .trio { grid-template-columns: 1fr } }
+.bizsys .tri { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 24px }
+.bizsys .tri .en { font-size: 10.5px; font-weight: 800; letter-spacing: .2em; color: var(--brand-bright) }
+.bizsys .tri h3 { margin: 8px 0 10px; font-size: 19px; font-weight: 800; letter-spacing: -.02em }
+.bizsys .tri p { margin: 0 0 12px; font-size: 14px; color: var(--muted); line-height: 1.7 }
+.bizsys .tri ul { margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--faint) }
+.bizsys .tri li { padding: 6px 0 6px 15px; border-top: 1px solid var(--line); position: relative }
+.bizsys .tri li::before { content: ""; position: absolute; left: 3px; top: 14px; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--brand) }
+
+/* ── 실적 카드 ──────────────────────────────────────────
+   포스터는 손님용 자산이라 크게 쓰면 톤이 무너진다. 작게·탈색해 증거로만 두고,
+   카드의 본체는 "어디까지 우리가 했는가" 태그 줄이다. */
+.bizsys .works { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px }
+@media (max-width: 700px) { .bizsys .works { grid-template-columns: 1fr } }
+.bizsys .work { display: grid; grid-template-columns: 78px 1fr; gap: 16px; align-items: center;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px }
+.bizsys .work .th { width: 78px; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden;
+  position: relative; border: 1px solid rgba(143,182,255,.24) }
+.bizsys .work .th img { width: 100%; height: 100%; object-fit: cover; display: block;
+  /* 포스터 4장의 색이 서로 싸우지 않게 눌러서 한 세트로 보이게 한다 */
+  filter: grayscale(.85) contrast(1.06) brightness(.82) }
+.bizsys .work .th::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(110,168,255,.22), rgba(6,26,88,.55)); mix-blend-mode: screen }
+.bizsys .work h4 { margin: 0 0 6px; font-size: 15.5px; font-weight: 800; letter-spacing: -.02em }
+.bizsys .work .kv { font-size: 12px; color: var(--faint); margin-bottom: 9px }
+.bizsys .work .tags { display: flex; flex-wrap: wrap; gap: 5px }
+.bizsys .work .tags span { font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+  color: var(--brand-bright); border: 1px solid rgba(143,182,255,.36);
+  background: rgba(110,168,255,.10); border-radius: 999px; padding: 3px 9px }
+
+/* ── 공정 레일 (5단계) ──────────────────────────────────
+   단계마다 "자체 인력" 배지를 다는 게 핵심. 하청을 안 쓴다는 사실이 곧 무기다. */
+.bizsys .rail { position: relative; display: grid; grid-template-columns: repeat(5,1fr); padding-top: 36px }
+.bizsys .rail::before { content: ""; position: absolute; top: 14px; left: 8%; right: 8%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand) 14%, var(--brand) 86%, transparent) }
+.bizsys .rail > div { position: relative; text-align: center; padding: 0 6px }
+.bizsys .rail > div::before { content: ""; position: absolute; top: -28px; left: 50%; width: 9px; height: 9px;
+  margin-left: -4.5px; border-radius: 50%; background: var(--surf); border: 2px solid var(--brand) }
+.bizsys .rail b { display: block; font-size: 13.5px; font-weight: 800; margin-bottom: 4px }
+.bizsys .rail span { font-size: 11.5px; color: var(--faint); line-height: 1.55; display: block }
+.bizsys .rail i { display: inline-block; margin-top: 7px; font-style: normal;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .1em; color: var(--brand-bright);
+  border: 1px solid rgba(143,182,255,.4); border-radius: 999px; padding: 2px 8px }
+@media (max-width: 640px) {
+  .bizsys .rail { grid-template-columns: 1fr; gap: 18px; padding-top: 0; padding-left: 24px }
+  .bizsys .rail::before { top: 8px; bottom: 8px; left: 4px; right: auto; width: 1px; height: auto;
+    background: linear-gradient(180deg, transparent, var(--brand) 14%, var(--brand) 86%, transparent) }
+  .bizsys .rail > div { text-align: left }
+  .bizsys .rail > div::before { top: 8px; left: -24px; margin-left: 0 }
+}
+
+/* ── 제품 무대 (마스터·슬레이브 도해) ────────────────────
+   사진 대신 도면. 어설픈 3D 렌더는 사진이 없는 것보다 나쁘고, 하드웨어 회사엔 도면이 더 정직하다. */
+.bizsys .pcbstage { position: relative; margin-top: 30px; padding: 26px 22px 30px;
+  border: 1px solid rgba(143,182,255,.22); border-radius: 20px;
+  background:
+    radial-gradient(120% 150% at 50% -20%, rgba(110,168,255,.16) 0%, transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10) }
+.bizsys .pcb { width: 100%; height: auto; display: block; overflow: visible }
+.bizsys .silk-brand { fill: #8fb6ff; font-size: 10px; font-weight: 800; letter-spacing: .28em }
+.bizsys .silk-model { fill: #e9f0ff; font-size: 19px; font-weight: 800; letter-spacing: -.01em }
+.bizsys .silk-model.sm { font-size: 13px }
+.bizsys .silk-role { fill: #8ea0c4; font-size: 10.5px; font-weight: 700; letter-spacing: .14em }
+.bizsys .silk-tiny { fill: #8ea0c4; font-size: 10px; font-weight: 700; letter-spacing: .06em }
+.bizsys .newbadge { position: absolute; top: -11px; left: 24px; z-index: 2;
+  background: var(--brand-bright); color: #06122e; font-size: 10.5px; font-weight: 800; letter-spacing: .14em;
+  padding: 5px 12px; border-radius: 999px; box-shadow: 0 6px 20px -6px rgba(143,182,255,.7) }
+/* 데이터가 마스터에서 모듈 쪽으로만 흐른다 — 마스터·슬레이브 관계 자체가 연출이 된다 */
+.bizsys .pcb .pulse { stroke: #eaf3ff; stroke-linecap: round;
+  stroke-dasharray: 26 380; stroke-dashoffset: 406;
+  filter: drop-shadow(0 0 5px #8fb6ff); animation: pcbFlow 9s linear infinite }
+@keyframes pcbFlow { to { stroke-dashoffset: 0 } }
+/* ⚠️ 전역 reduced-motion 규칙은 애니메이션을 "마지막 키프레임에서 멈춤"으로 만든다.
+      pcbFlow 는 dashoffset:0 으로 끝나 펄스가 선 끝에 박히므로 여기서 명시적으로 꺼야 한다.
+      (히어로 .scan 도 같은 이유로 이미 명시적 오버라이드가 있다) */
+@media (prefers-reduced-motion: reduce) {
+  .bizsys .pcb .pulse { animation: none; opacity: .45; stroke-dasharray: none }
+}
+@media (max-width: 820px) { .bizsys .pcbstage { padding: 20px 14px 24px; border-radius: 16px } }
+
+/* ── 사양표 (데이터시트 톤) ─────────────────────────────── */
+.bizsys .spec { display: grid; margin-top: 26px; font-size: 14px }
+.bizsys .spec > div { display: flex; align-items: baseline; gap: 10px; padding: 12px 2px;
+  border-bottom: 1px solid rgba(255,255,255,.07) }
+.bizsys .spec dt { color: var(--faint); font-size: 12.5px; font-weight: 700; white-space: nowrap; margin: 0 }
+.bizsys .spec .dots { flex: 1; height: 1px; align-self: center;
+  background-image: radial-gradient(circle, rgba(255,255,255,.26) 1px, transparent 1px);
+  background-size: 5px 1px; background-repeat: repeat-x }
+.bizsys .spec dd { margin: 0; font-weight: 800; font-feature-settings: "tnum"; letter-spacing: -.01em; text-align: right }
+@media (max-width: 520px) { .bizsys .spec .dots { display: none } }
+
+/* ── 책임 범위 도해 (전화할 곳 다섯 vs 하나) ─────────────── */
+.bizsys .who2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+@media (max-width: 700px) { .bizsys .who2 { grid-template-columns: 1fr } }
+.bizsys .who2 > div { border: 1px solid var(--line); border-radius: var(--r); padding: 20px }
+.bizsys .who2 .them { background: rgba(255,255,255,.03) }
+.bizsys .who2 .us { background: rgba(53,133,234,.13); border-color: rgba(143,182,255,.4) }
+.bizsys .who2 h4 { margin: 0 0 4px; font-size: 14px; font-weight: 800 }
+.bizsys .who2 .cnt { font-size: 12px; color: var(--faint); margin-bottom: 14px }
+.bizsys .who2 ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px }
+.bizsys .who2 li { font-size: 12px; font-weight: 700; border-radius: 8px; padding: 7px 11px }
+.bizsys .who2 .them li { color: var(--faint); background: rgba(255,255,255,.05); border: 1px solid var(--line) }
+.bizsys .who2 .us li { color: var(--text); background: rgba(110,168,255,.16); border: 1px solid rgba(143,182,255,.36) }
+
+/* ── 문의 유형 칩 ──────────────────────────────────────── */
+.bizsys .kinds { display: flex; flex-wrap: wrap; gap: 8px }
+.bizsys .kinds button { cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+  color: var(--muted); background: rgba(255,255,255,.05); border: 1px solid var(--line);
+  border-radius: 999px; padding: 10px 16px; min-height: 44px; transition: .16s }
+.bizsys .kinds button.on { background: rgba(110,168,255,.18); border-color: var(--brand); color: var(--text) }
+
+/* ── 다른 페이지로 넘기는 한 줄 ────────────────────────── */
+.bizsys .crossline { border: 1px dashed rgba(143,182,255,.35); border-radius: var(--r);
+  padding: 20px 22px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  background: rgba(255,255,255,.03) }
+.bizsys .crossline p { margin: 0; font-size: 14.5px; color: var(--muted); flex: 1 1 260px }
+.bizsys .crossline a { color: var(--brand-bright); font-weight: 800; font-size: 14.5px }
 .bizsys .bzerr { margin-top: 14px; font-size: 13.5px; color: #ffb4b0; background: rgba(217,83,79,.14); border: 1px solid rgba(217,83,79,.4); border-radius: 10px; padding: 10px 14px }
 .bizsys .bzdone { margin: 26px auto 0; max-width: 480px; padding: 24px 22px; border-radius: 14px; background: rgba(63,166,111,.12); border: 1px solid rgba(63,166,111,.42) }
 .bizsys .bzdone b { display: block; font-size: 17px; margin-bottom: 8px; color: var(--text) }
