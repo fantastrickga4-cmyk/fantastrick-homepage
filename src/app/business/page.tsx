@@ -77,6 +77,7 @@ export default function BusinessPage() {
   const [sent, setSent] = useState(false);
   const [formErr, setFormErr] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
+  const switching = useRef(false);
 
   /* 스크롤 등장.
      ⚠️ here 를 의존성에 반드시 넣을 것 — 범위를 바꾸면 화면에 새 요소가 붙는데,
@@ -107,16 +108,27 @@ export default function BusinessPage() {
         `rect.top + scrollY` 가 항상 "지금 스크롤 위치"로 나온다(= 이동이 0px). 실제로 그래서 안 움직였다.
         그래서 **바뀐 범위의 첫 섹션**을 기준으로 잡고, 고정 헤더(67) + 선택 줄 높이만큼 뺀다. */
   function pick(id: string) {
-    if (id === here) return;
+    /* 연타 잠금. 세 화면이 카본 검정 ↔ 크림 ↔ 흰색이라 빠르게 눌러대면 화면 전체 밝기가
+       초당 몇 번씩 뒤집힌다. 빛에 예민한 분에게 위험한 깜빡임이라 잠깐 막는다. */
+    if (id === here || switching.current) return;
+    switching.current = true;
+    window.setTimeout(() => { switching.current = false; }, 260);
+
     setHere(id);
     history.replaceState(null, "", id === "turnkey" ? " " : `#${id}`);
     // 새 내용이 화면에 붙은 다음에 재야 위치가 맞는다
     requestAnimationFrame(() => {
       const sec = document.getElementById(id);
       if (!sec) return;
-      const barH = document.getElementById("scopebar")?.offsetHeight ?? 0;
+      /* 고르는 자리가 sticky 일 때만 그 높이를 뺀다. 지금은 sticky 가 아니라서
+         빼면 그 장(章) 높이만큼 위로 튄다. 나중에 다시 sticky 로 바꿔도 알아서 맞는다. */
+      const bar = document.getElementById("scopebar");
+      const barH = bar && getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().height : 0;
       const y = sec.getBoundingClientRect().top + window.scrollY - 68 - barH;
-      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+      /* ⚠️ scrollTo 의 behavior:"smooth" 는 CSS 로 안 꺼진다(명시 옵션이 CSS 를 이긴다).
+         모션을 줄이겠다고 설정한 손님에게는 여기서 직접 꺼야 한다. */
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: Math.max(0, y), behavior: reduce ? "auto" : "smooth" });
     });
   }
 
@@ -149,11 +161,15 @@ export default function BusinessPage() {
       <section className="bz-hero">
         <div className="scan" />
         <div className="wrap">
+          {/* 🔴 히어로는 중립이어야 한다.
+              전에는 "방을 통째로 만듭니다"였는데, 그건 ①턴키만의 문장이라 페이지 전체가
+              "턴키 시공사 소개"로 규정됐다. 그러면 아래 선택은 셋 중 고르는 자리가 아니라
+              "턴키를 보는 방법 세 가지"로 읽힌다. 그 문장은 턴키 표제로 옮겼다. */}
           <div className="kicker">방탈출 제작 · 제어기 · 매장 운영</div>
-          <h1>방을 통째로<br />만듭니다.</h1>
+          <h1>방을 만드는 일부터<br />방을 돌리는 일까지.</h1>
           <p className="sub">
-            이야기 짜는 것부터 벽 세우고 배선 넣고 장치 만들어 붙이는 것까지 저희 사람이 합니다.
-            강남에서 3곳, 11년째 직접 운영하면서 쌓은 방식 그대로입니다.
+            방탈출을 통째로 짓는 일, 방 안 장치를 돌리는 제어기, 매장을 굴리는 프로그램.
+            강남에서 3곳, 11년째 직접 운영하면서 하나씩 만든 것들입니다.
           </p>
           <div className="bz-cta">
             <a className="btn primary" href="#cta">한번 보러 오세요</a>
@@ -181,24 +197,32 @@ export default function BusinessPage() {
         </section>
       </div>
 
-      {/* 범위 선택 — 누르면 아래 내용이 통째로 바뀐다.
-          단추 하나하나가 **그 범위의 디자인을 미리 보여준다**(종이 / 카본 / 흰 화면).
-          그래서 무엇을 고르는지가 글자만이 아니라 생김새로도 읽힌다. */}
-      <div className={`scope on-${here}`} id="scopebar">
+      {/* ══════════ 고르는 장(章) ══════════
+          🔴 두 번 "강조가 안 된다"는 지적을 받은 자리다. 원인은 크기가 아니라 **격(格)** 이었다.
+             얇은 sticky 띠는 화면 언어상 "도구 막대(필터·정렬)"라, 아무리 색을 칠해도
+             상품을 고르는 자리로 안 읽힌다. 그래서 띠를 버리고 한 장을 통째로 줬다.
+               · 물음을 15px 라벨에서 **h2(최대 46px)** 로 올렸다. 이 페이지에서 제일 중요한
+                 갈림길이 소제목보다 작은 글자였던 게 진짜 문제였다.
+               · 안 고른 카드도 보이게 했다. 전에는 테두리 알파 .16 이라 유령이었고,
+                 대조군이 없으면 "고른 상태"도 안 읽힌다.
+               · 폰에서 세로로 쌓는다. 가로로 두면 132px×3+간격 = 412px 이 필요한데
+                 375px 폰의 가용 폭은 331px 이라 **03이 화면 밖으로 잘려 있었다.** */}
+      <div className={`scopepick on-${here}`} id="scopebar">
         <div className="wrap">
-          <div className="scope-in">
-            <div className="scope-lab"><span>어디까지</span><b>맡기시겠습니까</b></div>
-            <div className="scope-tabs" role="tablist" aria-label="보실 범위">
-              {SCOPES.map((s, i) => (
-                <button
-                  key={s.id} role="tab" aria-selected={here === s.id}
-                  className={`sc-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
-                >
-                  <i>{String(i + 1).padStart(2, "0")}</i>
-                  <b>{s.label}</b><span>{s.sub}</span>
-                </button>
-              ))}
-            </div>
+          <div className="sp-head">
+            <div className="kicker">어디까지</div>
+            <h2 id="scope-q">맡기시겠습니까</h2>
+          </div>
+          <div className="sp-cards" aria-labelledby="scope-q">
+            {SCOPES.map((s, i) => (
+              <button
+                key={s.id} type="button" aria-pressed={here === s.id}
+                className={`sp-${s.id}${here === s.id ? " on" : ""}`} onClick={() => pick(s.id)}
+              >
+                <i>{String(i + 1).padStart(2, "0")}</i>
+                <b>{s.label}</b><span>{s.sub}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -207,9 +231,17 @@ export default function BusinessPage() {
           패널마다 배경·글씨체·색을 통째로 바꾼다(사장님 선택 2026-08-06: T2 종이 도면).
           ⚠️ 껍데기가 .wrap **바깥**에 있어야 배경이 화면 끝까지 칠해진다.
              안에 두면 밝은 배경이 가운데 카드처럼 떠 보인다. */}
-      {here === "turnkey" && <div className="pn-turnkey"><div className="wrap">
+      {here === "turnkey" && <div className="pn-turnkey">
+        {/* 바뀌었다는 신호. key 를 주면 범위를 바꿀 때마다 새로 마운트되어 한 번만 지나간다 */}
+        <span className="pn-sweep" key={here} aria-hidden="true" />
+        <div className="wrap">
+        {/* 범위 표제 — 여기서부터 이 화면이 시작한다는 선언. 히어로에 있던 문장을 이리로 옮겼다. */}
+        <header className="pn-head">
+          <i>01</i>
+          <h2>방을 통째로 만듭니다.</h2>
+          <p>기획부터 시공까지</p>
+        </header>
         <section className="bz-sec" id="turnkey">
-          <div className="kicker reveal">통째로 만들기</div>
           <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
           {/* 도면 모티프 — 장식이다. 읽을 정보가 아니라 "이 회사는 도면을 그린다"는 신호.
               스크린리더에서는 완전히 뺀다(정보가 아니라 신호라 읽으면 소음이 된다). */}
@@ -333,7 +365,14 @@ export default function BusinessPage() {
       </div></div>}
 
       {/* ══════════ ② 제어기 · 장치 ══════════ (D6 카본 · 시안) */}
-      {here === "device" && <div className="pn-device"><div className="wrap">
+      {here === "device" && <div className="pn-device">
+        <span className="pn-sweep" key={here} aria-hidden="true" />
+        <div className="wrap">
+        <header className="pn-head">
+          <i>02</i>
+          <h2>마스터 · 슬레이브 제어기</h2>
+          <p>방에 들어가는 것</p>
+        </header>
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
           <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
@@ -601,9 +640,15 @@ export default function BusinessPage() {
       </div></div>}
 
       {/* ══════════ ③ 매장 운영 프로그램 ══════════ (S1 밝은 SaaS) */}
-      {here === "software" && <div className="pn-software"><div className="wrap">
+      {here === "software" && <div className="pn-software">
+        <span className="pn-sweep" key={here} aria-hidden="true" />
+        <div className="wrap">
+        <header className="pn-head">
+          <i>03</i>
+          <h2>매장 운영 프로그램</h2>
+          <p>사무실에서 쓰는 것</p>
+        </header>
         <section className="bz-sec" id="software">
-          <div className="kicker reveal">방 밖에서 쓰는 것</div>
           <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
           <p className="lead reveal">방 안 장치를 돌리는 게 제어기라면, 이건 사무실에서 하는 일입니다.
             근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>

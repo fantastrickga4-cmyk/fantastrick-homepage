@@ -279,99 +279,169 @@
 .bizsys .ask::before { content: ""; flex: 0 0 auto; width: 3px; height: 20px; margin-top: 3px;
   border-radius: 2px; background: linear-gradient(180deg,#9cc2ff,#6ea8ff) }
 
-/* ── 범위 선택 = 이 페이지의 차례(목차) ──────────────────
-   그냥 탭이 아니라 "무엇을 고르는 자리"로 읽혀야 한다. 그래서
-     ① 왼쪽에 물음("어디까지 맡기시겠습니까")을 세우고
-     ② 단추마다 01·02·03 번호를 달고
-     ③ 단추 하나하나가 **그 범위의 디자인을 미리 보여준다**(종이 / 카본 / 흰 화면).
-   고른 단추는 아래 화면과 같은 색이 되어, 선택과 본문이 한 덩어리로 붙어 보인다. */
-.bizsys .scope {
-  position: sticky; top: 68px; z-index: 20;
-  background: rgba(4,12,32,.95); backdrop-filter: blur(14px);
+/* ── 고르는 장(章) ────────────────────────────────────────
+   🔴 두 번 "강조가 안 된다"는 지적을 받은 자리다. 세 번째를 부르지 않으려면 원인을 정확히 짚어야 한다.
+      원인은 크기가 아니라 **격(格)** 이었다. 얇은 sticky 띠는 화면 언어상 "도구 막대(필터·정렬)"라,
+      아무리 색을 칠하고 번호를 달아도 상품을 고르는 자리로는 안 읽힌다.
+
+      실측으로 확인된 것 세 가지:
+        ① 이 페이지 h2 는 최대 46px 인데 갈림길의 물음은 15px 이었다. 캡션(13.5px)보다 겨우 컸다.
+           페이지에서 제일 중요한 결정이 가장 작은 글자면 제목으로 안 읽힌다.
+        ② 안 고른 단추는 테두리 알파 .16 에 배경이 투명이라 거의 유령이었다.
+           대조군이 안 보이면 "고른 상태"도 안 읽힌다(선택 표시는 두 겹 이상 겹쳐 써야 한다).
+        ③ 폰에서 03 이 화면 밖으로 잘려 있었다 — 필요 폭 132×3+간격 = 412px, 375px 폰 가용 폭 331px.
+           게다가 가로 스크롤 막대를 숨겨놔서 더 있다는 신호조차 없었다.
+
+   그래서 띠를 버리고 **한 장을 통째로** 준다. sticky 도 뗀다:
+     · 범위 선택은 방문당 한두 번 쓰는 것이라 7,000px 내내 붙여둘 값어치가 없다.
+     · 되돌아갈 길은 각 범위 끝 [이어서 보기]와 주소(#device)로 이미 두 겹 깔려 있다.
+     · sticky 를 떼면 backdrop-filter 합성 비용과 "기준을 못 잡는" 스크롤 함정도 같이 사라진다. */
+.bizsys .scopepick {
+  position: relative; padding: 64px 0 74px;
+  background: linear-gradient(180deg, rgba(4,12,32,0), rgba(4,12,32,.60) 40%, rgba(4,12,32,.88));
   border-top: 1px solid rgba(255,255,255,.10);
-  border-bottom: 1px solid rgba(255,255,255,.16);
-  box-shadow: 0 14px 30px -26px rgba(0,0,0,.9);
-  transition: background .3s;
 }
-/* 고른 범위의 색이 선택 줄 위쪽에 가느다랗게 배어 나온다 — 아래 화면과 이어져 보이게 */
-.bizsys .scope::before {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: background .3s;
+/* 고른 범위의 색이 이 장 위쪽에서 배어 나온다 — 선택과 아래 본문이 한 덩어리로 보이게 */
+.bizsys .scopepick::after {
+  content: ""; position: absolute; inset: 0 0 auto; height: 3px; transition: background .35s;
 }
-.bizsys .scope.on-turnkey::before { background: linear-gradient(90deg, #f3efe6, rgba(243,239,230,.15) 62%, transparent) }
-.bizsys .scope.on-device::before { background: linear-gradient(90deg, #00d4ff, rgba(0,212,255,.15) 62%, transparent) }
-.bizsys .scope.on-software::before { background: linear-gradient(90deg, #2563eb, rgba(37,99,235,.15) 62%, transparent) }
+.bizsys .scopepick.on-turnkey::after { background: linear-gradient(90deg,#f3efe6,rgba(243,239,230,.12) 58%,transparent) }
+.bizsys .scopepick.on-device::after { background: linear-gradient(90deg,#00d4ff,rgba(0,212,255,.12) 58%,transparent) }
+.bizsys .scopepick.on-software::after { background: linear-gradient(90deg,#2563eb,rgba(37,99,235,.12) 58%,transparent) }
 
-.bizsys .scope-in { display: flex; align-items: center; gap: 20px; padding: 13px 0 14px }
-.bizsys .scope-lab { flex: 0 0 auto; line-height: 1.25 }
-.bizsys .scope-lab span {
-  display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .24em; color: #8ea0c4;
-}
-.bizsys .scope-lab b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.03em; color: #e9f0ff }
-.bizsys .scope-tabs { display: flex; gap: 8px; flex: 1 1 auto; overflow-x: auto; scrollbar-width: none }
-.bizsys .scope-tabs::-webkit-scrollbar { display: none }
+.bizsys .sp-head { margin-bottom: 32px }
+.bizsys .sp-head h2 { margin: 0 }   /* 물음이 이 장의 h2 다. 라벨이 아니다. */
 
-.bizsys .scope button {
-  flex: 1 0 auto; min-width: 152px; text-align: left; cursor: pointer; font-family: inherit;
-  position: relative; padding: 9px 15px 10px; transition: .18s;
-  background: transparent; border: 1px solid rgba(255,255,255,.16);
+.bizsys .sp-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px }
+.bizsys .sp-cards button {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; flex-direction: column; align-items: flex-start;
+  min-height: 186px; padding: 22px 22px 24px;
+  text-align: left; cursor: pointer; font-family: inherit;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.22);   /* .16 → .22 : 안 고른 것도 '있는 것'으로 보이게 */
+  transition: transform .2s, background .2s, border-color .2s, box-shadow .25s;
 }
-.bizsys .scope button i {
-  display: block; font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .14em;
-  opacity: .75; margin-bottom: 2px;
+.bizsys .sp-cards button > * { position: relative; z-index: 1 }
+/* 번호는 24px 이상 굵게 유지할 것 — opacity .5 는 4.28:1 이라 큰 글자(3:1 기준)로만 통과한다 */
+.bizsys .sp-cards button i {
+  font-style: normal; font-size: 30px; font-weight: 800; line-height: 1;
+  letter-spacing: .02em; opacity: .5; margin-bottom: auto;
 }
-.bizsys .scope button b { display: block; font-size: 14.5px; font-weight: 800; letter-spacing: -.02em }
-.bizsys .scope button span { font-size: 11px; opacity: .72 }
+.bizsys .sp-cards button b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; line-height: 1.3; margin-top: 16px }
+.bizsys .sp-cards button span { font-size: 13.5px; opacity: .8; line-height: 1.6; margin-top: 6px }
+.bizsys .sp-cards button:hover { transform: translateY(-2px); background: rgba(255,255,255,.07) }
+.bizsys .sp-cards button:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 3px }
 
-/* 단추마다 그 범위의 생김새 — 안 골랐을 때는 윤곽만, 고르면 그 화면 색으로 꽉 찬다 */
-.bizsys .scope .sc-turnkey {
-  border-radius: 2px; color: #e8e3d6;
-  font-family: "Nanum Myeongjo", serif;
+/* 카드 바탕에 그 범위의 질감 — 고르기 전에도 "어떤 화면인지" 손에 잡힌다.
+   ⚠️ 배경은 조연이다. 마스크로 왼쪽 위만 남기고 글자 뒤에서는 사라지게 한다.
+      여기에 그림자나 빛을 더 얹지 말 것. 배경이 주인공을 이긴다. */
+.bizsys .sp-cards button::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  -webkit-mask-image: linear-gradient(200deg,#000 6%, transparent 58%);
+          mask-image: linear-gradient(200deg,#000 6%, transparent 58%);
 }
-.bizsys .scope .sc-turnkey i { font-family: "IBM Plex Mono", ui-monospace, monospace }
-.bizsys .scope .sc-turnkey span { font-family: var(--font-sans) }
-.bizsys .scope .sc-turnkey:hover { border-color: rgba(243,239,230,.55); background: rgba(243,239,230,.07) }
-.bizsys .scope .sc-turnkey.on {
+
+/* ① 통째로 만들기 = 종이 도면 (22px 제도지 격자 · 각진 모서리 · 명조) */
+.bizsys .sp-turnkey { border-radius: 2px; color: #e8e3d6; font-family: "Nanum Myeongjo", serif }
+.bizsys .sp-turnkey i { font-family: "IBM Plex Mono", ui-monospace, monospace }
+.bizsys .sp-turnkey span { font-family: var(--font-sans) }
+.bizsys .sp-turnkey::before {
+  background-image:
+    linear-gradient(rgba(232,227,214,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,227,214,.10) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.bizsys .sp-turnkey:hover { border-color: rgba(243,239,230,.55) }
+.bizsys .sp-turnkey.on {
   background: #f3efe6; color: #1a1a18; border-color: #f3efe6;
-  box-shadow: 0 10px 24px -14px rgba(243,239,230,.7);
+  box-shadow: 0 26px 56px -30px rgba(243,239,230,.6);
 }
-.bizsys .scope .sc-turnkey.on i { color: #0d3b8c; opacity: 1 }
+.bizsys .sp-turnkey.on::before {
+  background-image:
+    linear-gradient(rgba(26,26,24,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,26,24,.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.bizsys .sp-turnkey.on i { color: #0d3b8c; opacity: 1 }
 
-.bizsys .scope .sc-device {
-  border-radius: 3px; color: #cfeef8;
-  font-family: "General Sans", var(--font-sans);
+/* ② 제어기 · 장치 = 카본 · 시안 (14px 기판 격자 · Mono) */
+.bizsys .sp-device { border-radius: 3px; color: #cfeef8; font-family: "General Sans", var(--font-sans) }
+.bizsys .sp-device i, .bizsys .sp-device span { font-family: "IBM Plex Mono", ui-monospace, monospace }
+.bizsys .sp-device::before {
+  background-image:
+    linear-gradient(rgba(0,212,255,.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.12) 1px, transparent 1px);
+  background-size: 14px 14px;
 }
-.bizsys .scope .sc-device i, .bizsys .scope .sc-device span {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-}
-.bizsys .scope .sc-device:hover { border-color: rgba(0,212,255,.6); background: rgba(0,212,255,.10) }
-.bizsys .scope .sc-device.on {
+.bizsys .sp-device:hover { border-color: rgba(0,212,255,.6) }
+.bizsys .sp-device.on {
   background: #0d0f12; color: #e6f7ff; border-color: #00d4ff;
-  box-shadow: inset 0 0 0 1px rgba(0,212,255,.35), 0 10px 24px -14px rgba(0,212,255,.8);
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,.32), 0 26px 56px -30px rgba(0,212,255,.75);
 }
-.bizsys .scope .sc-device.on i { color: #00d4ff; opacity: 1 }
+.bizsys .sp-device.on i { color: #00d4ff; opacity: 1 }
 
-.bizsys .scope .sc-software {
-  border-radius: 12px; color: #dbe6f5;
-  font-family: "General Sans", var(--font-sans);
-}
-.bizsys .scope .sc-software:hover { border-color: rgba(96,165,250,.6); background: rgba(37,99,235,.14) }
-.bizsys .scope .sc-software.on {
+/* ③ 매장 운영 프로그램 = 밝은 SaaS (격자 없음 · 둥근 모서리 · 옅은 파랑 번짐) */
+.bizsys .sp-software { border-radius: 14px; color: #dbe6f5; font-family: "General Sans", var(--font-sans) }
+.bizsys .sp-software::before { background: radial-gradient(90% 70% at 12% 0%, rgba(37,99,235,.28), transparent 66%) }
+.bizsys .sp-software:hover { border-color: rgba(96,165,250,.6) }
+.bizsys .sp-software.on {
   background: #ffffff; color: #101828; border-color: #ffffff;
-  box-shadow: 0 10px 24px -14px rgba(255,255,255,.55);
+  box-shadow: 0 26px 56px -30px rgba(255,255,255,.55);
 }
-.bizsys .scope .sc-software.on i { color: #2563eb; opacity: 1 }
-.bizsys .scope button.on span { opacity: .62 }
+.bizsys .sp-software.on::before { background: radial-gradient(90% 70% at 12% 0%, rgba(37,99,235,.10), transparent 66%) }
+.bizsys .sp-software.on i { color: #2563eb; opacity: 1 }
+
+/* 🔴 고른 카드의 설명 글자는 .72 아래로 내리지 말 것.
+      .62 로 두면 크림 바탕에서 4.6:1 이라 13.5px 글자에 여유가 없다(실측). */
+.bizsys .sp-cards button.on span { opacity: .72 }
 
 @media (max-width: 860px) {
-  /* 물음은 데스크톱에서만. 좁은 화면에서 sticky 가 두 줄이 되면 화면을 너무 먹는다. */
-  .bizsys .scope-lab { display: none }
+  .bizsys .scopepick { padding: 46px 0 52px }
+  /* 폰에서는 세로 3장. 가로로 두면 03 이 화면 밖으로 잘린다(실측 412px 필요 / 331px 가용). */
+  .bizsys .sp-cards { grid-template-columns: 1fr; gap: 10px }
+  .bizsys .sp-cards button { min-height: 0; flex-direction: row; align-items: baseline;
+    flex-wrap: wrap; gap: 0 12px; padding: 18px 18px 19px }
+  .bizsys .sp-cards button i { font-size: 22px; margin: 0 }
+  .bizsys .sp-cards button b { font-size: 18px; margin: 0 }
+  .bizsys .sp-cards button span { flex: 1 0 100%; margin-top: 5px }
 }
-@media (max-width: 520px) {
-  .bizsys .scope-in { padding: 10px 0 11px }
-  .bizsys .scope button { min-width: 132px; padding: 8px 12px 9px }
-  .bizsys .scope button b { font-size: 13px }
-  .bizsys .scope button span { font-size: 10px }
+
+/* ── 범위 표제 — 그 화면이 어디서 시작하는지 못 박는다 ──────
+   고르는 장에서 눌러 내려왔는데 첫 화면이 12px 키커면 "시작됐다"는 느낌이 없다.
+   ⚠️ 색을 하드코딩하지 않는다. 세 패널이 --text·--muted·--brand·--line 을 자기 값으로
+      덮어쓰고 있어서, 이 한 벌만으로 종이·카본·흰 화면 셋이 알아서 따라온다. */
+.bizsys .pn-head { padding: 54px 0 0; position: relative }
+.bizsys .pn-head i {
+  display: block; font-style: normal; font-weight: 800; line-height: .86;
+  font-size: clamp(52px, 9.5vw, 112px); letter-spacing: -.045em;
+  color: var(--brand); opacity: .18; margin-bottom: -12px;
 }
+.bizsys .pn-head h2 { font-size: clamp(30px, 5.4vw, 56px); margin: 0 }
+.bizsys .pn-head p { margin: 10px 0 0; color: var(--muted); font-size: 15px; letter-spacing: .04em }
+.bizsys .pn-head::after { content: ""; display: block; height: 1px; margin-top: 36px; background: var(--line) }
+.bizsys .pn-turnkey .pn-head i { font-family: "IBM Plex Mono", ui-monospace, monospace; opacity: .24 }
+.bizsys .pn-device .pn-head i { font-family: "IBM Plex Mono", ui-monospace, monospace; opacity: .24 }
+.bizsys .pn-software .pn-head i { font-family: "General Sans", var(--font-sans); opacity: .16 }
+@media (max-width: 640px) { .bizsys .pn-head { padding-top: 34px } .bizsys .pn-head::after { margin-top: 24px } }
+
+/* ── 바뀌었다는 신호 — 빛 한 번 ────────────────────────────
+   내용이 즉시 갈리고 스크롤도 같이 움직여서, 무엇이 무엇으로 바뀌었는지 알려주는 순간이 없었다.
+   히어로의 .scan 과 같은 문법을 딱 한 번만 쓴다.
+   ⚠️ 모션은 "끄기"가 아니라 "안 켜기"로 짠다. 전역 reduced-motion 규칙이 애니메이션을
+      마지막 키프레임에서 정지시키기 때문에, no-preference 안쪽에만 선언하면 사고가 원천 봉쇄된다. */
+@media (prefers-reduced-motion: no-preference) {
+  .bizsys .pn-sweep {
+    position: absolute; inset: 0 0 auto; height: 340px; z-index: 0; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.09) 46%, transparent 64%);
+    background-size: 46% 100%; background-repeat: no-repeat;
+    animation: pnSweep .62s cubic-bezier(.3,.8,.2,1) 1 both;
+  }
+  @keyframes pnSweep { from { background-position: -48% 0 } to { background-position: 152% 0 } }
+}
+/* 밝은 두 화면에서는 흰 빛이 안 보인다 — 각자의 브랜드색으로 */
+.bizsys .pn-turnkey .pn-sweep { background-image: linear-gradient(100deg, transparent, rgba(13,59,140,.10) 46%, transparent 64%) }
+.bizsys .pn-software .pn-sweep { background-image: linear-gradient(100deg, transparent, rgba(37,99,235,.10) 46%, transparent 64%) }
 
 /* ── 역량 3축 ───────────────────────────────────────────
    globals.css 의 .cap3 를 쓰지 않고 따로 둔다 — 그건 홈이 쓰는 것이라 같이 건드리면 홈이 바뀐다. */
