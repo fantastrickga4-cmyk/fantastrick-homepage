@@ -2,6 +2,22 @@
 
 > 무엇을 바꿨는지 시간 순으로 적는 곳이에요. (최신이 위)
 
+## 2026-08-06 — 기존 사이트 예약 동기화 다시 켬 (이번엔 기간 제한 없이)
+
+- **왜**: 7/30에 건 작업 스케줄러가 "82시간 29분" 반복 기간으로 걸려 있어 **2026-08-03 00:30에 조용히 끝나 있었다**(마지막 실행 08-03 00:25, 이후 3일간 새 예약이 하나도 안 넘어옴). 목~일 테스트용으로 기간을 잘라 걸었던 게 원인.
+- **조치**: `fantastrick-wp-sync` 작업을 **끝나는 날짜 없이(Repeat: Until: Duration = Disabled) 5분마다** 반복하도록 재등록. 실행 10분 넘으면 중단, 중복 실행 금지(IgnoreNew), 놓친 시각은 켜지면 바로 실행(StartWhenAvailable).
+  ```powershell
+  $a = New-ScheduledTaskAction -Execute "wscript.exe" -Argument '"D:\test3\fantastrick-homepage\wp-sync-hidden.vbs"' -WorkingDirectory "D:\test3\fantastrick-homepage"
+  $t = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddMinutes(-1)) -RepetitionInterval (New-TimeSpan -Minutes 5)   # ← Duration 을 안 주면 "무기한"
+  $s = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -MultipleInstances IgnoreNew -StartWhenAvailable
+  Register-ScheduledTask -TaskName "fantastrick-wp-sync" -Action $a -Trigger $t -Settings $s -User $env:USERNAME -Force
+  ```
+  ⚠️ `-RepetitionDuration ([TimeSpan]::MaxValue)` 는 "값이 범위를 벗어남" 오류가 난다. **인자를 아예 빼야** 무기한이 된다.
+- **첫 실행 결과**: 밀려 있던 **새 예약 45건 반영**. 다만 **409(칸 중복) 4건 실패** — 8/6 20:00·8/7 20:00·8/8 12:40·8/8 16:40(전부 태초의 신부).
+- ⚠️ **409의 정체 = 우리 쪽에 옛 손님이 남아 있는 것**. 예) 8/6 20:00 은 우리 사이트에 `류승희(confirmed, #38487)`가 자리를 잡고 있어 기존 사이트의 현재 예약자가 못 들어온다. 8/1 구조 변경으로 `--sync` 는 **추가만** 하고 저쪽의 취소·변경을 따라오지 않기 때문(우리가 처리의 주인이라 일부러 그렇게 함). → **관리자에서 그 4건을 취소 처리하면 다음 동기화 때 진짜 예약자가 들어온다.**
+- **무료 한도 영향 없음**: 1회당 Supabase 요청은 GET 1건(23.6KB) + 새 예약 수만큼 POST. 5분마다 = 하루 288회 ≈ **6.8MB/일, 약 200MB/월** (Supabase 무료 전송량 5GB의 4%, 요청 수는 무제한). 오히려 7일 무활동 시 프로젝트 일시정지를 막아준다. 기존 사이트에는 5분마다 SELECT 한 번뿐.
+- 파일: `wp-sync-hidden.vbs`(주석의 종료일 표기 수정).
+
 ## 2026-08-03 — 🚦 입금 감시 신호등 (26시간 멈춤을 아무도 몰랐던 사고 대응)
 
 ### 무슨 일이 있었나
