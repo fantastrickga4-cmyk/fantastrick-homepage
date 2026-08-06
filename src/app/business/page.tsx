@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { THEMES } from "@/lib/data";
 import "./business.css";
 
@@ -27,6 +27,15 @@ const SCOPES = [
 ];
 
 const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
+
+/* 근무표 도해용 데이터.
+   ⚠️ 실제 근무표가 아니다. 사람 이름·매장명·금액을 넣지 않는다 — 진짜 화면 캡처로 오인되면 안 된다. */
+const SW_DAYS = ["월", "화", "수", "목", "금", "토", "일"];
+const SW_BOARD = [
+  { who: "GM 1", d: ["12-20", "12-20", "", "12-20", "12-20", "16-22", ""] },
+  { who: "GM 2", d: ["", "16-22", "12-20", "16-22", "", "12-20", "12-20"] },
+  { who: "GM 3", d: ["16-22", "", "16-22", "", "16-22", "대타", "16-22"] },
+];
 
 /* 지금 보는 범위 끝에서 나머지 둘로 넘어가는 줄.
    탭으로 나누면 "고른 것만 보고 나머지는 있는 줄도 모른다"가 늘 따라온다(NN/g).
@@ -188,6 +197,30 @@ export default function BusinessPage() {
         <section className="bz-sec" id="turnkey">
           <div className="kicker reveal">통째로 만들기</div>
           <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
+          {/* 도면 모티프 — 장식이다. 읽을 정보가 아니라 "이 회사는 도면을 그린다"는 신호.
+              스크린리더에서는 완전히 뺀다(정보가 아니라 신호라 읽으면 소음이 된다). */}
+          <svg className="pn-plan" viewBox="0 0 320 240" aria-hidden="true" focusable="false">
+            <g className="pl-thin">
+              <path d="M24 22 H296" /><path d="M24 16 V28 M296 16 V28" />
+              <path d="M24 28 V44 M296 28 V44" />
+            </g>
+            <g className="pl-wall">
+              <path d="M24 44 H296 V214 H24 Z" />
+              <path d="M172 44 V138 M172 176 V214" />
+            </g>
+            <g className="pl-thin">
+              <path d="M172 138 V176" />
+              <path className="pl-arc" d="M172 176 A38 38 0 0 0 210 138" />
+              <path className="pl-wire" d="M56 190 H120 V96 H150" />
+              <path className="pl-wire" d="M204 190 H262 V96 H236" />
+            </g>
+            <g className="pl-dev">
+              <rect x="46" y="182" width="12" height="12" rx="2" />
+              <rect x="144" y="90" width="12" height="12" rx="2" />
+              <rect x="230" y="90" width="12" height="12" rx="2" />
+              <rect x="256" y="182" width="12" height="12" rx="2" />
+            </g>
+          </svg>
           <p className="lead reveal">
             대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다. 저희는 세 가지를 다 합니다.
             방탈출을 11년 하면서 필요해서 하나씩 갖춘 것들입니다.
@@ -248,7 +281,7 @@ export default function BusinessPage() {
           </div>
 
           {/* 공정 5단계 */}
-          <h3 className="reveal" style={{ margin: "40px 0 0", fontSize: 17, fontWeight: 800 }}>진행은 이렇게 합니다</h3>
+          <h3 className="reveal pn-h3">진행은 이렇게 합니다</h3>
           <div className="rail reveal" style={{ marginTop: 18 }}>
             <div><b>보러 감</b><span>현장 보고 방 개수·장치 세기</span><i>자체 인력</i></div>
             <div><b>기획 · 시나리오</b><span>이야기와 문제 설계</span><i>자체 인력</i></div>
@@ -258,15 +291,17 @@ export default function BusinessPage() {
           </div>
 
           {/* 우리가 만든 방들 */}
-          <h3 className="reveal" style={{ margin: "44px 0 0", fontSize: 17, fontWeight: 800 }}>저희가 만들어 저희가 돌리고 있는 방들</h3>
+          <h3 className="reveal pn-h3">저희가 만들어 저희가 돌리고 있는 방들</h3>
           <p className="lead reveal" style={{ margin: "10px 0 18px" }}>
             남의 매장에 넣어드리기 전에 저희 매장에서 먼저 씁니다. 아래 넷 다 저희 손으로 만들어 지금도 손님을 받고 있습니다.
           </p>
           <div className="works">
             {THEMES.map((t) => (
               <div className="work reveal" key={t.id}>
+                {/* 대장 행이라 썸네일은 56px. 포스터는 증거일 뿐 주인공이 아니다 —
+                    손님용 자산이라 B2B 화면에서 키우면 톤이 무너진다. */}
                 <div className="th">
-                  <Image src={t.poster} alt={t.name} width={78} height={104} sizes="78px" />
+                  <Image src={t.poster} alt={t.name} width={56} height={75} sizes="56px" />
                 </div>
                 <div>
                   <h4>{t.name}</h4>
@@ -327,8 +362,8 @@ export default function BusinessPage() {
           </figure>
         </section>
 
-        {/* 새 제어기 */}
-        <section className="bz-sec">
+        {/* 새 제어기 — 이 패널의 주인공. .pn-stage 는 여기 하나에만 붙인다(릴리즈 태그·조명) */}
+        <section className="bz-sec pn-stage">
           <div className="kicker reveal">새로 만든 것</div>
           <h2 className="reveal">마스터 · 슬레이브 제어기</h2>
           <p className="lead reveal">
@@ -348,10 +383,27 @@ export default function BusinessPage() {
                   <stop offset="0" stopColor="#6ea8ff" stopOpacity=".95" />
                   <stop offset="1" stopColor="#6ea8ff" stopOpacity=".25" />
                 </linearGradient>
+                {/* 치수선 화살촉 — auto-start-reverse 로 양끝에 같은 marker 를 쓴다 */}
+                <marker id="pnArw" markerWidth="7" markerHeight="7" refX="6.5" refY="3.5"
+                  orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+                  <path d="M0 0 L7 3.5 L0 7 Z" fill="#8fb6ff" fillOpacity=".72" />
+                </marker>
               </defs>
 
+              {/* 도면 눈금자 — 보드가 '측정된 물건'으로 읽히게 한다. 장식이 아니라 척도. */}
+              <g className="pn-rule" aria-hidden="true">
+                <line x1="16" y1="30" x2="266" y2="30" />
+                {Array.from({ length: 19 }, (_, i) => (
+                  <line key={`rt${i}`} x1={16 + i * 14} y1="30" x2={16 + i * 14} y2={i % 5 === 0 ? 21 : 25} />
+                ))}
+                <line x1="8" y1="40" x2="8" y2="240" />
+                {Array.from({ length: 15 }, (_, i) => (
+                  <line key={`rl${i}`} x1="8" y1={40 + i * 14} x2={i % 5 === 0 ? 0 : 4} y2={40 + i * 14} />
+                ))}
+              </g>
+
               {/* 마스터 */}
-              <rect x="16" y="40" width="250" height="200" rx="12"
+              <rect className="pn-master" x="16" y="40" width="250" height="200" rx="12"
                 fill="url(#pcbgrid)" stroke="#6ea8ff" strokeOpacity=".72" strokeWidth="1.5" />
               <circle cx="34" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
               <circle cx="248" cy="58" r="4" fill="none" stroke="#8fb6ff" strokeOpacity=".5" />
@@ -363,19 +415,35 @@ export default function BusinessPage() {
               <rect x="52" y="140" width="58" height="58" rx="4"
                 fill="#8fb6ff" fillOpacity=".14" stroke="#8fb6ff" strokeOpacity=".7" />
               <text className="silk-tiny" x="81" y="173" textAnchor="middle">MCU</text>
+              {/* 치수선 — 32칸의 폭을 실제로 잰다. 여기 쓰는 숫자는 사양표에 있는 32 뿐이다.
+                  없는 치수(mm)를 지어내면 스펙 화면에서 그건 거짓말이 된다. */}
+              <g className="pn-dim">
+                <line x1="130" y1="140" x2="130" y2="123" />
+                <line x1="252" y1="140" x2="252" y2="123" />
+                <line x1="130" y1="128" x2="252" y2="128" markerStart="url(#pnArw)" markerEnd="url(#pnArw)" />
+              </g>
+              <text className="pn-dimtxt" x="191" y="118" textAnchor="middle">32</text>
+              {/* 행 좌표 — 8열 × 4행 = 32. "32개"가 세어지는 숫자가 된다. */}
+              <g className="pn-coord" aria-hidden="true">
+                {["A", "B", "C", "D"].map((c, i) => (
+                  <text key={c} x="124" y={151 + i * 16} textAnchor="end">{c}</text>
+                ))}
+              </g>
               {Array.from({ length: 32 }, (_, i) => (
                 <rect key={i} x={130 + (i % 8) * 16} y={142 + Math.floor(i / 8) * 16}
                   width="10" height="10" rx="2"
                   fill="#6ea8ff" fillOpacity=".22" stroke="#6ea8ff" strokeOpacity=".7" />
               ))}
               <text className="silk-tiny" x="130" y="224">장치 32개</text>
-              <circle cx="232" cy="100" r="5" fill="#5ec98e" />
+              {/* 상태 표시 — 이 제품이 '스스로 보고 있다'는 유일한 시각 신호. 딱 하나만 둔다. */}
+              <circle className="pn-led-ring" cx="232" cy="100" r="5" />
+              <circle className="pn-led" cx="232" cy="100" r="5" />
 
               {/* 확장 버스 + 슬레이브 */}
               <path d="M266 140 H660" stroke="url(#busfade)" strokeWidth="2" fill="none" />
               <path className="pulse" d="M266 140 H660" strokeWidth="2.6" fill="none" />
               {[0, 1, 2].map((i) => (
-                <g key={i} opacity={1 - i * 0.26}>
+                <g className="pn-slave" key={i} opacity={1 - i * 0.26}>
                   <rect x={300 + i * 118} y="96" width="98" height="88" rx="9"
                     fill="url(#pcbgrid)" stroke="#6ea8ff" strokeOpacity=".65" strokeWidth="1.2"
                     strokeDasharray={i === 2 ? "5 5" : "0"} />
@@ -458,7 +526,9 @@ export default function BusinessPage() {
 
           {/* 구성 — 금액 없음 */}
           <h3 className="reveal" style={{ margin: "44px 0 0", fontSize: 17, fontWeight: 800 }}>방 몇 개짜리세요?</h3>
-          <div className="tiers" style={{ marginTop: 16, gridTemplateColumns: "repeat(2,1fr)" }}>
+          {/* ⚠️ gridTemplateColumns 를 인라인으로 두면 미디어쿼리를 이겨서 360px 폰에서도 2열로 남는다
+                 (카드 폭 111px → "장치 23개까지"가 세 줄로 접힘). CSS 로 옮겼다. */}
+          <div className="tiers" style={{ marginTop: 16 }}>
             <div className="tier reveal">
               <h3>소형</h3>
               <div className="devbar"><i style={{ width: "18%" }} /></div>
@@ -540,6 +610,30 @@ export default function BusinessPage() {
             <div className="usc t">발행하고 나면 누가 언제 썼는지 남습니다.</div>
           </div>
 
+          {/* 근무표 도해 — 소프트웨어에서 제일 알아보기 쉬운 화면 하나를 CSS 격자로 그린다.
+              🔴 캡처로 오인되지 않게: 파란 점선 테두리 + "그림으로 옮긴 화면" 태그 +
+                 사람 이름·매장명·금액 없음 + 아이콘·아바타·브라우저 크롬 없음. */}
+          <figure className="swmock reveal" style={{ marginTop: 26 }}>
+            <p className="ftitle">근무표는 이렇게 생겼습니다</p>
+            <span className="mocktag">그림으로 옮긴 화면</span>
+            <div className="board" role="img"
+              aria-label="한 주 근무표 도해입니다. 가로는 월요일부터 일요일, 세로는 근무자 세 명이고 칸마다 근무 시간이 들어갑니다. 비는 자리는 대타 신청 칸으로 남습니다.">
+              <span className="bh" aria-hidden="true" />
+              {SW_DAYS.map((d) => <span className="bh" key={d} aria-hidden="true">{d}</span>)}
+              {SW_BOARD.map((r) => (
+                <Fragment key={r.who}>
+                  <span className="bn" aria-hidden="true">{r.who}</span>
+                  {r.d.map((v, i) => (
+                    <span key={i} aria-hidden="true"
+                      className={"bc" + (v === "대타" ? " sub" : v ? " on" : "")}>{v}</span>
+                  ))}
+                </Fragment>
+              ))}
+            </div>
+            <figcaption>칸을 눌러 짜고, 비는 자리는 대타로 넘깁니다.
+              실제 화면을 찍은 것이 아니라 모양만 옮겨 그린 그림입니다.</figcaption>
+          </figure>
+
           <p className="lead reveal" style={{ margin: "22px 0 0" }}>
             전부 저희 매장 3곳에서 지금 이 순간 돌아가고 있는 것들입니다. 보여드리려고 만든 게 아닙니다.
           </p>
@@ -549,6 +643,23 @@ export default function BusinessPage() {
             예약금이 입금되면 그 예약이 알아서 확정으로 넘어갑니다. 이름과 금액이 맞는 건만 자동으로 처리하고,
             애매한 건 사장님한테 남깁니다.
           </p>
+          {/* 처리 내역 도해. ⚠️ 실제 로그가 아니다. 사람 이름·계좌·금액을 넣지 않는다.
+              흐름도가 아니라 줄로 그린 이유: 흐름도는 성공 경로만 그리게 되는데,
+              줄이면 "자동으로 안 되는 것"까지 같은 형식으로 나란히 놓을 수 있다. */}
+          <figure className="swmock reveal" style={{ marginBottom: 18 }}>
+            <p className="ftitle">이런 순서로 지나갑니다</p>
+            <span className="mocktag">그림으로 옮긴 화면</span>
+            <ol className="swlog" aria-label="입금 자동확인 처리 순서">
+              <li><span className="lt">09:41</span><span className="lm">입금 알림 도착</span><span className="lc">받음</span></li>
+              <li><span className="lt">09:41</span><span className="lm">이름과 금액 대조</span><span className="lc">일치</span></li>
+              <li><span className="lt">09:41</span><span className="lm">예약 확정</span><span className="lc">자동</span></li>
+              <li><span className="lt">09:41</span><span className="lm">손님에게 확정 문자</span><span className="lc">보냄</span></li>
+              <li className="hold"><span className="lt">09:52</span><span className="lm">이름이 다르게 들어온 건</span><span className="lc">사장님 확인</span></li>
+            </ol>
+            <figcaption>맞는 건만 자동으로 넘어가고, 애매한 건 마지막 줄처럼 남습니다.
+              실제 화면을 찍은 것이 아니라 모양만 옮겨 그린 그림입니다.</figcaption>
+          </figure>
+
           <div className="ops">
             <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
             <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
