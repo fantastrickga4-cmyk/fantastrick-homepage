@@ -181,8 +181,10 @@ export default function BusinessPage() {
       </div>
 
       <div className="wrap">
-      {/* ══════════ ① 통째로 만들기 ══════════ */}
-      {here === "turnkey" && <>
+      {/* ══════════ ① 통째로 만들기 ══════════
+          패널마다 성격이 달라 디자인도 나눈다(사장님 지시 2026-08-06).
+          껍데기 클래스(.pn-*)만 다르고 브랜드 색·글꼴은 공통 — 세 화면이 한 사이트로 읽혀야 한다. */}
+      {here === "turnkey" && <div className="pn-turnkey">
         <section className="bz-sec" id="turnkey">
           <div className="kicker reveal">통째로 만들기</div>
           <h2 className="reveal">이야기부터 배선까지<br />한 팀이 합니다.</h2>
@@ -279,10 +281,10 @@ export default function BusinessPage() {
           <p className="note reveal">값은 방 크기랑 하시려는 연출에 따라 달라서 보고 나서 말씀드립니다.</p>
         </section>
         <NextUp here={here} pick={pick} />
-      </>}
+      </div>}
 
       {/* ══════════ ② 제어기 · 장치 ══════════ */}
-      {here === "device" && <>
+      {here === "device" && <div className="pn-device">
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
           <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
@@ -508,10 +510,10 @@ export default function BusinessPage() {
           </figure>
         </section>
         <NextUp here={here} pick={pick} />
-      </>}
+      </div>}
 
       {/* ══════════ ③ 매장 운영 프로그램 ══════════ */}
-      {here === "software" && <>
+      {here === "software" && <div className="pn-software">
         <section className="bz-sec" id="software">
           <div className="kicker reveal">방 밖에서 쓰는 것</div>
           <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
@@ -555,7 +557,7 @@ export default function BusinessPage() {
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
         <NextUp here={here} pick={pick} />
-      </>}
+      </div>}
 
         {/* ══════════ 여기서부터는 어느 범위를 보든 항상 나온다 ══════════ */}
         {/* 비교 */}
