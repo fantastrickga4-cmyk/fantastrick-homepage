@@ -80,19 +80,27 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("date");
   const date = /^\d{4}-\d{2}-\d{2}$/.test(q || "") ? (q as string) : todayKst();
 
-  const { data, error } = await db
+  // ?theme=ldc 처럼 테마 하나만 받을 수 있다. 문자는 어차피 테마별로 나눠 보내므로,
+  // 그 테마만 볼 거면 **나머지 손님 번호는 폰에 안 내리는 게 맞다.**
+  // 테마 목록을 여기 박아두지 않는다 — 새 테마가 생겨도 이 파일을 고칠 일이 없게.
+  const themeRaw = req.nextUrl.searchParams.get("theme") || "";
+  const theme = /^[a-z0-9-]{1,40}$/.test(themeRaw) ? themeRaw : "";
+
+  let query = db
     .from("reservations")
     .select("id, store_id, theme_id, theme_name, date, time, people, name, phone, status")
     .eq("date", date)
-    .neq("status", "cancelled")
-    .order("time", { ascending: true });
+    .neq("status", "cancelled");
+  if (theme) query = query.eq("theme_id", theme);
+
+  const { data, error } = await query.order("time", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500, headers: cors });
   }
 
   return NextResponse.json(
-    { ok: true, date, reservations: data || [] },
+    { ok: true, date, theme: theme || null, reservations: data || [] },
     { headers: { ...cors, "Cache-Control": "no-store" } },
   );
 }
