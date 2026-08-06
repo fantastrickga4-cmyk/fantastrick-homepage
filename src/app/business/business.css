@@ -24,7 +24,7 @@
    경계선도 방향을 준다(왼쪽만 밝게) — 전부 같은 톤이면 페이지가 표처럼 읽힌다. */
 .bizsys .bz-sec { padding: 110px 0; border-top: none; position: relative;
   /* 탭바가 sticky(top:68) 라 앵커로 점프하면 제목이 가린다 */
-  scroll-margin-top: 124px }
+  scroll-margin-top: 80px }
 .bizsys .bz-sec::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
   background: linear-gradient(90deg, rgba(143,182,255,.34) 0%, rgba(255,255,255,.10) 34%, transparent 78%) }
 @media (max-width: 640px) { .bizsys .bz-sec { padding: 68px 0 } }
@@ -78,31 +78,6 @@
 .bizsys .strip > div { background: rgba(8,14,30,.86); border: 1px solid var(--line); border-radius: 11px; padding: 14px 20px }
 .bizsys .strip b { display: block; font-size: 27px; font-weight: 800; letter-spacing: -.02em; font-feature-settings: "tnum"; line-height: 1.1 }
 .bizsys .strip span { display: block; font-size: 11.5px; color: var(--faint); letter-spacing: .06em; margin-top: 4px }
-
-/* ── 상품 탭 (제어기 / 운영 프로그램) ────────────────────
-   페이지가 길어서 위로 되돌아가기 번거롭다 → 스크롤을 내려도 따라온다.
-   top 값 68px = 스크롤 중 고정 헤더의 실제 아래끝(실측 67px) 바로 밑.
-   62px 로 뒀더니 5px 이 헤더에 물려 탭 윗선이 잘렸다(2026-08-06 실측 후 수정). */
-.bizsys .bztabs { position: sticky; top: 68px; z-index: 20;
-  background: rgba(6, 18, 46, .92); backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line) }
-.bizsys .bztabs-in { display: flex; gap: 8px; padding: 10px 0 }
-.bizsys .bztabs button {
-  flex: 1; text-align: left; cursor: pointer; font-family: inherit;
-  background: transparent; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px; transition: .18s;
-}
-.bizsys .bztabs button b { display: block; font-size: 15px; font-weight: 800; color: var(--text) }
-.bizsys .bztabs button span { font-size: 12px; color: var(--faint) }
-.bizsys .bztabs button:hover { border-color: rgba(143,182,255,.45) }
-/* 고른 쪽은 색만이 아니라 채움으로도 구분한다(색만 쓰면 색약에서 안 갈린다) */
-.bizsys .bztabs button.on { background: rgba(110,168,255,.16); border-color: var(--brand) }
-.bizsys .bztabs button.on b { color: var(--brand-bright) }
-@media (max-width: 520px) {
-  .bizsys .bztabs button { padding: 9px 12px }
-  .bizsys .bztabs button b { font-size: 13.5px }
-  .bizsys .bztabs button span { font-size: 11px }
-}
 
 /* 운영 프로그램 before/after 표 — 비교표(.cmp)와 같은 짜임이되 글이 길어 열 비율만 다르다 */
 .bizsys .swtable { display: grid; grid-template-columns: .8fr 1.1fr 1.1fr; gap: 1px;

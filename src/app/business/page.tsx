@@ -833,6 +833,12 @@ export default function BusinessPage() {
           </div>
         </section>
 
+        {/* 🔴 공통 구간에서도 범위를 바꿀 수 있어야 한다.
+            [이어서 보기]는 각 화면 맨 아래에만 있어서, 그 뒤 비교표·사후관리·자주 묻는 것을
+            보는 동안에는 다른 범위로 갈 방법이 없었다. 페이지가 8,000px 이 넘어 위로 되돌아가기도 멀다.
+            그래서 문의 직전에 한 번 더 깐다. */}
+        <NextUp here={here} pick={pick} />
+
         {/* 문의 */}
         <section className="bz-sec" id="cta">
           <div className="ctabox reveal">
