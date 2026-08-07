@@ -23,24 +23,24 @@ const onlyNum = (s: string) => Number(String(s).replace(/[^0-9]/g, "")) || 0;
 /* short = 화면 가장자리 길잡이에 쓰는 짧은 이름.
    본이름을 그대로 쓰면 길잡이가 168px 이 넘어 본문을 가린다(1440 화면에서 56px 겹침 실측). */
 const SCOPES = [
-  { id: "turnkey", label: "통째로 만들기", short: "통째로", sub: "기획부터 시공까지" },
-  { id: "device", label: "제어기 · 장치", short: "제어기", sub: "방에 들어가는 것" },
-  { id: "software", label: "매장 운영 프로그램", short: "프로그램", sub: "사무실에서 쓰는 것" },
+  { id: "turnkey", label: "통째로 만들기", short: "통째로", sub: "이야기부터 공사까지 전부" },
+  { id: "device", label: "방 안 장치와 기계", short: "장치", sub: "자물쇠·센서·조명을 돌리는 것" },
+  { id: "software", label: "매장 운영 프로그램", short: "프로그램", sub: "근무표·급여·예약을 하는 것" },
 ];
 
-const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
+const KINDS = ["방 통째로 맡기기", "장치와 기계만", "운영 프로그램만", "그 밖에"];
 // 보고 있는 화면에 맞춰 문의 유형을 미리 골라 둔다
 const KIND_BY_SCOPE: Record<string, string> = {
-  turnkey: "통째로 시공", device: "제어기 도입", software: "운영 프로그램",
+  turnkey: "방 통째로 맡기기", device: "장치와 기계만", software: "운영 프로그램만",
 };
 
 /* 근무표 도해용 데이터.
    ⚠️ 실제 근무표가 아니다. 사람 이름·매장명·금액을 넣지 않는다 — 진짜 화면 캡처로 오인되면 안 된다. */
 const SW_DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 const SW_BOARD = [
-  { who: "GM 1", d: ["12-20", "12-20", "", "12-20", "12-20", "16-22", ""] },
-  { who: "GM 2", d: ["", "16-22", "12-20", "16-22", "", "12-20", "12-20"] },
-  { who: "GM 3", d: ["16-22", "", "16-22", "", "16-22", "대타", "16-22"] },
+  { who: "직원 1", d: ["12-20", "12-20", "", "12-20", "12-20", "16-22", ""] },
+  { who: "직원 2", d: ["", "16-22", "12-20", "16-22", "", "12-20", "12-20"] },
+  { who: "직원 3", d: ["16-22", "", "16-22", "", "16-22", "대타", "16-22"] },
 ];
 
 /* 지금 보는 범위 끝에서 나머지 둘로 넘어가는 줄.
@@ -230,10 +230,10 @@ export default function BusinessPage() {
               전에는 "방을 통째로 만듭니다"였는데, 그건 ①턴키만의 문장이라 페이지 전체가
               "턴키 시공사 소개"로 규정됐다. 그러면 아래 선택은 셋 중 고르는 자리가 아니라
               "턴키를 보는 방법 세 가지"로 읽힌다. 그 문장은 턴키 표제로 옮겼다. */}
-          <div className="kicker">방탈출 제작 · 제어기 · 매장 운영</div>
+          <div className="kicker">방탈출 제작 · 장치 · 매장 운영</div>
           <h1>방을 만드는 일부터<br />방을 돌리는 일까지.</h1>
           <p className="sub">
-            방탈출을 통째로 짓는 일, 방 안 장치를 돌리는 제어기, 매장을 굴리는 프로그램.
+            방탈출을 통째로 짓는 일, 방 안 장치를 움직이는 기계, 매장을 굴리는 프로그램.
             강남에서 3곳, 11년째 직접 운영하면서 하나씩 만든 것들입니다.
           </p>
           <div className="bz-cta">
@@ -256,7 +256,7 @@ export default function BusinessPage() {
           <div className="asks">
             <div className="ask reveal">방 하나 새로 여는데 어디부터 맡겨야 할지 모르겠다</div>
             <div className="ask reveal">장치가 작동을 안 하는데 어디로 전화해야 할지 헷갈린다</div>
-            <div className="ask reveal">방 늘릴 때마다 제어기부터 다시 사야 한다고 들었다</div>
+            <div className="ask reveal">방을 하나 더 만들려면 기계부터 새로 사야 한다고 들었다</div>
             <div className="ask reveal">예약이랑 근무표를 아직 엑셀이랑 단톡으로 하고 있다</div>
           </div>
         </section>
@@ -346,7 +346,7 @@ export default function BusinessPage() {
                 <li>시나리오 · 세계관</li>
                 <li>문제 · 장치 게임 설계</li>
                 <li>연출 · 사운드 디렉팅</li>
-                <li>운영 매뉴얼 · GM 교육</li>
+                <li>운영 방법 · 진행 담당(GM) 교육</li>
               </ul>
             </div>
             <div className="tri reveal">
@@ -363,12 +363,12 @@ export default function BusinessPage() {
             <div className="tri reveal">
               <div className="en">Device</div>
               <h3>장치 · 제어</h3>
-              <p>장치를 만들어 붙이고, 그걸 돌리는 제어기까지 저희가 만듭니다.</p>
+              <p>자물쇠와 센서를 만들어 붙이고, 그걸 움직이는 기계까지 저희가 만듭니다.</p>
               <ul>
                 <li>잠금 장치(전자석 · 기계식)</li>
                 <li>센서 · 트리거</li>
                 <li>연출 제어(조명 · 음향 · 영상)</li>
-                <li>마스터 · 슬레이브 제어기</li>
+                <li>장치를 한꺼번에 움직이는 기계</li>
               </ul>
             </div>
           </div>
@@ -397,8 +397,8 @@ export default function BusinessPage() {
             <div><b>보러 감</b><span>현장 보고 방 개수·장치 세기</span><i>자체 인력</i></div>
             <div><b>기획 · 시나리오</b><span>이야기와 문제 설계</span><i>자체 인력</i></div>
             <div><b>설계 · 인테리어</b><span>도면, 세트, 마감</span><i>자체 인력</i></div>
-            <div><b>전기 · 장치</b><span>배선, 장치 제작, 제어기</span><i>자체 인력</i></div>
-            <div><b>시공 · 오픈</b><span>현장 셋업, GM 교육</span><i>자체 인력</i></div>
+            <div><b>전기 · 장치</b><span>배선, 장치 제작, 기계</span><i>자체 인력</i></div>
+            <div><b>공사 · 오픈</b><span>현장 준비, 진행 담당 교육</span><i>자체 인력</i></div>
           </div>
 
           {/* 우리가 만든 방들 */}
@@ -438,8 +438,8 @@ export default function BusinessPage() {
             <div className="usc"><span className="mk y">&#10003;</span><span className="t">한 팀이 끝까지</span></div>
 
             <div className="rowlab">방을 늘리고 싶을 때</div>
-            <div><span className="mk n">&times;</span><span className="t mut">제어기를 다시</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">모듈만 추가</span></div>
+            <div><span className="mk n">&times;</span><span className="t mut">기계를 통째로 다시</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">판 하나만 더</span></div>
 
             <div className="rowlab">작동을 안 하는 걸 어떻게 아는가</div>
             <div><span className="mk n">&times;</span><span className="t mut">사람이 발견</span></div>
@@ -474,7 +474,7 @@ export default function BusinessPage() {
             <div className="reveal"><b>시나리오는 안 가져갑니다</b><span>고객사 시나리오랑 문제 구조는 우리 매장 어디에도 안 씁니다.</span></div>
             <div className="reveal"><b>매장 이름 안 밝힙니다</b><span>원하시면 납품 사례에서 빼드립니다.</span></div>
             <div className="reveal"><b>데이터는 따로 둡니다</b><span>매장 예약이랑 매출이 우리 쪽 데이터와 섞이지 않습니다.</span></div>
-            <div className="reveal"><b>제어기만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
+            <div className="reveal"><b>기계만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
           </div>
         </section>
 
@@ -546,8 +546,8 @@ export default function BusinessPage() {
         <div className="wrap">
         <header className="pn-head">
           <i>02</i>
-          <h2>마스터 · 슬레이브 제어기</h2>
-          <p>방에 들어가는 것</p>
+          <h2>방 안 장치를 움직이는 기계</h2>
+          <p>자물쇠·센서·조명을 한 대가 다 맡습니다</p>
         </header>
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
@@ -594,16 +594,17 @@ export default function BusinessPage() {
         {/* 새 제어기 — 이 패널의 주인공. .pn-stage 는 여기 하나에만 붙인다(릴리즈 태그·조명) */}
         <section className="bz-sec pn-stage">
           <div className="kicker reveal">새로 만든 것</div>
-          <h2 className="reveal">마스터 · 슬레이브 제어기</h2>
+          <h2 className="reveal">저희가 만든 기계, 마스터 · 슬레이브</h2>
           <p className="lead reveal">
-            마스터 한 대가 장치 32개를 맡습니다. 모자라면 슬레이브 모듈을 답니다.
+            방 안에 붙는 자물쇠, 전자석, 센서, 연출 조명을 한 대가 다 맡아서 움직이는 기계입니다.
+            본체(마스터) 한 대가 장치 32개를 맡고, 모자라면 옆에 판(슬레이브)을 하나 더 답니다.
             저희가 만들어 저희 매장에 넣고 쓰는 물건입니다.
           </p>
 
           <div className="pcbstage reveal">
             <span className="newbadge">NEW</span>
             <svg className="pcb" viewBox="0 0 660 300" role="img"
-              aria-label="마스터 제어기 한 대에 슬레이브 모듈이 이어진 구조 도해. 마스터가 장치 32개를 맡고 모듈을 달 때마다 32개씩 늘어납니다.">
+              aria-label="본체 한 대에 늘림판이 이어진 구조 그림입니다. 본체가 장치 32개를 맡고, 판을 달 때마다 32개씩 늘어납니다.">
               <defs>
                 <pattern id="pcbgrid" width="14" height="14" patternUnits="userSpaceOnUse">
                   <path d="M14 0H0V14" fill="none" stroke="#8fb6ff" strokeOpacity=".08" strokeWidth="1" />
@@ -688,22 +689,22 @@ export default function BusinessPage() {
           </div>
 
           <div className="spec reveal">
-            <div><dt>마스터 한 대</dt><span className="dots" /><dd>장치 32개</dd></div>
-            <div><dt>모듈 하나 달 때마다</dt><span className="dots" /><dd>32개씩</dd></div>
+            <div><dt>본체 한 대가 맡는 장치</dt><span className="dots" /><dd>장치 32개</dd></div>
+            <div><dt>판을 하나 달 때마다</dt><span className="dots" /><dd>32개씩</dd></div>
             <div><dt>한 대로 늘릴 수 있는 데까지</dt><span className="dots" /><dd>128개</dd></div>
-            <div><dt>상태 감시</dt><span className="dots" /><dd>장치마다 응답 확인</dd></div>
+            <div><dt>고장 감시</dt><span className="dots" /><dd>장치마다 자동으로 확인</dd></div>
             <div><dt>부품</dt><span className="dots" /><dd>시중에서 구할 수 있는 것</dd></div>
-            <div><dt>보증</dt><span className="dots" /><dd>보드 · 모듈 1년, 부품 6개월</dd></div>
+            <div><dt>보증</dt><span className="dots" /><dd>본체 · 판 1년, 부품 6개월</dd></div>
           </div>
 
           <figure className="reveal" style={{ marginTop: 26 }}>
-            <p className="ftitle">모자라면 모듈을 답니다</p>
+            <p className="ftitle">모자라면 판을 하나 더 답니다</p>
             <div className="blocks">
-              <div className="blk main"><b>마스터</b><span>장치 32개</span></div>
+              <div className="blk main"><b>본체</b><span>장치 32개</span></div>
               {Array.from({ length: mods }, (_, i) => (
                 <span key={i} className="blkpair">
                   <span className="plus">+</span>
-                  <span className="blk"><b>슬레이브</b><span>+32개</span></span>
+                  <span className="blk"><b>늘림판</b><span>+32개</span></span>
                 </span>
               ))}
               <span className="blkpair">
@@ -713,16 +714,16 @@ export default function BusinessPage() {
             </div>
             <div className="steprow">
               <div className="stepper">
-                <button type="button" onClick={() => setMods((m) => Math.max(0, m - 1))} aria-label="모듈 빼기">&#8722;</button>
-                <span className="v">모듈 <b>{mods}</b>개</span>
-                <button type="button" onClick={() => setMods((m) => Math.min(6, m + 1))} aria-label="모듈 추가">+</button>
+                <button type="button" onClick={() => setMods((m) => Math.max(0, m - 1))} aria-label="늘림판 빼기">&#8722;</button>
+                <span className="v">늘림판 <b>{mods}</b>개</span>
+                <button type="button" onClick={() => setMods((m) => Math.min(6, m + 1))} aria-label="늘림판 추가">+</button>
               </div>
               <div>
                 <span className="bignum sm">{devices}</span>
                 <span className="devsuf">개까지 물립니다</span>
               </div>
             </div>
-            <figcaption>모듈 하나 달면 32개씩 늘어납니다. 마스터는 처음 한 번만 사시면 되고요.</figcaption>
+            <figcaption>판 하나 달면 32개씩 늘어납니다. 본체는 처음 한 번만 사시면 되고요.</figcaption>
           </figure>
 
           {/* 방 늘릴 때 드는 돈 — 금액을 쓰지 않는다. 기울기 차이로만 읽게 한다. */}
@@ -730,7 +731,7 @@ export default function BusinessPage() {
             <p className="ftitle">방을 늘려갈 때</p>
             <div className="step-chart">
               <svg viewBox="0 0 620 200" role="img"
-                aria-label="방을 늘릴 때 드는 돈 비교. 제어기를 다시 사는 구조는 늘릴 때마다 처음 금액이 다시 들어 가파르게 올라가고, 모듈만 더하는 구조는 완만하게 올라갑니다.">
+                aria-label="방을 늘릴 때 드는 돈 비교. 기계를 통째로 다시 사는 방식은 늘릴 때마다 처음 금액이 또 들어 가파르게 올라가고, 판만 더하는 방식은 완만하게 올라갑니다.">
                 <line className="gl" x1="46" y1="20" x2="600" y2="20" />
                 <line className="gl" x1="46" y1="95" x2="600" y2="95" />
                 <line className="gl" x1="46" y1="170" x2="600" y2="170" />
@@ -739,22 +740,22 @@ export default function BusinessPage() {
                 <polyline fill="none" stroke="#8ea0c4" strokeWidth="2.5" strokeDasharray="7 5"
                   strokeLinejoin="round" strokeLinecap="round"
                   points="60,158 190,158 190,112 320,112 320,66 450,66 450,24 580,24" />
-                <text className="dlab" x="516" y="17" textAnchor="middle" fill="#8ea0c4">제어기를 다시</text>
+                <text className="dlab" x="516" y="17" textAnchor="middle" fill="#8ea0c4">기계를 다시</text>
                 <polyline fill="none" stroke="#3585ea" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
                   points="60,158 190,158 190,143 320,143 320,128 450,128 450,113 580,113" />
                 <circle className="dot" cx="60" cy="158" r="5" />
                 <circle className="dot" cx="190" cy="143" r="5" />
                 <circle className="dot" cx="320" cy="128" r="5" />
                 <circle className="dot" cx="450" cy="113" r="5" />
-                <text className="dlab" x="516" y="106" textAnchor="middle">모듈만 추가</text>
+                <text className="dlab" x="516" y="106" textAnchor="middle">판만 하나 더</text>
                 <text className="axl" x="60" y="190" textAnchor="middle">장치 32개</text>
                 <text className="axl" x="190" y="190" textAnchor="middle">64개</text>
                 <text className="axl" x="320" y="190" textAnchor="middle">96개</text>
                 <text className="axl" x="450" y="190" textAnchor="middle">128개</text>
               </svg>
             </div>
-            <figcaption>제어기를 다시 사야 하는 구조라면 방을 늘릴 때마다 처음 냈던 금액이 또 나갑니다.
-              모듈만 더하면 되는 구조는 처음 한 번으로 끝납니다.</figcaption>
+            <figcaption>기계를 통째로 다시 사야 하는 방식이면, 방을 늘릴 때마다 처음 냈던 돈이 또 나갑니다.
+              판만 더하면 되는 방식은 처음 한 번으로 끝납니다.</figcaption>
           </figure>
 
           {/* 구성 — 금액 없음 */}
@@ -767,13 +768,13 @@ export default function BusinessPage() {
               <div className="devbar"><i style={{ width: "18%" }} /></div>
               <div className="devn">장치 <b>23개</b>까지</div>
               <p>방 한 칸으로 시작하시는 분들. 23개에서 더는 안 늘어납니다. 나중에 표준으로 올리실 때
-                쓰시던 제어기는 값을 쳐드려요.</p>
+                쓰시던 기계는 값을 쳐드려요.</p>
             </div>
             <div className="tier hot reveal">
               <h3>표준</h3>
               <div className="devbar"><i style={{ width: "25%" }} /></div>
               <div className="devn">장치 <b>32개</b>부터</div>
-              <p>새로 여는 매장은 대부분 이걸로 갑니다. 모듈만 달면 계속 붙습니다. 위로 끝이 없어요.</p>
+              <p>새로 여는 매장은 대부분 이걸로 갑니다. 판만 더 달면 계속 붙습니다. 위로 끝이 없어요.</p>
             </div>
           </div>
           <p className="note reveal">설치는 3일 기준입니다. 금액은 방 개수와 장치 수에 따라 달라서 보러 가서 말씀드립니다.</p>
@@ -794,7 +795,7 @@ export default function BusinessPage() {
                 </div>
               </div>
               <div className="bar">
-                <div className="lab">GM이 먼저</div>
+                <div className="lab">직원이 먼저</div>
                 <div className="track">
                   <div className="fill warn"><b>6만원</b>그 타임 닫고 전화 돌립니다.</div>
                 </div>
@@ -805,7 +806,7 @@ export default function BusinessPage() {
               </div>
             </div>
             <figcaption>
-              <p>제어기가 장치 상태를 스스로 봅니다. 응답 없는 게 생기면 사장님 폰으로 알림이 갑니다.
+              <p>기계가 장치 상태를 스스로 살핍니다. 대답이 없는 게 생기면 사장님 폰으로 알림이 갑니다.
                 &quot;3번 방 전자석 응답 없음&quot; 이런 식으로요.</p>
               <p>다 잡히지는 않습니다. 손님이 뜯어버린 소품, 끊어진 배선, 정전은 이걸로 안 걸려요.
                 그건 여전히 사람이 봐야 합니다.</p>
@@ -843,7 +844,7 @@ export default function BusinessPage() {
             <details>
               <summary>장치가 작동을 안 하면 얼마나 빨리 오시나요?</summary>
               <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
-                원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
+                멀리서 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 기계를 만든 사람입니다.</div>
             </details>
             <details>
               <summary>방 하나만 새로 만들 수도 있나요?</summary>
@@ -851,8 +852,8 @@ export default function BusinessPage() {
                 지금 쓰시는 것 중 살릴 게 있으면 살립니다.</div>
             </details>
             <details>
-              <summary>제어기만 사고 나머지는 저희가 해도 되나요?</summary>
-              <div className="b">됩니다. 제어기만 가져가셔도 되고, 운영 프로그램만 쓰셔도 됩니다.
+              <summary>기계만 사고 나머지는 저희가 해도 되나요?</summary>
+              <div className="b">됩니다. 기계만 가져가셔도 되고, 운영 프로그램만 쓰셔도 됩니다.
                 어디까지 맡기실지는 보고 나서 같이 정합니다.</div>
             </details>
           </div>
@@ -931,7 +932,7 @@ export default function BusinessPage() {
         </header>
         <section className="bz-sec" id="software">
           <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
-          <p className="lead reveal">방 안 장치를 돌리는 게 제어기라면, 이건 사무실에서 하는 일입니다.
+          <p className="lead reveal">방 안 장치를 움직이는 게 기계라면, 이건 사무실에서 하는 일입니다.
             근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>
 
           <div className="swtable reveal">
@@ -1008,7 +1009,7 @@ export default function BusinessPage() {
             <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
             <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
           </div>
-          <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
+          <p className="note reveal">장치와 기계를 넣으시면 운영 프로그램이 함께 들어갑니다.
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
         {/* 이 화면의 마무리 — 다음 범위로 넘기고, 문의로 받는다 */}

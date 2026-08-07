@@ -121,12 +121,12 @@ export default function CollabPage() {
             <div className="tri reveal">
               <div className="en">Device</div>
               <h3>장치 · 제어</h3>
-              <p>손대면 반응하는 장치를 만들고, 그걸 돌리는 제어기까지 자체 제작합니다.</p>
+              <p>손대면 반응하는 장치를 만들고, 그걸 움직이는 기계까지 직접 만듭니다.</p>
               <ul>
                 <li>잠금 장치 · 기믹</li>
                 <li>센서 · 트리거</li>
                 <li>영상 · 조명 연출 제어</li>
-                <li>마스터 · 슬레이브 제어기</li>
+                <li>장치를 한꺼번에 움직이는 기계</li>
               </ul>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function CollabPage() {
 
           <div className="crossline reveal" style={{ marginTop: 22 }}>
             <p>방탈출 매장을 하시거나 열려고 하신다면 이쪽입니다.</p>
-            <Link href="/business">제어기 · 시공 이야기 보기 →</Link>
+            <Link href="/business">장치 · 시공 이야기 보기 →</Link>
           </div>
         </section>
       </div>
