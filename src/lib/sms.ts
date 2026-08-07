@@ -1,5 +1,6 @@
 import { getSupabase } from "./supabase";
 import { formatDate, normalizePhone } from "./util";
+import { IMPORTED_SOURCE } from "./data";
 import { THEME_TEMPLATES, TYPE_FALLBACK, type SmsType } from "./sms-templates";
 
 // ─── NHN Cloud 발송 공통 (Notification > SMS / KakaoTalk Bizmessage) ──────
@@ -116,6 +117,26 @@ export const TEST_PHONE_PREFIX = "0100000"; // 010-0000-XXXX
 export function isTestPhone(phone: string): boolean {
   return normalizePhone(phone).startsWith(TEST_PHONE_PREFIX);
 }
+
+/**
+ * 기존 사이트(fantastrick.co.kr)에서 가져온 예약인가 — **우리가 문자를 보내지 않는 예약.**
+ *
+ * 손님은 기존 사이트에서 예약했고 확정 안내도 거기서 받았다. 우리가 또 보내면 같은 예약으로
+ * 문자를 두 번 받는다. 그래서 가져온 예약에는 확정문자를 보내지 않는다.
+ *
+ * [왜 번호가 아니라 source 인가 — 2026-08-07]
+ *  전에는 가져올 때 번호를 010-0000-XXXX 로 바꿔 넣고 isTestPhone 으로 막았다. "번호가
+ *  가짜니까 문자도 못 간다"는 게 차단이었던 셈이다. 그런데 **직원이 아침마다 돌리는
+ *  안내문자 앱이 이 번호를 쓴다.** 가짜 번호가 그대로 문자앱에 올라와 아무에게도 안 갔다.
+ *  → 번호는 진짜를 넣고(scripts/import-from-wp.mts), 차단은 진짜 조건인 여기로 옮겼다.
+ *  isTestPhone 은 그대로 둔다 — 시드 테스트 데이터(seed-test-reservations.mjs)를 막는 몫이다.
+ */
+export function isImportedReservation(source?: string | null): boolean {
+  return source === IMPORTED_SOURCE;
+}
+
+/** 위 차단으로 남긴 로그의 표시. 관리자 [다시 보내기] 가 이 표시를 보고 거절한다(문구 비교이므로 상수로 둔다). */
+export const IMPORT_BLOCK_REASON = "기존사이트에서 가져온 예약 — 발송 차단";
 
 /* ─── 🔴 우리가 보내는 문자는 "예약 확정" 하나뿐이다 (2026-08-03 사장님 방침) ───
  *
@@ -271,7 +292,7 @@ export async function sendReservationSms(
   type: SmsType,
   r: {
     name: string; phone: string; theme_name: string; date: string; time: string; people: number;
-    theme_id?: string;
+    theme_id?: string; source?: string | null;
   }
 ) {
   const tpl = await getTemplate(type, r.theme_id);
@@ -282,6 +303,15 @@ export async function sendReservationSms(
   // ⚠️ NHN 은 키를 **#{} 없이** 받는다(솔라피는 "#{이름}" 형태였음). 여기서 형태가 어긋나면
   //    치환이 안 된 채 "#{이름}님" 그대로 손님에게 나간다.
   const vars = { 이름: r.name, 테마: r.theme_name, 날짜: formatDate(r.date), 시간: r.time };
+
+  // 가져온 예약에는 보내지 않는다(손님은 기존 사이트에서 이미 안내를 받았다).
+  // 여기서 막는 이유: 예약 문자는 결국 이 함수를 지난다 — 알림톡·SMS 어느 갈래로 가든 함께 막힌다.
+  // 문구를 만든 **뒤에** 막는 건, 로그에 "무엇이 나갈 뻔했는지"를 남겨두기 위해서다.
+  if (isImportedReservation(r.source)) {
+    await writeLog({ phone: r.phone, body, type, status: "skipped", channel: "sms", error: IMPORT_BLOCK_REASON });
+    return { ok: false, skipped: true };
+  }
+
   // 1순위 알림톡(실패 시 NHN 이 문자로 대체발송). 알림톡 미설정이면 SMS 경로.
   const kakao = await sendAlimtalk(r.phone, body, type, vars);
   if (kakao) return kakao;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
+import { isTestPhone } from "@/lib/sms";
 
 /**
  * 직원용 "오늘 예약" 읽기 전용 API — 안내문자 앱(reservation-sms)이 부른다.
@@ -20,6 +21,13 @@ import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
  *  대부분 걸러주지만, 관리자가 손으로 넣은 예약이나 옛 사이트에서 가져온 건은 미입금인 채로
  *  당일까지 남는다. 대신 **몇 건 뺐는지는 알려준다**(excludedUnpaid) — 소리 없이 사라지면
  *  직원은 손님이 누락된 줄 모른다.
+ *
+ *  **연습용(010-0000-XXXX)도 뺀다** (2026-08-07). 옛 사이트에서 옮겨온 예약
+ *  (scripts/import-from-wp.mts)과 테스트 시드(scripts/seed-test-reservations.mjs)는
+ *  진짜 번호 대신 이 대역을 쓴다. 홈페이지가 직접 보내는 문자는 lib/sms.ts 의 isTestPhone
+ *  가드가 막지만, **이 문으로 나간 번호는 직원 폰의 문자앱이 보내므로 그 가드를 못 거친다.**
+ *  실제로 안내문자 앱에 010-0000-8522 같은 수신자가 그대로 올라왔다 — 발송 길목이 아니라
+ *  여기서 막아야 하는 이유다. 여기 뺀 건수도 알려준다(excludedTest).
  *
  * [토큰이 새면]
  *  STAFF_TOKEN 값만 바꾸면 즉시 막힌다(관리자 비밀번호는 안 건드려도 된다). 그게 문을
@@ -107,15 +115,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "조회 중 오류가 발생했습니다." }, { status: 500, headers: cors });
   }
 
-  // 미입금은 여기서 잘라낸다. DB 쿼리로 안 자르고 받아서 세는 건 **뺀 건수를 알려주려고**다.
+  // 미입금·연습용은 여기서 잘라낸다. DB 쿼리로 안 자르고 받아서 세는 건
+  // **뺀 건수를 이유별로 알려주려고**다(직원이 해야 할 일이 서로 다르다).
   const rows = data || [];
-  const reservations = rows
-    .filter((r) => r.deposit_paid)
-    .map(({ deposit_paid: _unused, ...rest }) => rest);
-  const excludedUnpaid = rows.length - reservations.length;
+  const paid = rows.filter((r) => r.deposit_paid);
+  const excludedUnpaid = rows.length - paid.length;
+
+  const real = paid.filter((r) => !isTestPhone(r.phone || ""));
+  const excludedTest = paid.length - real.length;
+
+  const reservations = real.map(({ deposit_paid: _unused, ...rest }) => rest);
 
   return NextResponse.json(
-    { ok: true, date, theme: theme || null, excludedUnpaid, reservations },
+    { ok: true, date, theme: theme || null, excludedUnpaid, excludedTest, reservations },
     { headers: { ...cors, "Cache-Control": "no-store" } },
   );
 }

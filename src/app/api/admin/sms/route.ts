@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase, DB_NOT_CONFIGURED } from "@/lib/supabase";
 import { isAdmin } from "@/lib/admin";
-import { DEFAULT_TEMPLATES, kakaoConfigured, sendSms } from "@/lib/sms";
+import { DEFAULT_TEMPLATES, IMPORT_BLOCK_REASON, kakaoConfigured, sendSms } from "@/lib/sms";
 import { THEME_TEMPLATES, isActiveSmsType } from "@/lib/sms-templates";
 import { THEMES } from "@/lib/data";
 import { normalizePhone } from "@/lib/util";
@@ -86,9 +86,17 @@ export async function POST(req: NextRequest) {
 
   const id = String(body.id || "");
   if (!id) return NextResponse.json({ error: "발송 id가 필요합니다." }, { status: 400 });
-  const { data: row } = await db.from("sms_log").select("phone, body, type, status").eq("id", id).single();
+  const { data: row } = await db.from("sms_log").select("phone, body, type, status, error").eq("id", id).single();
   if (!row) return NextResponse.json({ error: "발송 내역을 찾을 수 없습니다." }, { status: 404 });
   if (row.status === "sent") return NextResponse.json({ error: "이미 발송된 문자예요. 다시 보낼 필요가 없습니다." }, { status: 400 });
+  // 가져온 예약은 일부러 막은 것이다 — 여기서 다시 보내면 그 차단을 우회한다.
+  // (sendSms 는 번호만 받아 예약이 어디서 온 건지 모른다. 그래서 로그에 남은 사유로 판단한다.)
+  if (row.error === IMPORT_BLOCK_REASON) {
+    return NextResponse.json(
+      { error: "기존 사이트에서 가져온 예약이에요. 손님은 그쪽에서 이미 안내를 받았으니 다시 보내지 않습니다." },
+      { status: 400 },
+    );
+  }
   // 이제 안 쓰는 종류(reminder = 방문 전날 자동문자)의 옛 기록은 다시 보낼 수 없다.
   if (!isActiveSmsType(String(row.type))) {
     return NextResponse.json({ error: "지금은 쓰지 않는 종류의 문자예요(방문 전날 자동안내). 다시 보낼 수 없습니다." }, { status: 400 });

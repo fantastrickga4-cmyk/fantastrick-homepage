@@ -2,6 +2,18 @@ name = "fantastrick-cron-backup"
 main = "worker.js"
 compatibility_date = "2024-12-30"
 
-# 매주 월요일 03:00 UTC (= 월요일 12:00 KST) 자동 백업
+# 메인 앱을 **서비스 바인딩**으로 부른다 (공개 주소로 부르지 않는다).
+#   워커끼리 workers.dev 주소로 부르면 같은 존이라 막힌다 — 2026-08-07 에 실제로
+#   `[wp-sync] 404 error code: 1042` 가 났다. 바인딩은 내부 경로라 그 문제가 없고,
+#   요청이 인터넷을 한 바퀴 돌지 않아 더 빠르고 안전하다.
+[[services]]
+binding = "HOMEPAGE"
+service = "fantastrick-homepage"
+
+# ⚠️ 여기 일정을 추가하면 worker.js 의 JOBS 에도 같은 문자열로 적어야 한다.
+#    (event.cron 문자열로 무슨 일을 할지 고른다 — 안 적으면 로그만 남기고 아무것도 안 한다)
 [triggers]
-crons = ["0 3 * * 1"]
+crons = [
+  "0 3 * * 1",    # 매주 월 03:00 UTC (= 월 12:00 KST) 전체 백업
+  "*/5 * * * *",  # 5분마다 기존 사이트 예약 거울 맞추기
+]

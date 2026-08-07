@@ -1,5 +1,14 @@
 // 판타스트릭 매장·테마 공유 데이터 (홈·예약·리뷰에서 함께 사용)
 
+/**
+ * 기존 사이트(fantastrick.co.kr)에서 가져온 예약의 source 값.
+ *
+ * 이 예약들은 **저쪽이 주인**이다 — 상태·시간은 5분마다 저쪽과 똑같이 맞춰지고
+ * (scripts/import-from-wp.mts), 우리 30분 자동취소(lib/expire.ts)와 확정문자
+ * 발송(lib/sms.ts)에서는 빠진다. 세 곳이 같은 값을 봐야 하므로 여기 한 번만 적는다.
+ */
+export const IMPORTED_SOURCE = "wp-import";
+
 export type Store = {
   id: "s1" | "s2" | "s3";
   tag: string;

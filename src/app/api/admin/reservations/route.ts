@@ -128,7 +128,9 @@ export async function PATCH(req: NextRequest) {
   // 바꾸기 전 상태 — 문자를 "실제로 바뀐 순간"에만 1번 보내고, 변경 이력에 "뭐가 뭐로" 남기기 위해 필요
   const { data: before } = await db
     .from("reservations")
-    .select("status, deposit_paid, refunded, name, phone, store_id, theme_id, theme_name, date, time, people, refund_rate, deposit, memo, admin_note")
+    // ⚠️ source 는 문자 발송 판단에 쓴다 — 빠지면 sendReservationSms 의 "가져온 예약 차단"이
+    //    조용히 통과해 손님이 같은 예약으로 문자를 두 번 받는다(2026-08-07 테스트에서 발견).
+    .select("status, deposit_paid, refunded, name, phone, store_id, theme_id, theme_name, date, time, people, refund_rate, deposit, memo, admin_note, source")
     .eq("id", id)
     .single();
   if (!before) return NextResponse.json({ error: "예약을 찾을 수 없습니다." }, { status: 404 });

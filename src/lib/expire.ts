@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isRefundOwed, type MoneyRow } from "@/lib/money";
+import { IMPORTED_SOURCE } from "@/lib/data";
 
 // 미입금 예약 자동취소 (지연 정리 방식) — 접속 시점에 청소한다.
 //
@@ -49,13 +50,16 @@ export async function sweepExpiredReservations(db: SupabaseClient): Promise<void
     })
     .eq("status", "pending")
     .eq("deposit_paid", false)
-    .lt("created_at", cutoff);
-  // 🔑 2026-08-01 — **모든 예약에 적용한다**(기존 사이트에서 가져온 것 포함).
-  //   07-31 에는 wp-import 를 뺐었다. 그땐 5분 동기화가 저쪽을 기준으로 되돌려서
-  //   취소했다 살아났다 반복했고, memo 덮어쓰기가 가져오기 열쇠를 지웠기 때문이다.
-  //   이제 ①동기화는 "새 대기 예약 가져오기"만 하고 ②취소 표시는 memo 가 아니라
-  //   auto_cancelled 칸에 적으므로, 두 이유가 다 사라졌다.
-  //   → 예약을 어디서 받았든 **처리의 주인은 우리 사이트**다.
+    .lt("created_at", cutoff)
+    // 🔑 2026-08-07 — **기존 사이트에서 가져온 예약은 뺀다.**
+    //   저 예약들의 입금 확인은 기존 사이트(와 매장)에서 일어난다. 우리 시계로 30분을 재면,
+    //   저쪽에서 입금대기(draft)로 막 들어온 예약을 30분 뒤 죽이게 된다. 저쪽이 나중에
+    //   승인해도 우리는 몰랐다 — **실제로 256건 중 35건이 그렇게 죽어 아침 안내문자에서
+    //   손님이 누락됐다**(오늘만 3명).
+    //   이제 그 예약들의 상태는 5분 동기화가 저쪽과 똑같이 맞춘다(scripts/import-from-wp.mts).
+    //   ⚠️ 여기서 다시 넣으면 그 동기화와 서로 되돌리는 밀당이 된다(07-31 에 겪은 일이다).
+    //      우리 사이트에서 직접 받은 예약(online·phone)은 그대로 이 만료가 주인이다.
+    .neq("source", IMPORTED_SOURCE);
 
   // 아직 오전 10시 30분(KST) 전이면, 오늘 자정 이후 접수된 건은 건드리지 않는다.
   //   → 새벽 2시 예약: 10시 30분까지 살아있음 (문자로 약속한 대로)
