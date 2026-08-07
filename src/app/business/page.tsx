@@ -29,6 +29,10 @@ const SCOPES = [
 ];
 
 const KINDS = ["통째로 시공", "제어기 도입", "운영 프로그램", "그 밖에"];
+// 보고 있는 화면에 맞춰 문의 유형을 미리 골라 둔다
+const KIND_BY_SCOPE: Record<string, string> = {
+  turnkey: "통째로 시공", device: "제어기 도입", software: "운영 프로그램",
+};
 
 /* 근무표 도해용 데이터.
    ⚠️ 실제 근무표가 아니다. 사람 이름·매장명·금액을 넣지 않는다 — 진짜 화면 캡처로 오인되면 안 된다. */
@@ -67,10 +71,15 @@ export default function BusinessPage() {
   /* 지금 펼쳐 놓은 범위. 누르면 그 자리로 이동하는 게 아니라 **내용만 바뀐다**(사장님 지시 2026-08-06).
      한 페이지에 셋을 다 이어 붙였더니 12,000px 이 넘어서, 긴 것 자체가 문제였다.
 
-     ⚠️ 대신 "안 고른 것은 영영 안 본다"는 탭의 고질병을 두 가지로 막는다(NN/g 지적).
-        ① 각 범위 맨 아래에 나머지 둘로 넘어가는 [이어서 보기] 줄
-        ② 비교표·사후관리·경쟁사 우려·자주 묻는 것·문의는 **범위와 상관없이 늘 아래에 있다**
-        (셋 다 상품과 무관하게 궁금한 것들이라 어느 범위를 보든 눈에 들어와야 한다) */
+     ⚠️ "안 고른 것은 영영 안 본다"는 탭의 고질병은 [이어서 보기] 줄로 막는다(각 화면 맨 아래).
+
+     🔴 2026-08-07: 아래쪽 공통 블록을 없앴다.
+        전에는 비교표·사후관리·경쟁사 우려·자주 묻는 것을 범위 밖에 두어 어느 탭에서도 보이게 했는데,
+        사장님이 "탭을 바꿔도 아래는 똑같이 나온다"고 지적했다. 실제로 탭이 바뀐 느낌을 깎아먹었다.
+        지금은 각 화면이 자기에게 맞는 것만 갖는다:
+          ① 통째로 만들기 = 비교표 + 경쟁사 우려   ② 제어기 = 사후 관리 + 자주 묻는 것
+          ③ 운영 프로그램 = 자기 내용만
+        셋 다 [이어서 보기] + [문의]로 끝난다(문의는 한 번에 하나만 그려지므로 중복이 아니다). */
   const [here, setHere] = useState("turnkey");
   // 오른쪽 길잡이를 띄울지 (고르는 장이 화면 밖으로 나갔을 때만)
   const [showNav, setShowNav] = useState(false);
@@ -134,6 +143,8 @@ export default function BusinessPage() {
     window.setTimeout(() => { switching.current = false; }, 260);
 
     setHere(id);
+    // 문의 유형도 지금 보는 것으로 맞춰 둔다. 손님이 칩을 다시 고르는 수고를 던다.
+    setKind(KIND_BY_SCOPE[id] ?? KINDS[0]);
     history.replaceState(null, "", id === "turnkey" ? " " : `#${id}`);
     // 새 내용이 화면에 붙은 다음에 재야 위치가 맞는다
     requestAnimationFrame(() => {
@@ -415,7 +426,118 @@ export default function BusinessPage() {
           </div>
           <p className="note reveal">값은 방 크기랑 하시려는 연출에 따라 달라서 보고 나서 말씀드립니다.</p>
         </section>
+        {/* 비교 */}
+        <section className="bz-sec">
+          <div className="kicker reveal">비교</div>
+          <h2 className="reveal">견적서에는 안 적히는 것들</h2>
+          <div className="cmp reveal">
+            <div className="h">&nbsp;</div><div className="h">보통 방식</div><div className="h usc">판타스트릭</div>
+
+            <div className="rowlab">기획부터 시공까지 어디까지 한 팀인가</div>
+            <div><span className="mk n">&times;</span><span className="t mut">따로따로 맡김</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">한 팀이 끝까지</span></div>
+
+            <div className="rowlab">방을 늘리고 싶을 때</div>
+            <div><span className="mk n">&times;</span><span className="t mut">제어기를 다시</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">모듈만 추가</span></div>
+
+            <div className="rowlab">작동을 안 하는 걸 어떻게 아는가</div>
+            <div><span className="mk n">&times;</span><span className="t mut">사람이 발견</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">24시간 자동 알림</span></div>
+
+            <div className="rowlab">작동을 안 할 때 전화할 곳</div>
+            <div><span className="mk n">&times;</span><span className="t mut">시공사, 제작사, 부품사</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">만든 사람이 직접 받습니다</span></div>
+
+            <div className="rowlab">부품 단종되면</div>
+            <div><span className="mk n">&times;</span><span className="t mut">그 업체만 만드는 기판</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">시중에서 구할 수 있는 부품</span></div>
+
+            <div className="rowlab">매장 운영 프로그램</div>
+            <div><span className="mk n">&times;</span><span className="t mut">없음</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">출퇴근, 급여, 예약, 쿠폰</span></div>
+
+            <div className="rowlab">만든 데가 방탈출을 하는가</div>
+            <div><span className="mk n">&times;</span><span className="t mut">아니오</span></div>
+            <div className="usc"><span className="mk y">&#10003;</span><span className="t">강남 3곳, 11년째</span></div>
+          </div>
+          <p className="disc reveal">업계에서 일반적으로 쓰이는 방식과의 구조 차이를 정리한 것입니다.
+            특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
+        </section>
+
+        {/* 먼저 말씀드립니다 */}
+        <section className="bz-sec">
+          <div className="kicker reveal">먼저 말씀드립니다</div>
+          <h2 className="reveal">경쟁사한테 사는 거 아니냐,<br />하실 겁니다.</h2>
+          <p className="lead reveal">맞습니다. 저희도 강남에서 방탈출을 합니다. 그래서 말로 하지 않고 계약서에 넣습니다.</p>
+          <div className="trust">
+            <div className="reveal"><b>시나리오는 안 가져갑니다</b><span>고객사 시나리오랑 문제 구조는 우리 매장 어디에도 안 씁니다.</span></div>
+            <div className="reveal"><b>매장 이름 안 밝힙니다</b><span>원하시면 납품 사례에서 빼드립니다.</span></div>
+            <div className="reveal"><b>데이터는 따로 둡니다</b><span>매장 예약이랑 매출이 우리 쪽 데이터와 섞이지 않습니다.</span></div>
+            <div className="reveal"><b>제어기만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
+          </div>
+        </section>
+
+        {/* 이 화면의 마무리 — 다음 범위로 넘기고, 문의로 받는다 */}
         <NextUp here={here} pick={pick} />
+
+        {/* 문의 */}
+        <section className="bz-sec" id="cta">
+          <div className="ctabox reveal">
+            <div className="kicker" style={{ justifyContent: "center" }}>CONTACT</div>
+            <h2>한번 보러 가겠습니다.</h2>
+            <p className="lead center">지금 쓰시는 게 있어도 괜찮습니다. 안 뜯고 볼 수 있는 것부터 봅니다.
+              방 몇 개인지, 장치가 몇 개 붙어 있는지, 고장 나면 지금 어떻게 하시는지. 그 정도만 보면 됩니다.</p>
+            {sent ? (
+              <div className="bzdone">
+                <b>문의 잘 받았습니다.</b>
+                <p>영업일 기준 하루 안에 전화 드립니다. 급하시면 <b>fantastrick@fantastrick.co.kr</b> 로도 연락 주세요.</p>
+              </div>
+            ) : (
+              <>
+                <div className="kinds" style={{ justifyContent: "center", margin: "22px 0 4px" }}>
+                  {KINDS.map((k) => (
+                    <button key={k} type="button" className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{k}</button>
+                  ))}
+                </div>
+                <form className="bzform" onSubmit={sendInquiry}>
+                  <div>
+                    <label htmlFor="bz-store">매장명</label>
+                    <input id="bz-store" maxLength={60} placeholder="○○이스케이프" autoComplete="organization"
+                      value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-tel">연락처</label>
+                    <input id="bz-tel" inputMode="tel" maxLength={20} placeholder="010-0000-0000" autoComplete="tel"
+                      value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-rooms">방 개수</label>
+                    <input id="bz-rooms" inputMode="numeric" maxLength={4} placeholder="3"
+                      value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-area">지역</label>
+                    <input id="bz-area" maxLength={40} placeholder="서울 강남"
+                      value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+                  </div>
+                  <div className="full">
+                    <button type="submit" className="btn primary" style={{ width: "100%" }} disabled={sending}>
+                      {sending ? "보내는 중…" : "한번 보러 와 달라고 하기"}
+                    </button>
+                  </div>
+                </form>
+                {formErr && <div className="bzerr">{formErr}</div>}
+                <div className="micro">보고 나서 안 하셔도 됩니다.<br />연락은 한 번만 드립니다.</div>
+              </>
+            )}
+          </div>
+
+          <div className="crossline reveal" style={{ marginTop: 22 }}>
+            <p>브랜드 팝업이나 기업 교육처럼 방탈출 매장이 아닌 곳에 만드는 일도 합니다.</p>
+            <Link href="/business/collab">협업 이야기 보기 →</Link>
+          </div>
+        </section>
       </div></div>}
 
       {/* ══════════ ② 제어기 · 장치 ══════════ (D6 카본 · 시안) */}
@@ -690,7 +812,112 @@ export default function BusinessPage() {
             </figcaption>
           </figure>
         </section>
+        {/* 사후 관리 — 상품과 상관없이 궁금한 것이라 범위 밖에 둔다 */}
+        <section className="bz-sec">
+          <div className="kicker reveal">사후 관리</div>
+          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
+          <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
+          <div className="trust">
+            <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
+            <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
+            <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
+            <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="bz-sec">
+          <div className="kicker reveal">자주 묻는 것</div>
+          <h2 className="reveal">이런 걸 물어보십니다.</h2>
+          <div className="reveal">
+            <details>
+              <summary>지금 매장에 있는 장치, 안 뜯고 그대로 쓸 수 있나요?</summary>
+              <div className="b">쓰시던 전자석이랑 센서, 조명은 대부분 선만 옮기면 됩니다.
+                뭘 살릴 수 있는지는 보러 가서 그 자리에 알려드립니다.</div>
+            </details>
+            <details>
+              <summary>공사하는 동안 매장 닫아야 하나요?</summary>
+              <div className="b">3일 기준입니다. 방 한 칸씩 나눠 하면 매장 전체를 닫지 않아도 됩니다.
+                예약 적은 요일에 맞춰 잡습니다.</div>
+            </details>
+            <details>
+              <summary>장치가 작동을 안 하면 얼마나 빨리 오시나요?</summary>
+              <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
+                원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
+            </details>
+            <details>
+              <summary>방 하나만 새로 만들 수도 있나요?</summary>
+              <div className="b">됩니다. 방 한 칸만 하시는 분들도 있고, 매장 전체를 맡기시는 분들도 있습니다.
+                지금 쓰시는 것 중 살릴 게 있으면 살립니다.</div>
+            </details>
+            <details>
+              <summary>제어기만 사고 나머지는 저희가 해도 되나요?</summary>
+              <div className="b">됩니다. 제어기만 가져가셔도 되고, 운영 프로그램만 쓰셔도 됩니다.
+                어디까지 맡기실지는 보고 나서 같이 정합니다.</div>
+            </details>
+          </div>
+        </section>
+
+        {/* 이 화면의 마무리 — 다음 범위로 넘기고, 문의로 받는다 */}
         <NextUp here={here} pick={pick} />
+
+        {/* 문의 */}
+        <section className="bz-sec" id="cta">
+          <div className="ctabox reveal">
+            <div className="kicker" style={{ justifyContent: "center" }}>CONTACT</div>
+            <h2>한번 보러 가겠습니다.</h2>
+            <p className="lead center">지금 쓰시는 게 있어도 괜찮습니다. 안 뜯고 볼 수 있는 것부터 봅니다.
+              방 몇 개인지, 장치가 몇 개 붙어 있는지, 고장 나면 지금 어떻게 하시는지. 그 정도만 보면 됩니다.</p>
+            {sent ? (
+              <div className="bzdone">
+                <b>문의 잘 받았습니다.</b>
+                <p>영업일 기준 하루 안에 전화 드립니다. 급하시면 <b>fantastrick@fantastrick.co.kr</b> 로도 연락 주세요.</p>
+              </div>
+            ) : (
+              <>
+                <div className="kinds" style={{ justifyContent: "center", margin: "22px 0 4px" }}>
+                  {KINDS.map((k) => (
+                    <button key={k} type="button" className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{k}</button>
+                  ))}
+                </div>
+                <form className="bzform" onSubmit={sendInquiry}>
+                  <div>
+                    <label htmlFor="bz-store">매장명</label>
+                    <input id="bz-store" maxLength={60} placeholder="○○이스케이프" autoComplete="organization"
+                      value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-tel">연락처</label>
+                    <input id="bz-tel" inputMode="tel" maxLength={20} placeholder="010-0000-0000" autoComplete="tel"
+                      value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-rooms">방 개수</label>
+                    <input id="bz-rooms" inputMode="numeric" maxLength={4} placeholder="3"
+                      value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="bz-area">지역</label>
+                    <input id="bz-area" maxLength={40} placeholder="서울 강남"
+                      value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+                  </div>
+                  <div className="full">
+                    <button type="submit" className="btn primary" style={{ width: "100%" }} disabled={sending}>
+                      {sending ? "보내는 중…" : "한번 보러 와 달라고 하기"}
+                    </button>
+                  </div>
+                </form>
+                {formErr && <div className="bzerr">{formErr}</div>}
+                <div className="micro">보고 나서 안 하셔도 됩니다.<br />연락은 한 번만 드립니다.</div>
+              </>
+            )}
+          </div>
+
+          <div className="crossline reveal" style={{ marginTop: 22 }}>
+            <p>브랜드 팝업이나 기업 교육처럼 방탈출 매장이 아닌 곳에 만드는 일도 합니다.</p>
+            <Link href="/business/collab">협업 이야기 보기 →</Link>
+          </div>
+        </section>
       </div></div>}
 
       {/* ══════════ ③ 매장 운영 프로그램 ══════════ (S1 밝은 SaaS) */}
@@ -784,113 +1011,7 @@ export default function BusinessPage() {
           <p className="note reveal">제어기를 넣으시면 운영 프로그램이 함께 들어갑니다.
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>
-        <NextUp here={here} pick={pick} />
-      </div></div>}
-
-      {/* ══════════ 여기서부터는 어느 범위를 보든 항상 나온다 ══════════ */}
-      <div className="wrap">
-        {/* 비교 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">비교</div>
-          <h2 className="reveal">견적서에는 안 적히는 것들</h2>
-          <div className="cmp reveal">
-            <div className="h">&nbsp;</div><div className="h">보통 방식</div><div className="h usc">판타스트릭</div>
-
-            <div className="rowlab">기획부터 시공까지 어디까지 한 팀인가</div>
-            <div><span className="mk n">&times;</span><span className="t mut">따로따로 맡김</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">한 팀이 끝까지</span></div>
-
-            <div className="rowlab">방을 늘리고 싶을 때</div>
-            <div><span className="mk n">&times;</span><span className="t mut">제어기를 다시</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">모듈만 추가</span></div>
-
-            <div className="rowlab">작동을 안 하는 걸 어떻게 아는가</div>
-            <div><span className="mk n">&times;</span><span className="t mut">사람이 발견</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">24시간 자동 알림</span></div>
-
-            <div className="rowlab">작동을 안 할 때 전화할 곳</div>
-            <div><span className="mk n">&times;</span><span className="t mut">시공사, 제작사, 부품사</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">만든 사람이 직접 받습니다</span></div>
-
-            <div className="rowlab">부품 단종되면</div>
-            <div><span className="mk n">&times;</span><span className="t mut">그 업체만 만드는 기판</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">시중에서 구할 수 있는 부품</span></div>
-
-            <div className="rowlab">매장 운영 프로그램</div>
-            <div><span className="mk n">&times;</span><span className="t mut">없음</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">출퇴근, 급여, 예약, 쿠폰</span></div>
-
-            <div className="rowlab">만든 데가 방탈출을 하는가</div>
-            <div><span className="mk n">&times;</span><span className="t mut">아니오</span></div>
-            <div className="usc"><span className="mk y">&#10003;</span><span className="t">강남 3곳, 11년째</span></div>
-          </div>
-          <p className="disc reveal">업계에서 일반적으로 쓰이는 방식과의 구조 차이를 정리한 것입니다.
-            특정 업체를 지칭하지 않으며 제품에 따라 사양은 다를 수 있습니다.</p>
-        </section>
-
-        {/* 사후 관리 — 상품과 상관없이 궁금한 것이라 범위 밖에 둔다 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">사후 관리</div>
-          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
-          <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
-          <div className="trust">
-            <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
-            <div className="reveal"><b>원격으로 되는 건 원격으로</b><span>방문 없이 처리되는 건 그 자리에서 끝냅니다.</span></div>
-            <div className="reveal"><b>장치 AS 도 직접</b><span>우리가 만든 장치라 다른 데로 돌리지 않습니다.</span></div>
-            <div className="reveal"><b>프로그램 손보는 것도</b><span>쓰시다가 불편한 곳은 고쳐서 올립니다.</span></div>
-          </div>
-        </section>
-
-        {/* 먼저 말씀드립니다 */}
-        <section className="bz-sec">
-          <div className="kicker reveal">먼저 말씀드립니다</div>
-          <h2 className="reveal">경쟁사한테 사는 거 아니냐,<br />하실 겁니다.</h2>
-          <p className="lead reveal">맞습니다. 저희도 강남에서 방탈출을 합니다. 그래서 말로 하지 않고 계약서에 넣습니다.</p>
-          <div className="trust">
-            <div className="reveal"><b>시나리오는 안 가져갑니다</b><span>고객사 시나리오랑 문제 구조는 우리 매장 어디에도 안 씁니다.</span></div>
-            <div className="reveal"><b>매장 이름 안 밝힙니다</b><span>원하시면 납품 사례에서 빼드립니다.</span></div>
-            <div className="reveal"><b>데이터는 따로 둡니다</b><span>매장 예약이랑 매출이 우리 쪽 데이터와 섞이지 않습니다.</span></div>
-            <div className="reveal"><b>제어기만 사셔도 됩니다</b><span>운영 프로그램 없이 장치만 가져가셔도 상관없습니다.</span></div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="bz-sec">
-          <div className="kicker reveal">자주 묻는 것</div>
-          <h2 className="reveal">이런 걸 물어보십니다.</h2>
-          <div className="reveal">
-            <details>
-              <summary>지금 매장에 있는 장치, 안 뜯고 그대로 쓸 수 있나요?</summary>
-              <div className="b">쓰시던 전자석이랑 센서, 조명은 대부분 선만 옮기면 됩니다.
-                뭘 살릴 수 있는지는 보러 가서 그 자리에 알려드립니다.</div>
-            </details>
-            <details>
-              <summary>공사하는 동안 매장 닫아야 하나요?</summary>
-              <div className="b">3일 기준입니다. 방 한 칸씩 나눠 하면 매장 전체를 닫지 않아도 됩니다.
-                예약 적은 요일에 맞춰 잡습니다.</div>
-            </details>
-            <details>
-              <summary>장치가 작동을 안 하면 얼마나 빨리 오시나요?</summary>
-              <div className="b">장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.
-                원격으로 되는 건 방문 없이 처리하고요. 그리고 전화 받는 사람이 그 제어기를 만든 사람입니다.</div>
-            </details>
-            <details>
-              <summary>방 하나만 새로 만들 수도 있나요?</summary>
-              <div className="b">됩니다. 방 한 칸만 하시는 분들도 있고, 매장 전체를 맡기시는 분들도 있습니다.
-                지금 쓰시는 것 중 살릴 게 있으면 살립니다.</div>
-            </details>
-            <details>
-              <summary>제어기만 사고 나머지는 저희가 해도 되나요?</summary>
-              <div className="b">됩니다. 제어기만 가져가셔도 되고, 운영 프로그램만 쓰셔도 됩니다.
-                어디까지 맡기실지는 보고 나서 같이 정합니다.</div>
-            </details>
-          </div>
-        </section>
-
-        {/* 🔴 공통 구간에서도 범위를 바꿀 수 있어야 한다.
-            [이어서 보기]는 각 화면 맨 아래에만 있어서, 그 뒤 비교표·사후관리·자주 묻는 것을
-            보는 동안에는 다른 범위로 갈 방법이 없었다. 페이지가 8,000px 이 넘어 위로 되돌아가기도 멀다.
-            그래서 문의 직전에 한 번 더 깐다. */}
+        {/* 이 화면의 마무리 — 다음 범위로 넘기고, 문의로 받는다 */}
         <NextUp here={here} pick={pick} />
 
         {/* 문의 */}
@@ -950,7 +1071,8 @@ export default function BusinessPage() {
             <Link href="/business/collab">협업 이야기 보기 →</Link>
           </div>
         </section>
-      </div>
+      </div></div>}
+
     </div>
   );
 }
