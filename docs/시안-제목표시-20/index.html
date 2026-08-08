@@ -1,0 +1,236 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>제목 강조·표시 시안 20 — 판타스트릭 비즈니스</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════
+   제목·부제를 어떻게 표시할지 20가지 (2026-08-08)
+
+   가운뎃점(·)을 제목에서 걷어냈다. 그 자리를 무엇으로 대신할지,
+   또는 아예 다른 방식으로 제목을 세울지 나란히 놓고 고르는 문서.
+
+   ⚠️ 20칸 전부 **같은 글자**를 쓴다. 달라 보이는 것은 표시 방법 때문이다.
+      글꼴은 사이트가 이미 받는 것만 썼다(Pretendard · General Sans · 나눔명조 · IBM Plex Mono).
+   ══════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+body{margin:0;background:#062a80;color:#e9f0ff;line-height:1.7;
+  font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background-image:linear-gradient(180deg,#062a80 0%,#05236c 45%,#041d57 100%);background-attachment:fixed}
+.page{max-width:1280px;margin:0 auto;padding:44px 22px 90px}
+h1{font-size:clamp(24px,3.4vw,38px);font-weight:800;letter-spacing:-.035em;margin:0 0 10px}
+.intro{color:#a9b8d6;font-size:15.5px;max-width:66ch;margin:0 0 6px}
+.warn{color:#f5c26b;font-size:14px;margin:14px 0 0}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:34px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+.card{border:1px solid rgba(255,255,255,.16);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.04)}
+.meta{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
+.no{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:#8fb6ff}
+.nm{font-size:14.5px;font-weight:800}
+.dc{flex:1 1 100%;font-size:12.5px;color:#8ea0c4;margin-top:-3px}
+.demo{padding:34px 30px 36px;background:#071b4d}
+
+/* ── 공통 골격 ── */
+.t{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1.2;margin:0}
+.s{font-size:14px;color:#a9b8d6;margin:8px 0 0}
+.k{font-size:11px;font-weight:800;letter-spacing:.22em;color:#8fb6ff;margin:0 0 12px}
+
+/* 01 위쪽 짧은 룰 (지금 쓰는 방식) */
+.d01 .k{display:flex;align-items:center;gap:10px}
+.d01 .k::before{content:"";width:24px;height:2px;border-radius:2px;background:linear-gradient(90deg,#9cc2ff,#6ea8ff)}
+/* 02 왼쪽 세로 굵은 선 */
+.d02{border-left:4px solid #6ea8ff;padding-left:18px}
+/* 03 번호 크게 */
+.d03 .num{font-family:"IBM Plex Mono",monospace;font-size:44px;font-weight:600;color:rgba(143,182,255,.32);line-height:1;display:block;margin-bottom:-4px}
+/* 04 형광펜 */
+.d04 .t mark{background:linear-gradient(180deg,transparent 58%,rgba(143,182,255,.42) 58%);color:inherit;padding:0 2px}
+/* 05 두꺼운 밑줄 */
+.d05 .t{display:inline-block;padding-bottom:10px;border-bottom:5px solid #6ea8ff}
+/* 06 배경 칩(알약) */
+.d06 .k{display:inline-block;padding:6px 14px;border-radius:999px;background:rgba(110,168,255,.18);
+  border:1px solid rgba(143,182,255,.4);letter-spacing:.14em}
+/* 07 각진 배지 */
+.d07 .k{display:inline-block;padding:6px 12px;border-radius:3px;background:#8fb6ff;color:#06122e;letter-spacing:.16em}
+/* 08 괄호로 묶기 */
+.d08 .t::before{content:"[ ";color:rgba(143,182,255,.55);font-weight:400}
+.d08 .t::after{content:" ]";color:rgba(143,182,255,.55);font-weight:400}
+/* 09 따옴표 */
+.d09 .t::before{content:"\201C";color:rgba(143,182,255,.45);margin-right:4px}
+.d09 .t::after{content:"\201D";color:rgba(143,182,255,.45);margin-left:2px}
+/* 10 계단 줄바꿈 */
+.d10 .t span{display:block}
+.d10 .t span:nth-child(2){margin-left:34px}
+/* 11 한 단어만 색 */
+.d11 .t em{font-style:normal;color:#8fb6ff}
+/* 12 굵기 대비 */
+.d12 .t{font-weight:400}
+.d12 .t strong{font-weight:800}
+/* 13 크기 대비 */
+.d13 .t{font-size:20px;font-weight:600;color:#a9b8d6}
+.d13 .t big{display:block;font-size:34px;font-weight:800;color:#e9f0ff;letter-spacing:-.04em;margin-top:2px}
+/* 14 영문 병기 */
+.d14 .en{font-family:"General Sans",sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.24em;
+  color:rgba(143,182,255,.75);display:block;margin-bottom:7px}
+/* 15 점선 밑줄 */
+.d15 .t{display:inline-block;padding-bottom:9px;border-bottom:2px dashed rgba(143,182,255,.5)}
+/* 16 좌우 선으로 감싸기 */
+.d16 .row{display:flex;align-items:center;gap:14px}
+.d16 .row::before,.d16 .row::after{content:"";height:1px;background:rgba(143,182,255,.35);flex:1}
+.d16 .t{font-size:24px;white-space:nowrap}
+/* 17 뒤에 사각 블록 */
+.d17 .t{position:relative;display:inline-block;z-index:1;padding:2px 10px}
+.d17 .t::before{content:"";position:absolute;left:0;right:0;bottom:2px;height:18px;z-index:-1;
+  background:rgba(110,168,255,.24);border-radius:3px}
+/* 18 첫 글자 크게 */
+.d18 .t .first{font-size:46px;line-height:.9;color:#8fb6ff;margin-right:2px}
+/* 19 세로 막대 + 들여쓰기 (인용 느낌) */
+.d19{position:relative;padding-left:22px}
+.d19::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;
+  background:linear-gradient(180deg,#9cc2ff,rgba(110,168,255,.15))}
+.d19 .t{font-family:"Nanum Myeongjo",serif;font-weight:800;letter-spacing:-.02em}
+/* 20 아래 전폭 얇은 선 */
+.d20 .t{padding-bottom:16px;border-bottom:1px solid rgba(143,182,255,.34)}
+.d20 .s{margin-top:12px}
+</style>
+
+<div class="page">
+  <h1>제목 강조·표시 시안 20</h1>
+  <p class="intro">제목에서 가운뎃점(·)을 걷어냈습니다. 그 자리를 무엇으로 대신할지,
+    또는 아예 다른 방식으로 제목을 세울지 나란히 놓았습니다.
+    <b>20칸 전부 같은 글자입니다.</b> 달라 보이는 건 표시 방법 때문입니다.</p>
+  <p class="warn">번호로 골라주세요. 하나만 고르셔도 되고, 큰 제목과 작은 제목에 서로 다른 것을 쓰셔도 됩니다.</p>
+
+  <div class="grid">
+
+    <div class="card"><div class="meta"><span class="no">01</span><span class="nm">위쪽 짧은 룰</span>
+      <span class="dc">지금 쓰는 방식. 라벨 앞에 24px 선 하나.</span></div>
+      <div class="demo d01"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">02</span><span class="nm">왼쪽 세로 굵은 선</span>
+      <span class="dc">제목 왼쪽에 굵은 선. 단정하고 눈에 잘 띈다.</span></div>
+      <div class="demo"><div class="d02"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div></div>
+
+    <div class="card"><div class="meta"><span class="no">03</span><span class="nm">번호 크게</span>
+      <span class="dc">차례가 있는 화면에 맞는다. 지금 범위 표제가 이 방식.</span></div>
+      <div class="demo d03"><span class="num">01</span>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">04</span><span class="nm">형광펜</span>
+      <span class="dc">한 덩어리만 밑에서 칠한다. 문장 안 핵심을 짚을 때.</span></div>
+      <div class="demo d04"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 <mark>한 팀이 합니다</mark></h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">05</span><span class="nm">두꺼운 밑줄</span>
+      <span class="dc">제목 길이만큼만 그어진다. 힘이 세다.</span></div>
+      <div class="demo d05"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">06</span><span class="nm">알약 칩</span>
+      <span class="dc">라벨을 둥근 칩에 넣는다. 부드럽다.</span></div>
+      <div class="demo d06"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">07</span><span class="nm">각진 배지</span>
+      <span class="dc">라벨을 색으로 꽉 채운다. 제품·장비 화면과 어울린다.</span></div>
+      <div class="demo d07"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">08</span><span class="nm">대괄호로 묶기</span>
+      <span class="dc">도면·설계도 느낌. 통째로 만들기 화면에 맞는다.</span></div>
+      <div class="demo d08"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">09</span><span class="nm">따옴표</span>
+      <span class="dc">사람이 한 말처럼 읽힌다. 현장 말투와 잘 맞는다.</span></div>
+      <div class="demo d09"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">10</span><span class="nm">계단 줄바꿈</span>
+      <span class="dc">둘째 줄을 들여 쓴다. 글자만으로 리듬을 만든다.</span></div>
+      <div class="demo d10"><p class="k">통째로 만들기</p>
+        <h2 class="t"><span>이야기부터 배선까지</span><span>한 팀이 합니다</span></h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">11</span><span class="nm">한 단어만 색</span>
+      <span class="dc">가장 싸고 안전하다. 어느 화면에서나 통한다.</span></div>
+      <div class="demo d11"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 <em>한 팀</em>이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">12</span><span class="nm">굵기 대비</span>
+      <span class="dc">앞은 얇게, 핵심만 굵게. 색을 안 쓰고 강조한다.</span></div>
+      <div class="demo d12"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 <strong>한 팀이 합니다</strong></h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">13</span><span class="nm">크기 대비</span>
+      <span class="dc">앞줄은 작게 깔고 본 제목을 크게. 두 줄 제목에 좋다.</span></div>
+      <div class="demo d13"><h2 class="t">이야기부터 배선까지<big>한 팀이 합니다</big></h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">14</span><span class="nm">영문 병기</span>
+      <span class="dc">위에 작은 영문. 지금 3축 카드가 쓰는 방식.</span></div>
+      <div class="demo d14"><span class="en">TURNKEY</span>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">15</span><span class="nm">점선 밑줄</span>
+      <span class="dc">실선보다 가볍다. 도면 톤 화면에 맞는다.</span></div>
+      <div class="demo d15"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">16</span><span class="nm">좌우 선으로 감싸기</span>
+      <span class="dc">가운데 정렬 화면에 맞는다. 장(章)이 바뀌는 느낌.</span></div>
+      <div class="demo d16"><div class="row"><h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2></div>
+        <p class="s" style="text-align:center">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">17</span><span class="nm">뒤에 사각 블록</span>
+      <span class="dc">글자 뒤에 색 블록. 형광펜보다 단단하다.</span></div>
+      <div class="demo d17"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">18</span><span class="nm">첫 글자 크게</span>
+      <span class="dc">책 첫머리 느낌. 이야기를 파는 화면에 어울린다.</span></div>
+      <div class="demo d18"><p class="k">통째로 만들기</p>
+        <h2 class="t"><span class="first">이</span>야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+    <div class="card"><div class="meta"><span class="no">19</span><span class="nm">세로 막대 + 명조</span>
+      <span class="dc">인용문처럼. 종이 도면 화면과 잘 맞는다.</span></div>
+      <div class="demo"><div class="d19"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div></div>
+
+    <div class="card"><div class="meta"><span class="no">20</span><span class="nm">아래 전폭 얇은 선</span>
+      <span class="dc">제목과 본문을 갈라준다. 조용하고 오래 봐도 안 질린다.</span></div>
+      <div class="demo d20"><p class="k">통째로 만들기</p>
+        <h2 class="t">이야기부터 배선까지 한 팀이 합니다</h2>
+        <p class="s">대부분은 이야기, 인테리어, 장치를 각각 다른 데 맡깁니다.</p></div></div>
+
+  </div>
+
+  <p class="intro" style="margin-top:40px">
+    참고로 화면마다 어울리는 것이 다릅니다. 종이 도면 화면은 <b>08 · 15 · 19</b>,
+    카본 기계 화면은 <b>07 · 03 · 12</b>, 흰 프로그램 화면은 <b>02 · 11 · 20</b> 쪽이 무난합니다.
+    셋을 다르게 쓰셔도 되고, 하나로 통일하셔도 됩니다.</p>
+</div>

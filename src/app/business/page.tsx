@@ -24,8 +24,8 @@ const onlyNum = (s: string) => Number(String(s).replace(/[^0-9]/g, "")) || 0;
    본이름을 그대로 쓰면 길잡이가 168px 이 넘어 본문을 가린다(1440 화면에서 56px 겹침 실측). */
 const SCOPES = [
   { id: "turnkey", label: "통째로 만들기", short: "통째로", sub: "이야기부터 공사까지 전부" },
-  { id: "device", label: "방 안 장치와 기계", short: "장치", sub: "자물쇠·센서·조명을 돌리는 것" },
-  { id: "software", label: "매장 운영 프로그램", short: "프로그램", sub: "근무표·급여·예약을 하는 것" },
+  { id: "device", label: "방 안 장치와 기계", short: "장치", sub: "자물쇠와 센서, 조명을 돌리는 것" },
+  { id: "software", label: "매장 운영 프로그램", short: "프로그램", sub: "근무표와 급여, 예약을 하는 것" },
 ];
 
 const KINDS = ["방 통째로 맡기기", "장치와 기계만", "운영 프로그램만", "그 밖에"];
@@ -230,7 +230,7 @@ export default function BusinessPage() {
               전에는 "방을 통째로 만듭니다"였는데, 그건 ①턴키만의 문장이라 페이지 전체가
               "턴키 시공사 소개"로 규정됐다. 그러면 아래 선택은 셋 중 고르는 자리가 아니라
               "턴키를 보는 방법 세 가지"로 읽힌다. 그 문장은 턴키 표제로 옮겼다. */}
-          <div className="kicker">방탈출 제작 · 장치 · 매장 운영</div>
+          <div className="kicker">방탈출 제작, 장치, 매장 운영</div>
           <h1>방을 만드는 일부터<br />방을 돌리는 일까지.</h1>
           <p className="sub">
             방탈출을 통째로 짓는 일, 방 안 장치를 움직이는 기계, 매장을 굴리는 프로그램.
@@ -243,7 +243,7 @@ export default function BusinessPage() {
           <div className="strip">
             <div><b>11년째</b><span>직접 운영 중</span></div>
             <div><b>강남 3곳</b><span>직영</span></div>
-            <div><b>한 팀</b><span>기획 · 시공 · 장치</span></div>
+            <div><b>한 팀</b><span>기획부터 장치까지</span></div>
           </div>
         </div>
       </section>
@@ -340,34 +340,34 @@ export default function BusinessPage() {
           <div className="trio">
             <div className="tri reveal">
               <div className="en">Contents</div>
-              <h3>이야기 · 문제</h3>
+              <h3>이야기와 문제</h3>
               <p>세계관을 짜고 방 안에서 손님이 무엇을 하게 할지 설계합니다.</p>
               <ul>
-                <li>시나리오 · 세계관</li>
-                <li>문제 · 장치 게임 설계</li>
-                <li>연출 · 사운드 디렉팅</li>
-                <li>운영 방법 · 진행 담당(GM) 교육</li>
+                <li>시나리오와 세계관</li>
+                <li>문제와 장치 게임 설계</li>
+                <li>연출과 사운드 디렉팅</li>
+                <li>운영 방법과 진행 담당(GM) 교육</li>
               </ul>
             </div>
             <div className="tri reveal">
               <div className="en">Space</div>
-              <h3>공간 · 인테리어</h3>
+              <h3>공간과 인테리어</h3>
               <p>도면을 그리고 벽을 세우고 마감까지 합니다.</p>
               <ul>
-                <li>평면 · 동선 설계</li>
-                <li>세트 제작 · 인테리어 시공</li>
-                <li>조명 · 음향 설치</li>
+                <li>평면과 동선 설계</li>
+                <li>세트 제작과 인테리어 시공</li>
+                <li>조명과 음향 설치</li>
                 <li>전기 배선</li>
               </ul>
             </div>
             <div className="tri reveal">
               <div className="en">Device</div>
-              <h3>장치 · 제어</h3>
+              <h3>장치와 제어</h3>
               <p>자물쇠와 센서를 만들어 붙이고, 그걸 움직이는 기계까지 저희가 만듭니다.</p>
               <ul>
-                <li>잠금 장치(전자석 · 기계식)</li>
-                <li>센서 · 트리거</li>
-                <li>연출 제어(조명 · 음향 · 영상)</li>
+                <li>잠금 장치(전자석과 기계식)</li>
+                <li>센서와 트리거</li>
+                <li>연출 제어(조명, 음향, 영상)</li>
                 <li>장치를 한꺼번에 움직이는 기계</li>
               </ul>
             </div>
@@ -394,11 +394,11 @@ export default function BusinessPage() {
           {/* 공정 5단계 */}
           <h3 className="reveal pn-h3">진행은 이렇게 합니다</h3>
           <div className="rail reveal" style={{ marginTop: 18 }}>
-            <div><b>보러 감</b><span>현장 보고 방 개수·장치 세기</span><i>자체 인력</i></div>
-            <div><b>기획 · 시나리오</b><span>이야기와 문제 설계</span><i>자체 인력</i></div>
-            <div><b>설계 · 인테리어</b><span>도면, 세트, 마감</span><i>자체 인력</i></div>
-            <div><b>전기 · 장치</b><span>배선, 장치 제작, 기계</span><i>자체 인력</i></div>
-            <div><b>공사 · 오픈</b><span>현장 준비, 진행 담당 교육</span><i>자체 인력</i></div>
+            <div><b>보러 감</b><span>현장 보고 방 개수와 장치 세기</span><i>자체 인력</i></div>
+            <div><b>기획과 시나리오</b><span>이야기와 문제 설계</span><i>자체 인력</i></div>
+            <div><b>설계와 인테리어</b><span>도면, 세트, 마감</span><i>자체 인력</i></div>
+            <div><b>전기와 장치</b><span>배선, 장치 제작, 기계</span><i>자체 인력</i></div>
+            <div><b>공사와 오픈</b><span>현장 준비, 진행 담당 교육</span><i>자체 인력</i></div>
           </div>
 
           {/* 우리가 만든 방들 */}
@@ -547,7 +547,7 @@ export default function BusinessPage() {
         <header className="pn-head">
           <i>02</i>
           <h2>방 안 장치를 움직이는 기계</h2>
-          <p>자물쇠·센서·조명을 한 대가 다 맡습니다</p>
+          <p>자물쇠와 센서, 조명을 한 대가 다 맡습니다</p>
         </header>
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
@@ -594,7 +594,7 @@ export default function BusinessPage() {
         {/* 새 제어기 — 이 패널의 주인공. .pn-stage 는 여기 하나에만 붙인다(릴리즈 태그·조명) */}
         <section className="bz-sec pn-stage">
           <div className="kicker reveal">새로 만든 것</div>
-          <h2 className="reveal">저희가 만든 기계, 마스터 · 슬레이브</h2>
+          <h2 className="reveal">저희가 만든 기계, 마스터와 슬레이브</h2>
           <p className="lead reveal">
             방 안에 붙는 자물쇠, 전자석, 센서, 연출 조명을 한 대가 다 맡아서 움직이는 기계입니다.
             본체(마스터) 한 대가 장치 32개를 맡고, 모자라면 옆에 판(슬레이브)을 하나 더 답니다.
@@ -694,7 +694,7 @@ export default function BusinessPage() {
             <div><dt>한 대로 늘릴 수 있는 데까지</dt><span className="dots" /><dd>128개</dd></div>
             <div><dt>고장 감시</dt><span className="dots" /><dd>장치마다 자동으로 확인</dd></div>
             <div><dt>부품</dt><span className="dots" /><dd>시중에서 구할 수 있는 것</dd></div>
-            <div><dt>보증</dt><span className="dots" /><dd>본체 · 판 1년, 부품 6개월</dd></div>
+            <div><dt>보증</dt><span className="dots" /><dd>본체와 판 1년, 부품 6개월</dd></div>
           </div>
 
           <figure className="reveal" style={{ marginTop: 26 }}>
@@ -938,15 +938,15 @@ export default function BusinessPage() {
           <div className="swtable reveal">
             <div className="h">&nbsp;</div><div className="h">지금 이렇게 하고 계실 겁니다</div><div className="h usc">바뀌는 것</div>
 
-            <div className="rowlab">출퇴근 · 근무표</div>
+            <div className="rowlab">출퇴근과 근무표</div>
             <div className="t mut">출퇴근은 단톡에 카톡으로, 근무표는 엑셀 짜서 사진으로 올림</div>
             <div className="usc t">폰으로 찍습니다. 대타도 서로 신청하고 승인합니다.</div>
 
-            <div className="rowlab">급여 · 매출 장부</div>
+            <div className="rowlab">급여와 매출 장부</div>
             <div className="t mut">말일에 시급 계산기 두드림</div>
             <div className="usc t">찍힌 근태가 그대로 급여로 넘어갑니다. 매출까지 한 화면에서.</div>
 
-            <div className="rowlab">예약 · 홈페이지</div>
+            <div className="rowlab">예약과 홈페이지</div>
             <div className="t mut">외부 플랫폼 수수료, 손 안 대는 홈페이지</div>
             <div className="usc t">자체 예약, 취소, 환불 규정까지. 홈페이지도 같이 갑니다.</div>
 

@@ -13,7 +13,7 @@ import "../business.css";
    ⚠️ 없는 실적을 쓰지 않는다. 우리가 댈 수 있는 것은 "직영 3곳을 11년 굴려온 것"뿐이다.
       대기업 로고를 흉내 내면 빈자리가 그대로 보인다. 카피 규칙은 /business 와 같다. */
 
-const KINDS = ["브랜드 팝업", "기업 교육", "공공·전시", "그 밖에"];
+const KINDS = ["브랜드 팝업", "기업 교육", "공공과 전시", "그 밖에"];
 
 export default function CollabPage() {
   const [form, setForm] = useState({ storeName: "", phone: "", rooms: "", area: "" });
@@ -41,7 +41,7 @@ export default function CollabPage() {
     try {
       const res = await fetch("/api/business/inquiry", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, kind: `협업 · ${kind}` }),
+        body: JSON.stringify({ ...form, kind: `협업 ${kind}` }),
       });
       if (res.ok) setSent(true);
       else {
@@ -59,7 +59,7 @@ export default function CollabPage() {
       <section className="bz-hero">
         <div className="scan" />
         <div className="wrap">
-          <div className="kicker">협업 · 브랜드 · 기관</div>
+          <div className="kicker">협업, 브랜드, 기관</div>
           <h1>방탈출을 팝업에,<br />교육에, 전시에.</h1>
           <p className="sub">
             사람을 앉혀 놓고 설명하는 대신, 직접 움직이고 풀게 만드는 방식입니다.
@@ -72,7 +72,7 @@ export default function CollabPage() {
           <div className="strip">
             <div><b>11년째</b><span>직접 운영 중</span></div>
             <div><b>강남 3곳</b><span>직영</span></div>
-            <div><b>한 팀</b><span>기획 · 시공 · 장치</span></div>
+            <div><b>한 팀</b><span>기획부터 장치까지</span></div>
           </div>
         </div>
       </section>
@@ -98,34 +98,34 @@ export default function CollabPage() {
           <div className="trio">
             <div className="tri reveal">
               <div className="en">Contents</div>
-              <h3>이야기 · 문제</h3>
+              <h3>이야기와 문제</h3>
               <p>전하려는 메시지를 사람이 직접 풀어야 하는 형태로 바꿉니다.</p>
               <ul>
-                <li>세계관 · 시나리오</li>
-                <li>문제 · 미션 설계</li>
-                <li>연출 · 사운드</li>
-                <li>진행 매뉴얼 · 운영 교육</li>
+                <li>세계관과 시나리오</li>
+                <li>문제와 미션 설계</li>
+                <li>연출과 사운드</li>
+                <li>진행 매뉴얼과 운영 교육</li>
               </ul>
             </div>
             <div className="tri reveal">
               <div className="en">Space</div>
-              <h3>공간 · 시공</h3>
+              <h3>공간과 시공</h3>
               <p>도면부터 마감까지, 현장에 실제로 세우는 일까지 합니다.</p>
               <ul>
-                <li>평면 · 동선 설계</li>
-                <li>세트 제작 · 인테리어</li>
-                <li>조명 · 음향</li>
+                <li>평면과 동선 설계</li>
+                <li>세트 제작과 인테리어</li>
+                <li>조명과 음향</li>
                 <li>전기 배선</li>
               </ul>
             </div>
             <div className="tri reveal">
               <div className="en">Device</div>
-              <h3>장치 · 제어</h3>
+              <h3>장치와 제어</h3>
               <p>손대면 반응하는 장치를 만들고, 그걸 움직이는 기계까지 직접 만듭니다.</p>
               <ul>
-                <li>잠금 장치 · 기믹</li>
-                <li>센서 · 트리거</li>
-                <li>영상 · 조명 연출 제어</li>
+                <li>잠금 장치와 기믹</li>
+                <li>센서와 트리거</li>
+                <li>영상과 조명 연출 제어</li>
                 <li>장치를 한꺼번에 움직이는 기계</li>
               </ul>
             </div>
@@ -138,9 +138,9 @@ export default function CollabPage() {
           <div className="rail reveal" style={{ marginTop: 26 }}>
             <div><b>미팅</b><span>목적, 예산, 기간 확인</span><i>자체 인력</i></div>
             <div><b>기획</b><span>콘셉트와 시나리오 제안</span><i>자체 인력</i></div>
-            <div><b>설계 · 견적</b><span>도면, 장치 목록, 일정</span><i>자체 인력</i></div>
-            <div><b>제작 · 시공</b><span>세트, 장치, 배선, 설치</span><i>자체 인력</i></div>
-            <div><b>운영 · 철수</b><span>진행 교육, 현장 지원</span><i>자체 인력</i></div>
+            <div><b>설계와 견적</b><span>도면, 장치 목록, 일정</span><i>자체 인력</i></div>
+            <div><b>제작과 시공</b><span>세트, 장치, 배선, 설치</span><i>자체 인력</i></div>
+            <div><b>운영과 철수</b><span>진행 교육, 현장 지원</span><i>자체 인력</i></div>
           </div>
           <p className="note reveal">기간과 금액은 하시려는 규모에 따라 달라서 미팅에서 말씀드립니다.</p>
         </section>
@@ -175,7 +175,7 @@ export default function CollabPage() {
           <h2 className="reveal">만들어만 보고 끝난<br />회사가 아닙니다.</h2>
           <div className="trust">
             <div className="reveal"><b>매일 운영합니다</b><span>강남 3곳에서 11년째 직접 손님을 받습니다. 주소도 공개돼 있습니다.</span></div>
-            <div className="reveal"><b>하청을 안 씁니다</b><span>기획·시공·장치가 한 회사 안에 있어 중간에 말이 새지 않습니다.</span></div>
+            <div className="reveal"><b>하청을 안 씁니다</b><span>기획과 시공, 장치가 한 회사 안에 있어 중간에 말이 새지 않습니다.</span></div>
             <div className="reveal"><b>고장 나는 걸 압니다</b><span>어디가 먼저 닳는지 겪어봐서 처음부터 그걸 감안해 만듭니다.</span></div>
             <div className="reveal"><b>끝나고도 받습니다</b><span>설치하고 사라지지 않습니다. 전화 받는 사람이 만든 사람입니다.</span></div>
           </div>
@@ -201,7 +201,7 @@ export default function CollabPage() {
                 </div>
                 <form className="bzform" onSubmit={send}>
                   <div>
-                    <label htmlFor="cb-org">회사 · 기관</label>
+                    <label htmlFor="cb-org">회사나 기관</label>
                     <input id="cb-org" maxLength={60} placeholder="○○○" autoComplete="organization"
                       value={form.storeName} onChange={(e) => setForm({ ...form, storeName: e.target.value })} />
                   </div>
@@ -234,7 +234,7 @@ export default function CollabPage() {
 
           <div className="crossline reveal" style={{ marginTop: 22 }}>
             <p>방탈출 매장을 하시거나 열려고 하신다면 이쪽입니다.</p>
-            <Link href="/business">장치 · 시공 이야기 보기 →</Link>
+            <Link href="/business">장치와 시공 이야기 보기 →</Link>
           </div>
         </section>
       </div>
