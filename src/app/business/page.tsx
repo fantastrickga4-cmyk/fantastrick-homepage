@@ -1009,6 +1009,51 @@ export default function BusinessPage() {
             <div className="op reveal"><b>손으로 대조하던 일</b><span>통장 열어서 이름 맞춰보고, 관리자 들어가서 확정 누르고.</span></div>
             <div className="op reveal"><b>지금</b><span>입금 알림이 오면 맞는 예약을 찾아 확정까지 갑니다. 손님한테 확정 문자도 나갑니다.</span></div>
           </div>
+
+          {/* 힌트폰 — 저희가 실제로 만들어 쓰는 것. 락다운시티(태블릿 카드 태그식)와
+              태초의 신부(코드 입력식) 두 가지를 매장에서 돌리고 있다.
+              ⚠️ 없는 실적을 쓰지 않는다. 여기 적힌 것은 전부 지금 돌아가는 기능이다. */}
+          <h3 className="reveal" style={{ margin: "48px 0 0", fontSize: 17, fontWeight: 800 }}>방 안에서 손님이 보는 화면도 만듭니다</h3>
+          <p className="lead reveal" style={{ margin: "10px 0 18px" }}>
+            힌트를 종이로 주거나 직원이 문을 열고 들어가는 대신, 방 안 태블릿으로 줍니다.
+            손님이 보는 화면과 직원이 보는 화면이 따로 있고, 둘이 실시간으로 붙어 있습니다.
+            저희 매장에서 지금 그렇게 돌리고 있습니다.
+          </p>
+
+          <figure className="swmock reveal">
+            <p className="ftitle">두 화면이 붙어 있습니다</p>
+            <span className="mocktag">그림으로 옮긴 화면</span>
+            <div className="hintduo">
+              <div className="hd-screen" role="img"
+                aria-label="손님이 보는 태블릿 화면 그림입니다. 남은 시간과 지금 할 일, 방금 받은 힌트가 보입니다.">
+                <span className="hd-lab" aria-hidden="true">손님 태블릿</span>
+                <div className="hd-body" aria-hidden="true">
+                  <div className="hd-time">1:12:40</div>
+                  <div className="hd-row"><b>지금 할 일</b><span>2층 사무실로</span></div>
+                  <div className="hd-row"><b>받은 힌트</b><span>액자 뒤를 보세요</span></div>
+                </div>
+              </div>
+              <div className="hd-link" aria-hidden="true"><i /><b>실시간</b></div>
+              <div className="hd-screen us" role="img"
+                aria-label="직원이 보는 화면 그림입니다. 어디까지 왔는지, 시간이 얼마나 남았는지 보이고 힌트를 눌러 보냅니다.">
+                <span className="hd-lab" aria-hidden="true">직원 화면</span>
+                <div className="hd-body" aria-hidden="true">
+                  <div className="hd-row"><b>진행</b><span>7 / 12 단계</span></div>
+                  <div className="hd-row"><b>남은 시간</b><span>1:12:40</span></div>
+                  <div className="hd-send"><span>1차 힌트 보내기</span><em>정답 보기</em></div>
+                </div>
+              </div>
+            </div>
+            <figcaption>실제 화면을 찍은 것이 아니라 모양만 옮겨 그린 그림입니다.</figcaption>
+          </figure>
+
+          <div className="ops" style={{ marginTop: 18 }}>
+            <div className="op reveal"><b>방 성격에 맞춰 만듭니다</b><span>카드를 대면 다음 할 일이 뜨는 방식, 코드를 넣으면 이야기가 오는 방식. 둘 다 저희 매장에서 돌리고 있습니다.</span></div>
+            <div className="op reveal"><b>힌트는 미리 넣어 둡니다</b><span>문제마다 1차 힌트와 정답을 적어두고, 직원이 눌러서 보냅니다. 말로 설명하다 김 새는 일이 없습니다.</span></div>
+            <div className="op reveal"><b>끊겨도 이어집니다</b><span>태블릿이 꺼졌다 켜져도 어디까지 왔는지와 남은 시간이 그대로 따라옵니다.</span></div>
+            <div className="op reveal"><b>직원이 멀리서 봅니다</b><span>어느 방이 어디까지 왔는지 한 화면에서 보고, 필요하면 그 자리에서 힌트를 보냅니다.</span></div>
+          </div>
+
           <p className="note reveal">장치와 기계를 넣으시면 운영 프로그램이 함께 들어갑니다.
             프로그램만 따로 쓰고 싶으시면 그것도 상담해 드립니다.</p>
         </section>

@@ -1153,6 +1153,53 @@
   .bizsys .pn-software .bn, .bizsys .pn-software .bh { font-size: 10px }
 }
 
+/* ── 힌트폰 도해 — 손님 화면 / 직원 화면이 붙어 있는 것 ──────
+   ⚠️ 모형 화면 규칙은 근무표·처리 내역과 같다. 파란 점선 + "그림으로 옮긴 화면" 태그 +
+      사람 이름·매장명·금액 없음. 진짜 캡처로 오인되면 안 된다. */
+.bizsys .pn-software .hintduo {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px;
+}
+.bizsys .pn-software .hd-screen {
+  position: relative; padding: 30px 16px 16px; border-radius: 14px;
+  background: #fff; border: 1px dashed rgba(37,99,235,.35);
+}
+.bizsys .pn-software .hd-screen.us { background: #f8fafc }
+.bizsys .pn-software .hd-lab {
+  position: absolute; top: 9px; left: 14px; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .12em; color: var(--faint);
+}
+.bizsys .pn-software .hd-time {
+  font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: #2563eb;
+  font-feature-settings: "tnum"; margin-bottom: 10px;
+}
+.bizsys .pn-software .hd-row {
+  display: flex; align-items: baseline; gap: 10px; padding: 8px 0;
+  border-top: 1px solid var(--line); font-size: 13px;
+}
+.bizsys .pn-software .hd-row b { flex: 0 0 66px; font-size: 11.5px; font-weight: 800; color: var(--faint) }
+.bizsys .pn-software .hd-row span { color: var(--text) }
+.bizsys .pn-software .hd-send { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap }
+.bizsys .pn-software .hd-send span {
+  font-size: 12px; font-weight: 800; color: #fff; background: #2563eb;
+  border-radius: 999px; padding: 7px 13px;
+}
+.bizsys .pn-software .hd-send em {
+  font-style: normal; font-size: 12px; font-weight: 700; color: #2563eb;
+  border: 1px solid rgba(37,99,235,.35); border-radius: 999px; padding: 6px 12px;
+}
+/* 두 화면을 잇는 선 — 글자(화살표) 대신 선과 점 하나 */
+.bizsys .pn-software .hd-link { display: flex; flex-direction: column; align-items: center; gap: 6px }
+.bizsys .pn-software .hd-link i {
+  display: block; width: 34px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, rgba(37,99,235,.25), #2563eb, rgba(37,99,235,.25));
+}
+.bizsys .pn-software .hd-link b { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: #2563eb }
+@media (max-width: 700px) {
+  .bizsys .pn-software .hintduo { grid-template-columns: 1fr; gap: 10px }
+  .bizsys .pn-software .hd-link { flex-direction: row }
+  .bizsys .pn-software .hd-link i { width: 2px; height: 22px }
+}
+
 /* 처리 내역 — 흐름도가 아니라 줄. 흐름도는 성공 경로만 그리게 되지만
    줄이면 "자동으로 안 되는 것"까지 같은 형식으로 나란히 놓을 수 있다. */
 .bizsys .pn-software .swlog {
