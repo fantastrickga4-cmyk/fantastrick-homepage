@@ -305,7 +305,12 @@
 }
 .bizsys .sp-cards button b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; line-height: 1.3; margin-top: 16px }
 .bizsys .sp-cards button span { font-size: 13.5px; opacity: .8; line-height: 1.6; margin-top: 6px }
-.bizsys .sp-cards button:hover { transform: translateY(-2px); background: rgba(255,255,255,.07) }
+/* 🔴 `:not(.on)` 이 꼭 필요하다.
+   `button:hover`(클래스 3개 + 가상클래스)가 `.sp-software.on`(클래스 3개)보다 셈이 세서,
+   **고른 카드에 마우스를 올리면 배경만 어두워지고 글자는 어두운 채로 남아 안 보였다.**
+   (2026-08-08 사장님 제보 — 운영 프로그램 카드에서 재현) */
+.bizsys .sp-cards button:hover { transform: translateY(-2px) }
+.bizsys .sp-cards button:not(.on):hover { background: rgba(255,255,255,.07) }
 .bizsys .sp-cards button:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 3px }
 
 /* 카드 바탕에 그 범위의 질감 — 고르기 전에도 "어떤 화면인지" 손에 잡힌다.
