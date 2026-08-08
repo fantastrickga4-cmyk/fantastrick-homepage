@@ -551,7 +551,7 @@ export default function BusinessPage() {
         </header>
         <section className="bz-sec" id="device">
           <div className="kicker reveal">장치값보다 큰 돈</div>
-          <h2 className="reveal">장치 하나가 작동을 안 하면<br />그 방은 그날 못 씁니다.</h2>
+          <h2 className="reveal">장치 하나가 작동을 안 하면<br /><strong>그 방은 그날 못 씁니다.</strong></h2>
           <p className="lead reveal">
             2시 타임 한 번 비면 그날 매출에서 그냥 빠져요. 내일 두 팀 받는다고 메워지는 것도 아니고요.
             주말에 타임이 다 차는 방일수록 손해가 큽니다.
@@ -594,7 +594,7 @@ export default function BusinessPage() {
         {/* 새 제어기 — 이 패널의 주인공. .pn-stage 는 여기 하나에만 붙인다(릴리즈 태그·조명) */}
         <section className="bz-sec pn-stage">
           <div className="kicker reveal">새로 만든 것</div>
-          <h2 className="reveal">저희가 만든 기계, 마스터와 슬레이브</h2>
+          <h2 className="reveal">저희가 만든 기계, <strong>마스터와 슬레이브</strong></h2>
           <p className="lead reveal">
             방 안에 붙는 자물쇠, 전자석, 센서, 연출 조명을 한 대가 다 맡아서 움직이는 기계입니다.
             본체(마스터) 한 대가 장치 32개를 맡고, 모자라면 옆에 판(슬레이브)을 하나 더 답니다.
@@ -783,7 +783,7 @@ export default function BusinessPage() {
         {/* 누가 먼저 아느냐 */}
         <section className="bz-sec">
           <div className="kicker reveal">누가 먼저 아느냐</div>
-          <h2 className="reveal">손님이 인터폰 누르기 전에<br />아셔야 합니다.</h2>
+          <h2 className="reveal">손님이 인터폰 누르기 전에<br /><strong>아셔야 합니다.</strong></h2>
 
           <figure className="reveal">
             <p className="ftitle">누가 먼저 아느냐에 따라 손해가 갈립니다</p>
@@ -816,7 +816,7 @@ export default function BusinessPage() {
         {/* 사후 관리 — 상품과 상관없이 궁금한 것이라 범위 밖에 둔다 */}
         <section className="bz-sec">
           <div className="kicker reveal">사후 관리</div>
-          <h2 className="reveal">전화 한 통이면 끝납니다.</h2>
+          <h2 className="reveal">전화 한 통이면 <strong>끝납니다.</strong></h2>
           <p className="lead reveal">어디에 전화해야 하는지 고민하실 일이 없습니다. 만든 사람이 받습니다.</p>
           <div className="trust">
             <div className="reveal"><b>24시간 고장 감시</b><span>장치가 응답을 안 하면 저희가 먼저 알고 연락드립니다.</span></div>
@@ -931,7 +931,7 @@ export default function BusinessPage() {
           <p>사무실에서 쓰는 것</p>
         </header>
         <section className="bz-sec" id="software">
-          <h2 className="reveal">사장님이 엑셀로<br />하고 계신 것들</h2>
+          <h2 className="reveal">사장님이 <em>엑셀로</em><br />하고 계신 것들</h2>
           <p className="lead reveal">방 안 장치를 움직이는 게 기계라면, 이건 사무실에서 하는 일입니다.
             근무표 짜고, 시급 계산하고, 예약 받고, 쿠폰 챙기는 것.</p>
 

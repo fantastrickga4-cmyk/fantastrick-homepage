@@ -679,20 +679,34 @@
 .bizsys .pn-turnkey .bz-sec::before {
   background: linear-gradient(90deg, rgba(13,59,140,.34) 0%, rgba(26,24,20,.14) 34%, transparent 78%);
 }
-/* 제목은 명조. 도면 위의 손글씨 표제 같은 자리라 세리프가 맞다. */
+/* 제목 표시 — 종이 도면 화면에는 도면 문법을 쓴다(사장님 선택 2026-08-08).
+     · 라벨 = 대괄호로 묶기      · 큰 제목 = 왼쪽 세로 막대 + 명조   · 소제목 = 점선 밑줄
+   가운뎃점을 걷어낸 자리를 이 셋이 대신한다. */
 .bizsys .pn-turnkey h2,
 .bizsys .pn-turnkey .pn-h3 { font-family: "Nanum Myeongjo", serif; letter-spacing: -.02em }
 .bizsys .pn-turnkey h2 { font-weight: 800; line-height: 1.22 }
-.bizsys .pn-turnkey .kicker { color: #0d3b8c; font-family: "IBM Plex Mono", ui-monospace, monospace }
-.bizsys .pn-turnkey .kicker::before { background: #0d3b8c }
+/* 큰 제목 왼쪽에 세로 막대. 도면 위 표제란처럼 글이 어디서 시작하는지 못 박는다. */
+.bizsys .pn-turnkey .bz-sec > h2 {
+  position: relative; padding-left: 20px;
+}
+.bizsys .pn-turnkey .bz-sec > h2::before {
+  content: ""; position: absolute; left: 0; top: .18em; bottom: .18em; width: 3px; border-radius: 2px;
+  background: linear-gradient(180deg, #0d3b8c, rgba(13,59,140,.25));
+}
+/* 라벨은 대괄호로 묶는다. 도면 표제란의 문법이고, 점을 안 써도 덩어리가 갈린다. */
+.bizsys .pn-turnkey .kicker { color: #0d3b8c; font-family: "IBM Plex Mono", ui-monospace, monospace; gap: 6px }
+.bizsys .pn-turnkey .kicker::before {
+  content: "["; width: auto; height: auto; background: none; border-radius: 0;
+  font-size: 13px; font-weight: 400; opacity: .7;
+}
 .bizsys .pn-turnkey .kicker::after {
-  content: ""; flex: 1 1 auto; height: 1px;
-  background: repeating-linear-gradient(90deg, rgba(13,59,140,.42) 0 6px, transparent 6px 12px);
+  content: "]"; font-size: 13px; font-weight: 400; opacity: .7;
 }
+/* 소제목은 점선 밑줄. 실선보다 가벼워 큰 제목과 안 싸운다. */
 .bizsys .pn-turnkey .pn-h3 {
-  margin: 52px 0 0; font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 12px;
+  margin: 52px 0 0; font-size: 19px; font-weight: 800; display: inline-flex; align-items: center;
+  padding-bottom: 9px; border-bottom: 2px dashed rgba(13,59,140,.45);
 }
-.bizsys .pn-turnkey .pn-h3::after { content: ""; flex: 1 1 auto; height: 1px; background: rgba(26,24,20,.20) }
 
 /* 종이 위의 모든 상자는 각지게. 둥근 모서리는 도면 문법이 아니다. */
 .bizsys .pn-turnkey figure,
@@ -868,11 +882,19 @@
 .bizsys .pn-device .bz-sec::before {
   background: linear-gradient(90deg, rgba(0,212,255,.46) 0%, rgba(255,255,255,.08) 34%, transparent 78%);
 }
-.bizsys .pn-device h2 { font-family: "General Sans", var(--font-sans); letter-spacing: -.045em }
+/* 제목 표시 — 기계 화면에는 계기판 문법(사장님 선택 2026-08-08).
+     · 라벨 = 각진 배지   · 큰 제목 = 굵기 대비(앞은 얇게, 핵심만 굵게)   · 번호는 화면 표제에 이미 큼 */
+.bizsys .pn-device h2 { font-family: "General Sans", var(--font-sans); letter-spacing: -.045em; font-weight: 500 }
+/* 핵심만 굵게. 색을 안 쓰고 강조해서 시안색이 도해에만 남는다. */
+.bizsys .pn-device h2 strong { font-weight: 800; color: #fff }
+.bizsys .pn-device .pn-head h2 { font-weight: 800 }
+/* 라벨을 색으로 꽉 채운 각진 배지. 장비 앞면의 명판과 같은 문법. */
 .bizsys .pn-device .kicker {
-  color: #6fe6ff; font-family: "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .24em;
+  display: inline-flex; align-items: center; gap: 0;
+  padding: 6px 12px; border-radius: 3px; background: #00d4ff; color: #04141a;
+  font-family: "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .18em; font-size: 11px;
 }
-.bizsys .pn-device .kicker::before { background: linear-gradient(90deg, #00d4ff, rgba(0,212,255,.2)) }
+.bizsys .pn-device .kicker::before { display: none }
 .bizsys .pn-device .note { color: var(--muted) }
 
 /* 제품 무대 — 배경보다 더 검게. 그래야 시안 선이 뜬다. */
@@ -1067,7 +1089,19 @@
 .bizsys .pn-software .bz-sec::before {
   background: linear-gradient(90deg, rgba(37,99,235,.28) 0%, rgba(16,24,40,.08) 34%, transparent 78%);
 }
+/* 제목 표시 — 밝은 프로그램 화면에는 조용한 문법(사장님 선택 2026-08-08).
+     · 큰 제목 = 아래 전폭 얇은 선   · 소제목 = 왼쪽 세로 굵은 선   · 핵심 한 단어만 색 */
 .bizsys .pn-software h2 { font-family: "General Sans", var(--font-sans); letter-spacing: -.04em }
+/* 제목과 본문을 선 하나로 가른다. 오래 봐도 안 질린다. */
+.bizsys .pn-software .bz-sec > h2 { padding-bottom: 16px; border-bottom: 1px solid rgba(37,99,235,.28) }
+.bizsys .pn-software .bz-sec > h2 + .lead { margin-top: 14px }
+.bizsys .pn-software h2 em { font-style: normal; color: #2563eb }
+/* 소제목은 왼쪽 굵은 선. 흰 바탕에서 제일 눈에 잘 들어온다. */
+.bizsys .pn-software h3 { position: relative; padding-left: 15px }
+.bizsys .pn-software h3::before {
+  content: ""; position: absolute; left: 0; top: .16em; bottom: .16em; width: 4px;
+  border-radius: 2px; background: #2563eb;
+}
 .bizsys .pn-software .kicker { color: #2563eb; font-family: "General Sans", var(--font-sans) }
 .bizsys .pn-software .kicker::before { background: linear-gradient(90deg, #60a5fa, #2563eb) }
 .bizsys .pn-software .note { color: var(--muted) }
